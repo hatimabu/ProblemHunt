@@ -1,0 +1,989 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Problem Hunt - Find Validated Problems to Build</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background: #F9FAFB;
+            color: #111827;
+            line-height: 1.6;
+        }
+
+        /* Landing Page */
+        .landing {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .landing::before {
+            content: '';
+            position: absolute;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px);
+            background-size: 50px 50px;
+            animation: float 20s linear infinite;
+        }
+
+        @keyframes float {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(50px, 50px); }
+        }
+
+        .hero {
+            max-width: 900px;
+            text-align: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero h1 {
+            font-size: clamp(3rem, 8vw, 5rem);
+            font-weight: 700;
+            color: white;
+            margin-bottom: 1rem;
+            text-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        }
+
+        .tagline {
+            font-size: clamp(1.2rem, 3vw, 1.8rem);
+            color: rgba(255,255,255,0.95);
+            margin-bottom: 1rem;
+            font-style: italic;
+        }
+
+        .subheadline {
+            font-size: clamp(1rem, 2.5vw, 1.4rem);
+            color: rgba(255,255,255,0.9);
+            margin-bottom: 3rem;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .cta-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 4rem;
+        }
+
+        .btn {
+            padding: 1rem 2.5rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-radius: 12px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: inherit;
+            min-width: 200px;
+            min-height: 56px;
+        }
+
+        .btn-primary {
+            background: white;
+            color: #6366F1;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: white;
+            border: 2px solid white;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255,255,255,0.1);
+            transform: translateY(-2px);
+        }
+
+        .value-props {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .value-prop {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            padding: 2rem;
+            border-radius: 16px;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .value-prop h3 {
+            color: white;
+            font-size: 1.3rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .value-prop p {
+            color: rgba(255,255,255,0.9);
+            font-size: 1rem;
+        }
+
+        /* App Interface */
+        .app {
+            display: none;
+            min-height: 100vh;
+        }
+
+        .app.active {
+            display: block;
+        }
+
+        .app-header {
+            background: white;
+            padding: 1rem 2rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #6366F1;
+            cursor: pointer;
+        }
+
+        .search-bar {
+            flex: 1;
+            max-width: 500px;
+            min-width: 200px;
+        }
+
+        .search-bar input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 2px solid #E5E7EB;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-family: inherit;
+        }
+
+        .search-bar input:focus {
+            outline: none;
+            border-color: #6366F1;
+        }
+
+        .app-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 250px 1fr 300px;
+            gap: 2rem;
+            padding: 2rem;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            height: fit-content;
+            position: sticky;
+            top: 100px;
+        }
+
+        .sidebar h3 {
+            font-size: 1.1rem;
+            margin-bottom: 1rem;
+            color: #111827;
+        }
+
+        .filter-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .filter-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: #374151;
+            font-size: 0.9rem;
+        }
+
+        .filter-group select {
+            width: 100%;
+            padding: 0.5rem;
+            border: 2px solid #E5E7EB;
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 0.9rem;
+        }
+
+        /* Main Feed */
+        .main-feed {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .feed-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .feed-header h2 {
+            font-size: 1.8rem;
+            color: #111827;
+        }
+
+        .sort-dropdown select {
+            padding: 0.75rem 1rem;
+            border: 2px solid #E5E7EB;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 0.95rem;
+            cursor: pointer;
+        }
+
+        /* Problem Cards */
+        .problem-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+        }
+
+        .problem-card:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            transform: translateY(-2px);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .upvote-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.5rem;
+            background: #F3F4F6;
+            border: 2px solid #E5E7EB;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            min-width: 60px;
+        }
+
+        .upvote-btn:hover {
+            background: #E5E7EB;
+        }
+
+        .upvote-btn.upvoted {
+            background: #D1FAE5;
+            border-color: #10B981;
+        }
+
+        .upvote-icon {
+            font-size: 1.2rem;
+        }
+
+        .upvote-count {
+            font-weight: 600;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            color: #111827;
+        }
+
+        .card-content {
+            flex: 1;
+        }
+
+        .problem-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #111827;
+            margin-bottom: 0.5rem;
+            line-height: 1.3;
+        }
+
+        .problem-description {
+            color: #6B7280;
+            margin-bottom: 1rem;
+            line-height: 1.5;
+        }
+
+        .card-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .category-tag {
+            background: #EEF2FF;
+            color: #6366F1;
+            padding: 0.25rem 0.75rem;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .budget {
+            font-weight: 700;
+            color: #10B981;
+            font-size: 1.1rem;
+            font-family: 'Courier New', monospace;
+        }
+
+        .stat {
+            color: #6B7280;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .card-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 1rem;
+            border-top: 1px solid #E5E7EB;
+        }
+
+        .author {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #6B7280;
+            font-size: 0.9rem;
+        }
+
+        .avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 0.8rem;
+        }
+
+        .submit-proposal {
+            background: #6366F1;
+            color: white;
+            padding: 0.5rem 1.5rem;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            font-family: inherit;
+            transition: all 0.2s ease;
+            min-height: 44px;
+        }
+
+        .submit-proposal:hover {
+            background: #4F46E5;
+            transform: translateY(-1px);
+        }
+
+        /* Right Sidebar */
+        .right-sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .widget {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .widget h3 {
+            font-size: 1.1rem;
+            margin-bottom: 1rem;
+            color: #111827;
+        }
+
+        .trending-item {
+            padding: 0.75rem 0;
+            border-bottom: 1px solid #E5E7EB;
+        }
+
+        .trending-item:last-child {
+            border-bottom: none;
+        }
+
+        .trending-title {
+            font-weight: 500;
+            color: #111827;
+            font-size: 0.95rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .trending-stats {
+            font-size: 0.85rem;
+            color: #6B7280;
+        }
+
+        .builder-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid #E5E7EB;
+        }
+
+        .builder-item:last-child {
+            border-bottom: none;
+        }
+
+        .builder-info {
+            flex: 1;
+        }
+
+        .builder-name {
+            font-weight: 500;
+            color: #111827;
+            font-size: 0.95rem;
+        }
+
+        .builder-stats {
+            font-size: 0.85rem;
+            color: #6B7280;
+        }
+
+        /* FAB */
+        .fab {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: #6366F1;
+            color: white;
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            border: none;
+            font-size: 2rem;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(99,102,241,0.4);
+            transition: all 0.3s ease;
+            z-index: 90;
+        }
+
+        .fab:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(99,102,241,0.5);
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 16px;
+            max-width: 600px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-header h2 {
+            font-size: 1.8rem;
+            color: #111827;
+        }
+
+        .close-modal {
+            background: none;
+            border: none;
+            font-size: 2rem;
+            cursor: pointer;
+            color: #6B7280;
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #374151;
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #E5E7EB;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 1rem;
+        }
+
+        .form-group textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #6366F1;
+        }
+
+        .submit-btn {
+            width: 100%;
+            background: #6366F1;
+            color: white;
+            padding: 1rem;
+            border-radius: 8px;
+            border: none;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.2s ease;
+        }
+
+        .submit-btn:hover {
+            background: #4F46E5;
+        }
+
+        /* Mobile Menu */
+        .mobile-menu-btn {
+            display: none;
+            background: #6366F1;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            min-height: 44px;
+            min-width: 44px;
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .app-container {
+                grid-template-columns: 1fr 300px;
+            }
+
+            .sidebar {
+                display: none;
+            }
+
+            .sidebar.mobile-active {
+                display: block;
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 280px;
+                height: 100vh;
+                z-index: 200;
+                overflow-y: auto;
+                box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+            }
+
+            .mobile-menu-btn {
+                display: block;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .app-container {
+                grid-template-columns: 1fr;
+                padding: 1rem;
+                gap: 1rem;
+            }
+
+            .right-sidebar {
+                display: none;
+            }
+
+            .header-content {
+                padding: 0;
+            }
+
+            .search-bar {
+                order: 3;
+                width: 100%;
+                max-width: 100%;
+            }
+
+            .app-header {
+                padding: 1rem;
+            }
+
+            .fab {
+                bottom: 1rem;
+                right: 1rem;
+                width: 56px;
+                height: 56px;
+                font-size: 1.5rem;
+            }
+
+            .card-header {
+                flex-direction: column;
+            }
+
+            .upvote-btn {
+                align-self: flex-start;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Landing Page -->
+    <div class="landing" id="landing">
+        <div class="hero">
+            <h1>Problem Hunt</h1>
+            <p class="tagline">Houston, we have a problem.</p>
+            <p class="subheadline">The marketplace where people post problems they'd pay to solve - and builders compete to solve them.</p>
+            
+            <div class="cta-buttons">
+                <button class="btn btn-primary" onclick="showApp()">Browse Problems</button>
+                <button class="btn btn-secondary" onclick="showApp(); showModal()">Post a Problem</button>
+            </div>
+
+            <div class="value-props">
+                <div class="value-prop">
+                    <h3>💡 For people with problems</h3>
+                    <p>Signal demand. Get solutions built.</p>
+                </div>
+                <div class="value-prop">
+                    <h3>🛠️ For builders</h3>
+                    <p>Find validated problems. Build what people actually want.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- App Interface -->
+    <div class="app" id="app">
+        <header class="app-header">
+            <div class="header-content">
+                <div class="logo" onclick="showLanding()">Problem Hunt</div>
+                <button class="mobile-menu-btn" onclick="toggleMobileMenu()">☰ Filters</button>
+                <div class="search-bar">
+                    <input type="text" placeholder="Search problems..." id="searchInput">
+                </div>
+            </div>
+        </header>
+
+        <div class="app-container">
+            <!-- Left Sidebar -->
+            <aside class="sidebar" id="sidebar">
+                <h3>Filters</h3>
+                
+                <div class="filter-group">
+                    <label>Category</label>
+                    <select id="categoryFilter">
+                        <option value="all">All Categories</option>
+                        <option value="Productivity">Productivity</option>
+                        <option value="Social">Social</option>
+                        <option value="Finance">Finance</option>
+                        <option value="Health">Health</option>
+                        <option value="Developer Tools">Developer Tools</option>
+                        <option value="Entertainment">Entertainment</option>
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label>Budget Range</label>
+                    <select id="budgetFilter">
+                        <option value="all">All Budgets</option>
+                        <option value="0-10">$0 - $10</option>
+                        <option value="10-25">$10 - $25</option>
+                        <option value="25-50">$25 - $50</option>
+                        <option value="50+">$50+</option>
+                    </select>
+                </div>
+            </aside>
+
+            <!-- Main Feed -->
+            <main class="main-feed">
+                <div class="feed-header">
+                    <h2>All Problems</h2>
+                    <div class="sort-dropdown">
+                        <select id="sortSelect">
+                            <option value="upvotes">Most Upvotes</option>
+                            <option value="newest">Newest</option>
+                            <option value="budget">Highest Budget</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="problemFeed"></div>
+            </main>
+
+            <!-- Right Sidebar -->
+            <aside class="right-sidebar">
+                <div class="widget">
+                    <h3>🔥 Trending Problems</h3>
+                    <div class="trending-item">
+                        <div class="trending-title">LinkedIn salary blocker</div>
+                        <div class="trending-stats">518 upvotes • $10/mo</div>
+                    </div>
+                    <div class="trending-item">
+                        <div class="trending-title">Streaming optimizer</div>
+                        <div class="trending-stats">623 upvotes • $10/mo</div>
+                    </div>
+                    <div class="trending-item">
+                        <div class="trending-title">Bill negotiator</div>
+                        <div class="trending-stats">445 upvotes • $25/mo</div>
+                    </div>
+                </div>
+
+                <div class="widget">
+                    <h3>⭐ Top Builders</h3>
+                    <div class="builder-item">
+                        <div class="avatar">SK</div>
+                        <div class="builder-info">
+                            <div class="builder-name">Sarah Kim</div>
+                            <div class="builder-stats">12 solutions built</div>
+                        </div>
+                    </div>
+                    <div class="builder-item">
+                        <div class="avatar">MJ</div>
+                        <div class="builder-info">
+                            <div class="builder-name">Mike Johnson</div>
+                            <div class="builder-stats">9 solutions built</div>
+                        </div>
+                    </div>
+                    <div class="builder-item">
+                        <div class="avatar">AL</div>
+                        <div class="builder-info">
+                            <div class="builder-name">Alex Lee</div>
+                            <div class="builder-stats">7 solutions built</div>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+        </div>
+
+        <button class="fab" onclick="showModal()">+</button>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal" id="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Post a Problem</h2>
+                <button class="close-modal" onclick="closeModal()">×</button>
+            </div>
+            
+            <form id="problemForm">
+                <div class="form-group">
+                    <label>Problem Title</label>
+                    <input type="text" id="problemTitle" placeholder="What problem do you need solved?" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea id="problemDescription" placeholder="Describe your problem in detail..." required></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>Category</label>
+                    <select id="problemCategory" required>
+                        <option value="">Select a category</option>
+                        <option value="Productivity">Productivity</option>
+                        <option value="Social">Social</option>
+                        <option value="Finance">Finance</option>
+                        <option value="Health">Health</option>
+                        <option value="Developer Tools">Developer Tools</option>
+                        <option value="Entertainment">Entertainment</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>I'd pay this much</label>
+                    <input type="text" id="problemBudget" placeholder="e.g., $20/month or $5/use" required>
+                </div>
+
+                <button type="submit" class="submit-btn">Submit Problem</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const problems = [
+            {
+                id: 1,
+                title: "I need a way to automatically transcribe and summarize my Zoom calls",
+                description: "After every meeting, I spend 30 minutes writing notes. I want a tool that records, transcribes, and gives me a 3-bullet summary of action items.",
+                category: "Productivity",
+                budget: "$50/month",
+                budgetValue: 50,
+                upvotes: 342,
+                proposals: 8,
+                author: "David Chen",
+                time: "2 hours ago",
+                upvoted: false
+            },
+            {
+                id: 2,
+                title: "A tool that tracks when my favorite creators post new content across all platforms",
+                description: "I follow creators on YouTube, Twitter, Substack, and TikTok. I want one place to see when they post anything new.",
+                category: "Social",
+                budget: "$15/month",
+                budgetValue: 15,
+                upvotes: 289,
+                proposals: 12,
+                author: "Emma Wilson",
+                time: "5 hours ago",
+                upvoted: false
+            },
+            {
+                id: 3,
+                title: "An app that reminds me to follow up with people I met at conferences",
+                description: "I collect business cards and LinkedIn connections but never follow up. Need smart reminders based on context and my calendar.",
+                category: "Productivity",
+                budget: "$20/month",
+                budgetValue: 20,
+                upvotes: 256,
+                proposals: 6,
+                author: "Jason Park",
+                time: "1 day ago",
+                upvoted: false
+            },
+            {
+                id: 4,
+                title: "A browser extension that blocks LinkedIn recruiters unless they mention salary",
+                description: "Tired of 'exciting opportunity' messages that waste my time. Only show me messages that include actual compensation info.",
+                category: "Productivity",
+                budget: "$10/month",
+                budgetValue: 10,
+                upvotes: 518,
+                proposals: 15,
+                author: "Rachel Torres",
+                time: "3 hours ago",
+                upvoted: false
+            },
+            {
+                id: 5,
+                title: "Software that automatically categorizes and files my business receipts",
+                description: "I take photos of receipts but never organize them. Need OCR + smart categorization for tax time.",
+                category: "Finance",
+                budget: "$30/month",
+                budgetValue: 30,
+                upvotes: 198,
+                proposals: 9,
+                author: "Marcus Johnson",
+                time: "6 hours ago",
+                upvoted: false
+            },
+            {
+                id: 6,
+                title: "A service that negotiates my bills for me automatically",
+                description: "Cable, phone, insurance - I know I'm overpaying but hate calling. Want AI to negotiate better rates on my behalf.",
+                category: "Finance",
+                budget: "$25/month",
+                budgetValue: 25,
+                upvotes: 445,
+                proposals: 11,
+                author: "Lisa Anderson",
+                time: "4 hours ago",
+                upvoted: false
+            },
+            {
+                id: 7,
+                title: "An AI that writes personalized thank-you notes based on gift descriptions",
+                description: "I'm terrible at thank-you notes. Tell it what gift I got from whom, and it writes a genuine-sounding note.",
+                category: "Social",
+                budget: "$5/use",
+                budgetValue: 5,
+                upvotes: 167,
+                proposals: 4,
+                author: "Kevin Martinez",
+                time: "12 hours ago",
+                upvoted: false
+            },
+            {
+                id: 8,
+                title: "A tool that finds the cheapest combination of streaming services for shows I want to watch",
+                description: "I want to watch 20 specific shows. Tell me the cheapest combo of Netflix/Hulu/etc to get them all, and when to rotate subscriptions.",
+                category: "Entertainment",
+                budget: "$10/month",
+                budgetValue: 10,
+                upvotes: 623,
+                proposals: 18
