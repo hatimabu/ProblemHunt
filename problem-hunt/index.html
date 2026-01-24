@@ -986,4 +986,136 @@
                 budget: "$10/month",
                 budgetValue: 10,
                 upvotes: 623,
-                proposals: 18
+                proposals: 18,
+                author: "Sarah Smith",
+                time: "2 hours ago",
+                upvoted: false
+            }
+        ];
+
+        // App Logic
+        function showApp() {
+            document.getElementById('landing').classList.remove('active');
+            document.getElementById('landing').style.display = 'none';
+            document.getElementById('app').classList.add('active');
+            renderFeed();
+        }
+
+        function showLanding() {
+            document.getElementById('app').classList.remove('active');
+            document.getElementById('landing').style.display = 'flex';
+            document.getElementById('landing').classList.add('active');
+        }
+
+        function showModal() {
+            document.getElementById('modal').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('modal').classList.remove('active');
+        }
+
+        function toggleMobileMenu() {
+            document.getElementById('sidebar').classList.toggle('mobile-active');
+        }
+
+        function renderFeed() {
+            const feed = document.getElementById('problemFeed');
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const categoryFilter = document.getElementById('categoryFilter').value;
+            const sortOrder = document.getElementById('sortSelect').value;
+
+            let filteredProblems = problems.filter(p => {
+                const matchesSearch = p.title.toLowerCase().includes(searchTerm) || 
+                                    p.description.toLowerCase().includes(searchTerm);
+                const matchesCategory = categoryFilter === 'all' || p.category === categoryFilter;
+                return matchesSearch && matchesCategory;
+            });
+
+            // Sort
+            filteredProblems.sort((a, b) => {
+                if (sortOrder === 'upvotes') return b.upvotes - a.upvotes;
+                if (sortOrder === 'newest') return b.id - a.id;
+                if (sortOrder === 'budget') return b.budgetValue - a.budgetValue;
+                return 0;
+            });
+
+            feed.innerHTML = filteredProblems.map(p => `
+                <div class="problem-card">
+                    <div class="card-header">
+                        <button class="upvote-btn ${p.upvoted ? 'upvoted' : ''}" onclick="toggleUpvote(${p.id})">
+                            <span class="upvote-icon">▲</span>
+                            <span class="upvote-count">${p.upvotes}</span>
+                        </button>
+                        <div class="card-content">
+                            <h3 class="problem-title">${p.title}</h3>
+                            <p class="problem-description">${p.description}</p>
+                            <div class="card-meta">
+                                <span class="category-tag">${p.category}</span>
+                                <span class="budget">${p.budget}</span>
+                                <span class="stat">💬 ${p.proposals} proposals</span>
+                                <span class="stat">🕒 ${p.time}</span>
+                            </div>
+                            <div class="card-footer">
+                                <div class="author">
+                                    <div class="avatar">${p.author.split(' ').map(n => n[0]).join('')}</div>
+                                    <span>${p.author}</span>
+                                </div>
+                                <button class="submit-proposal">Submit Proposal</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function toggleUpvote(id) {
+            const problem = problems.find(p => p.id === id);
+            if (problem) {
+                if (problem.upvoted) {
+                    problem.upvotes--;
+                    problem.upvoted = false;
+                } else {
+                    problem.upvotes++;
+                    problem.upvoted = true;
+                }
+                renderFeed();
+            }
+        }
+
+        // Form Handling
+        document.getElementById('problemForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const newProblem = {
+                id: problems.length + 1,
+                title: document.getElementById('problemTitle').value,
+                description: document.getElementById('problemDescription').value,
+                category: document.getElementById('problemCategory').value,
+                budget: document.getElementById('problemBudget').value,
+                budgetValue: parseInt(document.getElementById('problemBudget').value.replace(/[^0-9]/g, '')) || 0,
+                upvotes: 0,
+                proposals: 0,
+                author: "Anonymous",
+                time: "Just now",
+                upvoted: false
+            };
+            problems.unshift(newProblem);
+            closeModal();
+            renderFeed();
+            e.target.reset();
+        });
+
+        // Event Listeners
+        document.getElementById('searchInput').addEventListener('input', renderFeed);
+        document.getElementById('categoryFilter').addEventListener('change', renderFeed);
+        document.getElementById('sortSelect').addEventListener('change', renderFeed);
+
+        // Initial check
+        window.addEventListener('load', () => {
+            if (window.location.hash === '#app') {
+                showApp();
+            }
+        });
+    </script>
+</body>
+</html>
