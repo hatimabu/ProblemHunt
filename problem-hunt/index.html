@@ -886,7 +886,7 @@
     </div>
 
     <script>
-        const problems = [
+        const dummyProblems = [
             {
                 id: 1,
                 title: "I need a way to automatically transcribe and summarize my Zoom calls",
@@ -993,12 +993,58 @@
             }
         ];
 
+        let problems = [...dummyProblems];
+
+        // API Calls
+        async function loadProblems() {
+            try {
+                const response = await fetch('/api/problems');
+                if (!response.ok) throw new Error('API failed');
+                const data = await response.json();
+                problems = data;
+                renderFeed();
+            } catch (error) {
+                console.error('Error loading problems:', error);
+                problems = [...dummyProblems];
+                renderFeed();
+            }
+        }
+
+        async function upvoteProblem(problemId) {
+            try {
+                const response = await fetch(`/api/problems/${problemId}/upvote`, {
+                    method: 'POST'
+                });
+                if (!response.ok) throw new Error('Upvote failed');
+                const updated = await response.json();
+                const index = problems.findIndex(p => p.id === problemId);
+                if (index !== -1) {
+                    problems[index] = updated;
+                    renderFeed();
+                }
+            } catch (error) {
+                console.error('Error upvoting:', error);
+                // Simple local fallback for demo purposes
+                const problem = problems.find(p => p.id === problemId);
+                if (problem) {
+                    if (problem.upvoted) {
+                        problem.upvotes--;
+                        problem.upvoted = false;
+                    } else {
+                        problem.upvotes++;
+                        problem.upvoted = true;
+                    }
+                    renderFeed();
+                }
+            }
+        }
+
         // App Logic
         function showApp() {
             document.getElementById('landing').classList.remove('active');
             document.getElementById('landing').style.display = 'none';
             document.getElementById('app').classList.add('active');
-            renderFeed();
+            loadProblems(); // Use API to load
         }
 
         function showLanding() {
@@ -1043,7 +1089,7 @@
             feed.innerHTML = filteredProblems.map(p => `
                 <div class="problem-card">
                     <div class="card-header">
-                        <button class="upvote-btn ${p.upvoted ? 'upvoted' : ''}" onclick="toggleUpvote(${p.id})">
+                        <button class="upvote-btn ${p.upvoted ? 'upvoted' : ''}" onclick="upvoteProblem(${p.id})">
                             <span class="upvote-icon">▲</span>
                             <span class="upvote-count">${p.upvotes}</span>
                         </button>
@@ -1069,40 +1115,46 @@
             `).join('');
         }
 
-        function toggleUpvote(id) {
-            const problem = problems.find(p => p.id === id);
-            if (problem) {
-                if (problem.upvoted) {
-                    problem.upvotes--;
-                    problem.upvoted = false;
-                } else {
-                    problem.upvotes++;
-                    problem.upvoted = true;
-                }
-                renderFeed();
-            }
-        }
-
         // Form Handling
-        document.getElementById('problemForm').addEventListener('submit', (e) => {
+        document.getElementById('problemForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const newProblem = {
-                id: problems.length + 1,
                 title: document.getElementById('problemTitle').value,
                 description: document.getElementById('problemDescription').value,
                 category: document.getElementById('problemCategory').value,
                 budget: document.getElementById('problemBudget').value,
                 budgetValue: parseInt(document.getElementById('problemBudget').value.replace(/[^0-9]/g, '')) || 0,
-                upvotes: 0,
-                proposals: 0,
                 author: "Anonymous",
-                time: "Just now",
-                upvoted: false
+                time: "Just now"
             };
-            problems.unshift(newProblem);
-            closeModal();
-            renderFeed();
-            e.target.reset();
+
+            try {
+                const response = await fetch('/api/problems', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(newProblem)
+                });
+                if (!response.ok) throw new Error('Post failed');
+                const saved = await response.json();
+                problems.unshift(saved);
+                closeModal();
+                renderFeed();
+                e.target.reset();
+            } catch (error) {
+                console.error('Error posting problem:', error);
+                // Fallback for demo
+                const demoProblem = {
+                    ...newProblem,
+                    id: problems.length + 1,
+                    upvotes: 0,
+                    proposals: 0,
+                    upvoted: false
+                };
+                problems.unshift(demoProblem);
+                closeModal();
+                renderFeed();
+                e.target.reset();
+            }
         });
 
         // Event Listeners
