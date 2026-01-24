@@ -430,6 +430,102 @@
             transform: translateY(-1px);
         }
 
+        .proposal-badge {
+            background: #FEF3C7;
+            color: #92400E;
+            padding: 0.25rem 0.75rem;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .proposals-section {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid #E5E7EB;
+        }
+
+        .proposal-card {
+            background: #F9FAFB;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 0.75rem;
+        }
+
+        .proposal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 0.5rem;
+        }
+
+        .proposal-title {
+            font-weight: 600;
+            color: #111827;
+            font-size: 1rem;
+        }
+
+        .proposal-description {
+            color: #6B7280;
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .proposal-meta {
+            display: flex;
+            gap: 1rem;
+            font-size: 0.85rem;
+            color: #6B7280;
+        }
+
+        .proposal-link {
+            color: #6366F1;
+            text-decoration: none;
+        }
+
+        .proposal-link:hover {
+            text-decoration: underline;
+        }
+
+        .view-proposals-btn {
+            background: transparent;
+            color: #6366F1;
+            border: 1px solid #6366F1;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .view-proposals-btn:hover {
+            background: #EEF2FF;
+        }
+
+        .empty-proposals {
+            text-align: center;
+            color: #6B7280;
+            padding: 2rem;
+            font-style: italic;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: #6B7280;
+        }
+
+        .empty-state h3 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: #374151;
+        }
+
+        .empty-state p {
+            margin-bottom: 2rem;
+        }
+
         /* Right Sidebar */
         .right-sidebar {
             display: flex;
@@ -448,54 +544,6 @@
             font-size: 1.1rem;
             margin-bottom: 1rem;
             color: #111827;
-        }
-
-        .trending-item {
-            padding: 0.75rem 0;
-            border-bottom: 1px solid #E5E7EB;
-        }
-
-        .trending-item:last-child {
-            border-bottom: none;
-        }
-
-        .trending-title {
-            font-weight: 500;
-            color: #111827;
-            font-size: 0.95rem;
-            margin-bottom: 0.25rem;
-        }
-
-        .trending-stats {
-            font-size: 0.85rem;
-            color: #6B7280;
-        }
-
-        .builder-item {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            padding: 0.75rem 0;
-            border-bottom: 1px solid #E5E7EB;
-        }
-
-        .builder-item:last-child {
-            border-bottom: none;
-        }
-
-        .builder-info {
-            flex: 1;
-        }
-
-        .builder-name {
-            font-weight: 500;
-            color: #111827;
-            font-size: 0.95rem;
-        }
-
-        .builder-stats {
-            font-size: 0.85rem;
-            color: #6B7280;
         }
 
         /* FAB */
@@ -744,7 +792,7 @@
                 <div class="logo" onclick="showLanding()">Problem Hunt</div>
                 <button class="mobile-menu-btn" onclick="toggleMobileMenu()">☰ Filters</button>
                 <div class="search-bar">
-                    <input type="text" placeholder="Search problems..." id="searchInput">
+                    <input type="text" placeholder="Search problems..." id="searchInput" onkeyup="filterProblems()">
                 </div>
             </div>
         </header>
@@ -756,7 +804,7 @@
                 
                 <div class="filter-group">
                     <label>Category</label>
-                    <select id="categoryFilter">
+                    <select id="categoryFilter" onchange="filterProblems()">
                         <option value="all">All Categories</option>
                         <option value="Productivity">Productivity</option>
                         <option value="Social">Social</option>
@@ -769,7 +817,7 @@
 
                 <div class="filter-group">
                     <label>Budget Range</label>
-                    <select id="budgetFilter">
+                    <select id="budgetFilter" onchange="filterProblems()">
                         <option value="all">All Budgets</option>
                         <option value="0-10">$0 - $10</option>
                         <option value="10-25">$10 - $25</option>
@@ -784,7 +832,7 @@
                 <div class="feed-header">
                     <h2>All Problems</h2>
                     <div class="sort-dropdown">
-                        <select id="sortSelect">
+                        <select id="sortSelect" onchange="sortProblems()">
                             <option value="upvotes">Most Upvotes</option>
                             <option value="newest">Newest</option>
                             <option value="budget">Highest Budget</option>
@@ -798,44 +846,19 @@
             <!-- Right Sidebar -->
             <aside class="right-sidebar">
                 <div class="widget">
-                    <h3>🔥 Trending Problems</h3>
-                    <div class="trending-item">
-                        <div class="trending-title">LinkedIn salary blocker</div>
-                        <div class="trending-stats">518 upvotes • $10/mo</div>
-                    </div>
-                    <div class="trending-item">
-                        <div class="trending-title">Streaming optimizer</div>
-                        <div class="trending-stats">623 upvotes • $10/mo</div>
-                    </div>
-                    <div class="trending-item">
-                        <div class="trending-title">Bill negotiator</div>
-                        <div class="trending-stats">445 upvotes • $25/mo</div>
-                    </div>
+                    <h3>🚀 Getting Started</h3>
+                    <p style="color: #6B7280; margin-bottom: 1rem;">Welcome to Problem Hunt! Here's how it works:</p>
+                    <ol style="color: #6B7280; padding-left: 1.25rem;">
+                        <li style="margin-bottom: 0.5rem;">Browse problems people want solved</li>
+                        <li style="margin-bottom: 0.5rem;">Submit proposals for problems you can solve</li>
+                        <li style="margin-bottom: 0.5rem;">Get direct access to paying customers</li>
+                    </ol>
                 </div>
 
                 <div class="widget">
-                    <h3>⭐ Top Builders</h3>
-                    <div class="builder-item">
-                        <div class="avatar">SK</div>
-                        <div class="builder-info">
-                            <div class="builder-name">Sarah Kim</div>
-                            <div class="builder-stats">12 solutions built</div>
-                        </div>
-                    </div>
-                    <div class="builder-item">
-                        <div class="avatar">MJ</div>
-                        <div class="builder-info">
-                            <div class="builder-name">Mike Johnson</div>
-                            <div class="builder-stats">9 solutions built</div>
-                        </div>
-                    </div>
-                    <div class="builder-item">
-                        <div class="avatar">AL</div>
-                        <div class="builder-info">
-                            <div class="builder-name">Alex Lee</div>
-                            <div class="builder-stats">7 solutions built</div>
-                        </div>
-                    </div>
+                    <h3>💡 Post Your Problem</h3>
+                    <p style="color: #6B7280; margin-bottom: 1rem;">Have a problem that needs solving? Post it and see if builders want to help!</p>
+                    <button class="btn btn-primary" style="width: 100%; min-width: auto;" onclick="showModal()">Post Problem</button>
                 </div>
             </aside>
         </div>
@@ -843,7 +866,7 @@
         <button class="fab" onclick="showModal()">+</button>
     </div>
 
-    <!-- Modal -->
+    <!-- Problem Modal -->
     <div class="modal" id="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -880,216 +903,166 @@
                     <input type="text" id="problemBudget" placeholder="e.g., $20/month or $5/use" required>
                 </div>
 
+                <div class="form-group">
+                    <label>Your Name (optional)</label>
+                    <input type="text" id="problemAuthor" placeholder="Your name">
+                </div>
+
                 <button type="submit" class="submit-btn">Submit Problem</button>
             </form>
         </div>
     </div>
 
+    <!-- Proposal Modal -->
+    <div class="modal" id="proposalModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Submit Proposal</h2>
+                <button class="close-modal" onclick="closeProposalModal()">×</button>
+            </div>
+            
+            <div style="background: #F3F4F6; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem;">
+                <strong>Problem:</strong>
+                <p id="proposalProblemTitle" style="margin-top: 0.5rem; color: #374151;"></p>
+            </div>
+
+            <form id="proposalForm">
+                <input type="hidden" id="proposalProblemId">
+                
+                <div class="form-group">
+                    <label>Solution Title</label>
+                    <input type="text" id="proposalTitle" placeholder="What's your solution called?" required>
+                </div>
+
+                <div class="form-group">
+                    <label>How will you solve it?</label>
+                    <textarea id="proposalDescription" placeholder="Describe your proposed solution in detail..." required></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>Timeline</label>
+                    <input type="text" id="proposalTimeline" placeholder="e.g., 2 weeks, 1 month" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Your Name</label>
+                    <input type="text" id="proposalBuilderName" placeholder="Your name or company" required>
+                </div>
+
+                <div class="form-group">
+                    <label>GitHub URL (optional)</label>
+                    <input type="url" id="proposalGithubUrl" placeholder="https://github.com/yourusername">
+                </div>
+
+                <div class="form-group">
+                    <label>Demo URL (optional)</label>
+                    <input type="url" id="proposalDemoUrl" placeholder="https://your-demo.com">
+                </div>
+
+                <button type="submit" class="submit-btn">Submit Proposal</button>
+            </form>
+        </div>
+    </div>
+
     <script>
-        const dummyProblems = [
+        // API Configuration
+        const API_BASE_URL = window.location.hostname === 'localhost' 
+            ? '/api'
+            : '/api';
+
+        // Initial data - just one example
+        let problems = [
             {
-                id: 1,
-                title: "I need a way to automatically transcribe and summarize my Zoom calls",
-                description: "After every meeting, I spend 30 minutes writing notes. I want a tool that records, transcribes, and gives me a 3-bullet summary of action items.",
-                category: "Productivity",
-                budget: "$50/month",
-                budgetValue: 50,
-                upvotes: 342,
-                proposals: 8,
-                author: "David Chen",
-                time: "2 hours ago",
-                upvoted: false
-            },
-            {
-                id: 2,
-                title: "A tool that tracks when my favorite creators post new content across all platforms",
-                description: "I follow creators on YouTube, Twitter, Substack, and TikTok. I want one place to see when they post anything new.",
-                category: "Social",
-                budget: "$15/month",
-                budgetValue: 15,
-                upvotes: 289,
-                proposals: 12,
-                author: "Emma Wilson",
-                time: "5 hours ago",
-                upvoted: false
-            },
-            {
-                id: 3,
-                title: "An app that reminds me to follow up with people I met at conferences",
-                description: "I collect business cards and LinkedIn connections but never follow up. Need smart reminders based on context and my calendar.",
-                category: "Productivity",
-                budget: "$20/month",
-                budgetValue: 20,
-                upvotes: 256,
-                proposals: 6,
-                author: "Jason Park",
-                time: "1 day ago",
-                upvoted: false
-            },
-            {
-                id: 4,
-                title: "A browser extension that blocks LinkedIn recruiters unless they mention salary",
-                description: "Tired of 'exciting opportunity' messages that waste my time. Only show me messages that include actual compensation info.",
-                category: "Productivity",
-                budget: "$10/month",
+                id: '1',
+                title: 'A browser extension that blocks LinkedIn recruiters unless they mention salary',
+                description: 'Tired of "exciting opportunity" messages that waste my time. Only show me messages that include actual compensation information upfront.',
+                category: 'Productivity',
+                budget: '$10/month',
                 budgetValue: 10,
-                upvotes: 518,
-                proposals: 15,
-                author: "Rachel Torres",
-                time: "3 hours ago",
-                upvoted: false
-            },
-            {
-                id: 5,
-                title: "Software that automatically categorizes and files my business receipts",
-                description: "I take photos of receipts but never organize them. Need OCR + smart categorization for tax time.",
-                category: "Finance",
-                budget: "$30/month",
-                budgetValue: 30,
-                upvotes: 198,
-                proposals: 9,
-                author: "Marcus Johnson",
-                time: "6 hours ago",
-                upvoted: false
-            },
-            {
-                id: 6,
-                title: "A service that negotiates my bills for me automatically",
-                description: "Cable, phone, insurance - I know I'm overpaying but hate calling. Want AI to negotiate better rates on my behalf.",
-                category: "Finance",
-                budget: "$25/month",
-                budgetValue: 25,
-                upvotes: 445,
-                proposals: 11,
-                author: "Lisa Anderson",
-                time: "4 hours ago",
-                upvoted: false
-            },
-            {
-                id: 7,
-                title: "An AI that writes personalized thank-you notes based on gift descriptions",
-                description: "I'm terrible at thank-you notes. Tell it what gift I got from whom, and it writes a genuine-sounding note.",
-                category: "Social",
-                budget: "$5/use",
-                budgetValue: 5,
-                upvotes: 167,
-                proposals: 4,
-                author: "Kevin Martinez",
-                time: "12 hours ago",
-                upvoted: false
-            },
-            {
-                id: 8,
-                title: "A tool that finds the cheapest combination of streaming services for shows I want to watch",
-                description: "I want to watch 20 specific shows. Tell me the cheapest combo of Netflix/Hulu/etc to get them all, and when to rotate subscriptions.",
-                category: "Entertainment",
-                budget: "$10/month",
-                budgetValue: 10,
-                upvotes: 623,
-                proposals: 18,
-                author: "Sarah Smith",
-                time: "2 hours ago",
+                upvotes: 127,
+                proposals: 3,
+                author: 'Anonymous User',
+                time: '2 hours ago',
                 upvoted: false
             }
         ];
 
-        let problems = [...dummyProblems];
+        let allProblems = [...problems];
 
-        // API Calls
-        async function loadProblems() {
-            try {
-                const response = await fetch('/api/problems');
-                if (!response.ok) throw new Error('API failed');
-                const data = await response.json();
-                problems = data;
-                renderFeed();
-            } catch (error) {
-                console.error('Error loading problems:', error);
-                problems = [...dummyProblems];
-                renderFeed();
-            }
+        // Page navigation
+        function showLanding() {
+            document.getElementById('landing').style.display = 'flex';
+            document.getElementById('app').classList.remove('active');
         }
 
-        async function upvoteProblem(problemId) {
-            try {
-                const response = await fetch(`/api/problems/${problemId}/upvote`, {
-                    method: 'POST'
-                });
-                if (!response.ok) throw new Error('Upvote failed');
-                const updated = await response.json();
-                const index = problems.findIndex(p => p.id === problemId);
-                if (index !== -1) {
-                    problems[index] = updated;
-                    renderFeed();
-                }
-            } catch (error) {
-                console.error('Error upvoting:', error);
-                // Simple local fallback for demo purposes
-                const problem = problems.find(p => p.id === problemId);
-                if (problem) {
-                    if (problem.upvoted) {
-                        problem.upvotes--;
-                        problem.upvoted = false;
-                    } else {
-                        problem.upvotes++;
-                        problem.upvoted = true;
-                    }
-                    renderFeed();
-                }
-            }
-        }
-
-        // App Logic
         function showApp() {
-            document.getElementById('landing').classList.remove('active');
             document.getElementById('landing').style.display = 'none';
             document.getElementById('app').classList.add('active');
-            loadProblems(); // Use API to load
-        }
-
-        function showLanding() {
-            document.getElementById('app').classList.remove('active');
-            document.getElementById('landing').style.display = 'flex';
-            document.getElementById('landing').classList.add('active');
-        }
-
-        function showModal() {
-            document.getElementById('modal').classList.add('active');
-        }
-
-        function closeModal() {
-            document.getElementById('modal').classList.remove('active');
+            loadProblems();
         }
 
         function toggleMobileMenu() {
             document.getElementById('sidebar').classList.toggle('mobile-active');
         }
 
-        function renderFeed() {
+        // Modal functions
+        function showModal() {
+            document.getElementById('modal').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('modal').classList.remove('active');
+            document.getElementById('problemForm').reset();
+        }
+
+        function showProposalModal(problemId, problemTitle) {
+            document.getElementById('proposalModal').classList.add('active');
+            document.getElementById('proposalProblemId').value = problemId;
+            document.getElementById('proposalProblemTitle').textContent = problemTitle;
+        }
+
+        function closeProposalModal() {
+            document.getElementById('proposalModal').classList.remove('active');
+            document.getElementById('proposalForm').reset();
+        }
+
+        // Load problems from API or use local data
+        async function loadProblems() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/problems`);
+                if (response.ok) {
+                    const data = await response.json();
+                    allProblems = data.problems || data;
+                    problems = [...allProblems];
+                    renderProblems(problems);
+                } else {
+                    renderProblems(problems);
+                }
+            } catch (error) {
+                console.log('Using local data');
+                renderProblems(problems);
+            }
+        }
+
+        // Render problems
+        function renderProblems(problemsToRender) {
             const feed = document.getElementById('problemFeed');
-            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-            const categoryFilter = document.getElementById('categoryFilter').value;
-            const sortOrder = document.getElementById('sortSelect').value;
+            
+            if (problemsToRender.length === 0) {
+                feed.innerHTML = `
+                    <div class="empty-state">
+                        <h3>No problems found</h3>
+                        <p>Be the first to post a problem that needs solving!</p>
+                        <button class="btn btn-primary" onclick="showModal()">Post a Problem</button>
+                    </div>
+                `;
+                return;
+            }
 
-            let filteredProblems = problems.filter(p => {
-                const matchesSearch = p.title.toLowerCase().includes(searchTerm) || 
-                                    p.description.toLowerCase().includes(searchTerm);
-                const matchesCategory = categoryFilter === 'all' || p.category === categoryFilter;
-                return matchesSearch && matchesCategory;
-            });
-
-            // Sort
-            filteredProblems.sort((a, b) => {
-                if (sortOrder === 'upvotes') return b.upvotes - a.upvotes;
-                if (sortOrder === 'newest') return b.id - a.id;
-                if (sortOrder === 'budget') return b.budgetValue - a.budgetValue;
-                return 0;
-            });
-
-            feed.innerHTML = filteredProblems.map(p => `
+            feed.innerHTML = problemsToRender.map(p => `
                 <div class="problem-card">
                     <div class="card-header">
-                        <button class="upvote-btn ${p.upvoted ? 'upvoted' : ''}" onclick="upvoteProblem(${p.id})">
+                        <button class="upvote-btn ${p.upvoted ? 'upvoted' : ''}" onclick="toggleUpvote('${p.id}')">
                             <span class="upvote-icon">▲</span>
                             <span class="upvote-count">${p.upvotes}</span>
                         </button>
@@ -1099,75 +1072,250 @@
                             <div class="card-meta">
                                 <span class="category-tag">${p.category}</span>
                                 <span class="budget">${p.budget}</span>
-                                <span class="stat">💬 ${p.proposals} proposals</span>
-                                <span class="stat">🕒 ${p.time}</span>
-                            </div>
-                            <div class="card-footer">
-                                <div class="author">
-                                    <div class="avatar">${p.author.split(' ').map(n => n[0]).join('')}</div>
-                                    <span>${p.author}</span>
-                                </div>
-                                <button class="submit-proposal">Submit Proposal</button>
+                                <span class="stat">${p.proposals} proposal${p.proposals !== 1 ? 's' : ''}</span>
                             </div>
                         </div>
                     </div>
+                    <div class="card-footer">
+                        <div class="author">
+                            <div class="avatar">${p.author.substring(0, 2).toUpperCase()}</div>
+                            <span>Posted by ${p.author} • ${p.time}</span>
+                        </div>
+                        <div style="display: flex; gap: 0.5rem;">
+                            ${p.proposals > 0 ? `<button class="view-proposals-btn" onclick="viewProposals('${p.id}')">View ${p.proposals} Proposal${p.proposals > 1 ? 's' : ''}</button>` : ''}
+                            <button class="submit-proposal" onclick="showProposalModal('${p.id}', '${p.title.replace(/'/g, "\\'")}')">Submit Proposal</button>
+                        </div>
+                    </div>
+                    <div class="proposals-section" id="proposals-${p.id}" style="display: none;"></div>
                 </div>
             `).join('');
         }
 
-        // Form Handling
+        // Toggle upvote
+        async function toggleUpvote(problemId) {
+            const problem = problems.find(p => p.id === problemId);
+            if (!problem) return;
+
+            try {
+                if (problem.upvoted) {
+                    const response = await fetch(`${API_BASE_URL}/problems/${problemId}/upvote`, {
+                        method: 'DELETE'
+                    });
+                    if (response.ok) {
+                        problem.upvoted = false;
+                        problem.upvotes -= 1;
+                    }
+                } else {
+                    const response = await fetch(`${API_BASE_URL}/problems/${problemId}/upvote`, {
+                        method: 'POST'
+                    });
+                    if (response.ok) {
+                        problem.upvoted = true;
+                        problem.upvotes += 1;
+                    }
+                }
+            } catch (error) {
+                // Fallback to local state
+                problem.upvoted = !problem.upvoted;
+                problem.upvotes += problem.upvoted ? 1 : -1;
+            }
+            
+            renderProblems(problems);
+        }
+
+        // View proposals
+        async function viewProposals(problemId) {
+            const proposalsSection = document.getElementById(`proposals-${problemId}`);
+            
+            if (proposalsSection.style.display === 'block') {
+                proposalsSection.style.display = 'none';
+                return;
+            }
+
+            proposalsSection.innerHTML = '<p style="text-align: center; color: #6B7280;">Loading proposals...</p>';
+            proposalsSection.style.display = 'block';
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/problems/${problemId}/proposals`);
+                const data = await response.json();
+
+                if (data.proposals && data.proposals.length > 0) {
+                    proposalsSection.innerHTML = `
+                        <h4 style="margin-bottom: 1rem; color: #111827;">💡 Solution Proposals (${data.proposals.length})</h4>
+                        ${data.proposals.map(proposal => `
+                            <div class="proposal-card">
+                                <div class="proposal-header">
+                                    <div>
+                                        <div class="proposal-title">${proposal.title}</div>
+                                        <div class="proposal-meta">
+                                            <span>👤 ${proposal.builderName}</span>
+                                            <span>⏱️ ${proposal.timeline}</span>
+                                            <span class="proposal-badge">${proposal.status}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <p class="proposal-description">${proposal.description}</p>
+                                ${proposal.githubUrl || proposal.demoUrl ? `
+                                    <div class="proposal-meta">
+                                        ${proposal.githubUrl ? `<a href="${proposal.githubUrl}" target="_blank" class="proposal-link">🔗 GitHub</a>` : ''}
+                                        ${proposal.demoUrl ? `<a href="${proposal.demoUrl}" target="_blank" class="proposal-link">🚀 Demo</a>` : ''}
+                                    </div>
+                                ` : ''}
+                            </div>
+                        `).join('')}
+                    `;
+                } else {
+                    proposalsSection.innerHTML = '<div class="empty-proposals">No proposals yet. Be the first to submit a solution! 🚀</div>';
+                }
+            } catch (error) {
+                console.error('Error loading proposals:', error);
+                proposalsSection.innerHTML = '<div class="empty-proposals">Failed to load proposals. Please try again.</div>';
+            }
+        }
+
+        // Filter and sort
+        function filterProblems() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const category = document.getElementById('categoryFilter').value;
+            const budgetRange = document.getElementById('budgetFilter').value;
+
+            problems = allProblems.filter(p => {
+                const matchesSearch = p.title.toLowerCase().includes(searchTerm) || 
+                                     p.description.toLowerCase().includes(searchTerm);
+                const matchesCategory = category === 'all' || p.category === category;
+                
+                let matchesBudget = true;
+                if (budgetRange !== 'all') {
+                    const [min, max] = budgetRange.split('-');
+                    if (max === undefined) {
+                        matchesBudget = p.budgetValue >= parseInt(min);
+                    } else {
+                        matchesBudget = p.budgetValue >= parseInt(min) && p.budgetValue <= parseInt(max);
+                    }
+                }
+
+                return matchesSearch && matchesCategory && matchesBudget;
+            });
+
+            sortProblems();
+        }
+
+        function sortProblems() {
+            const sortBy = document.getElementById('sortSelect').value;
+            
+            if (sortBy === 'upvotes') {
+                problems.sort((a, b) => b.upvotes - a.upvotes);
+            } else if (sortBy === 'newest') {
+                problems.sort((a, b) => {
+                    const timeA = parseTimeAgo(a.time);
+                    const timeB = parseTimeAgo(b.time);
+                    return timeA - timeB;
+                });
+            } else if (sortBy === 'budget') {
+                problems.sort((a, b) => b.budgetValue - a.budgetValue);
+            }
+
+            renderProblems(problems);
+        }
+
+        function parseTimeAgo(timeStr) {
+            const match = timeStr.match(/(\d+)\s+(minute|hour|day|week)/);
+            if (!match) return 0;
+            const value = parseInt(match[1]);
+            const unit = match[2];
+            const multipliers = { minute: 1, hour: 60, day: 1440, week: 10080 };
+            return value * (multipliers[unit] || 0);
+        }
+
+        // Form submissions
         document.getElementById('problemForm').addEventListener('submit', async (e) => {
             e.preventDefault();
+            
             const newProblem = {
                 title: document.getElementById('problemTitle').value,
                 description: document.getElementById('problemDescription').value,
                 category: document.getElementById('problemCategory').value,
                 budget: document.getElementById('problemBudget').value,
-                budgetValue: parseInt(document.getElementById('problemBudget').value.replace(/[^0-9]/g, '')) || 0,
-                author: "Anonymous",
-                time: "Just now"
+                author: document.getElementById('problemAuthor').value || 'Anonymous User'
             };
 
             try {
-                const response = await fetch('/api/problems', {
+                const response = await fetch(`${API_BASE_URL}/problems`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(newProblem)
                 });
-                if (!response.ok) throw new Error('Post failed');
-                const saved = await response.json();
-                problems.unshift(saved);
-                closeModal();
-                renderFeed();
-                e.target.reset();
+
+                if (response.ok) {
+                    const created = await response.json();
+                    allProblems.unshift(created);
+                    problems = [...allProblems];
+                    renderProblems(problems);
+                    closeModal();
+                    alert('🎉 Problem posted successfully!');
+                } else {
+                    throw new Error('Failed to create problem');
+                }
             } catch (error) {
-                console.error('Error posting problem:', error);
-                // Fallback for demo
-                const demoProblem = {
+                // Fallback to local
+                const localProblem = {
+                    id: String(Date.now()),
                     ...newProblem,
-                    id: problems.length + 1,
+                    budgetValue: parseInt(newProblem.budget.match(/\d+/)?.[0] || '0'),
                     upvotes: 0,
                     proposals: 0,
+                    time: 'just now',
                     upvoted: false
                 };
-                problems.unshift(demoProblem);
+                allProblems.unshift(localProblem);
+                problems = [...allProblems];
+                renderProblems(problems);
                 closeModal();
-                renderFeed();
-                e.target.reset();
+                alert('🎉 Problem posted successfully!');
             }
         });
 
-        // Event Listeners
-        document.getElementById('searchInput').addEventListener('input', renderFeed);
-        document.getElementById('categoryFilter').addEventListener('change', renderFeed);
-        document.getElementById('sortSelect').addEventListener('change', renderFeed);
+        document.getElementById('proposalForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const problemId = document.getElementById('proposalProblemId').value;
+            
+            const proposalData = {
+                title: document.getElementById('proposalTitle').value,
+                description: document.getElementById('proposalDescription').value,
+                timeline: document.getElementById('proposalTimeline').value,
+                builderName: document.getElementById('proposalBuilderName').value,
+                githubUrl: document.getElementById('proposalGithubUrl').value || null,
+                demoUrl: document.getElementById('proposalDemoUrl').value || null
+            };
 
-        // Initial check
-        window.addEventListener('load', () => {
-            if (window.location.hash === '#app') {
-                showApp();
+            try {
+                const response = await fetch(`${API_BASE_URL}/problems/${problemId}/proposals`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(proposalData)
+                });
+
+                if (response.ok) {
+                    const problem = problems.find(p => p.id === problemId);
+                    if (problem) {
+                        problem.proposals += 1;
+                        renderProblems(problems);
+                    }
+                    
+                    closeProposalModal();
+                    alert('🎉 Proposal submitted successfully! The problem owner will be notified.');
+                } else {
+                    throw new Error('Failed to submit proposal');
+                }
+            } catch (error) {
+                console.error('Error submitting proposal:', error);
+                alert('Failed to submit proposal. Please try again.');
             }
         });
+
+        // Initialize on page load
+        renderProblems(problems);
     </script>
 </body>
 </html>
