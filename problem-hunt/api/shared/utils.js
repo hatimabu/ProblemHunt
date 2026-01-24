@@ -1,0 +1,98 @@
+const { v4: uuidv4 } = require('uuid');
+
+/**
+ * Create a standardized API response
+ */
+function createResponse(statusCode, body, headers = {}) {
+  return {
+    status: statusCode,
+    body: typeof body === 'string' ? body : JSON.stringify(body),
+    headers: {
+      'Content-Type': 'application/json',
+      'Access-Control-Allow-Origin': '*',
+      ...headers
+    }
+  };
+}
+
+/**
+ * Create error response
+ */
+function errorResponse(statusCode, message) {
+  return createResponse(statusCode, {
+    error: message,
+    timestamp: new Date().toISOString()
+  });
+}
+
+/**
+ * Get user ID from request (for now, generate from IP or use anonymous)
+ */
+function getUserId(req) {
+  // In production, this would come from authentication
+  // For now, use a combination of IP and user agent as a simple identifier
+  const ip = req.headers['x-forwarded-for'] || req.headers['x-real-ip'] || 'unknown';
+  const userAgent = req.headers['user-agent'] || 'unknown';
+  
+  // Return a consistent ID for the same user
+  return Buffer.from(`${ip}-${userAgent}`).toString('base64').substring(0, 32);
+}
+
+/**
+ * Generate unique ID
+ */
+function generateId() {
+  return uuidv4();
+}
+
+/**
+ * Validate required fields
+ */
+function validateRequired(obj, fields) {
+  const missing = fields.filter(field => !obj[field]);
+  if (missing.length > 0) {
+    return `Missing required fields: ${missing.join(', ')}`;
+  }
+  return null;
+}
+
+/**
+ * Parse budget value from string like "$50/month" or "$10/use"
+ */
+function parseBudgetValue(budgetString) {
+  const match = budgetString.match(/\$?(\d+)/);
+  return match ? parseInt(match[1]) : 0;
+}
+
+/**
+ * Get current timestamp
+ */
+function timestamp() {
+  return new Date().toISOString();
+}
+
+/**
+ * Calculate time ago string
+ */
+function timeAgo(dateString) {
+  const date = new Date(dateString);
+  const now = new Date();
+  const seconds = Math.floor((now - date) / 1000);
+  
+  if (seconds < 60) return 'just now';
+  if (seconds < 3600) return `${Math.floor(seconds / 60)} minutes ago`;
+  if (seconds < 86400) return `${Math.floor(seconds / 3600)} hours ago`;
+  if (seconds < 604800) return `${Math.floor(seconds / 86400)} days ago`;
+  return `${Math.floor(seconds / 604800)} weeks ago`;
+}
+
+module.exports = {
+  createResponse,
+  errorResponse,
+  getUserId,
+  generateId,
+  validateRequired,
+  parseBudgetValue,
+  timestamp,
+  timeAgo
+};
