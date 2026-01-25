@@ -83,9 +83,9 @@
             min-height: 100vh;
             display: flex;
             flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 2rem;
+            align-items: stretch;
+            justify-content: flex-start;
+            padding: 0;
             background: radial-gradient(1200px 600px at 50% 0%, color-mix(in srgb, var(--brand-from) 20%, transparent), transparent 60%),
                         linear-gradient(135deg, var(--background) 0%, var(--background-elevated) 100%);
             position: relative;
@@ -112,6 +112,8 @@
             text-align: center;
             position: relative;
             z-index: 1;
+            margin: 0 auto;
+            padding: 5rem 1.5rem 3rem;
         }
 
         .hero h1 {
@@ -120,6 +122,38 @@
             color: var(--foreground);
             margin-bottom: 1rem;
             text-shadow: 0 8px 30px rgba(0,0,0,0.45);
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.4rem 1rem;
+            border-radius: 999px;
+            border: 1px solid rgba(34, 211, 238, 0.25);
+            background: linear-gradient(90deg, rgba(34, 211, 238, 0.12), rgba(37, 99, 235, 0.12));
+            color: var(--brand-accent);
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+        }
+
+        .hero-title-line {
+            display: block;
+        }
+
+        .hero-gradient {
+            background: linear-gradient(90deg, #ffffff, #e2e8f0, #94a3b8);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .hero-gradient-accent {
+            background: linear-gradient(90deg, #22d3ee, #60a5fa, #818cf8);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
         }
 
         .tagline {
@@ -144,6 +178,59 @@
             justify-content: center;
             flex-wrap: wrap;
             margin-bottom: 4rem;
+        }
+
+        .landing-header {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            padding: 1.5rem 1.5rem 0;
+            position: relative;
+            z-index: 2;
+        }
+
+        .landing-logo {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 700;
+        }
+
+        .landing-nav {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+
+        .nav-btn {
+            background: transparent;
+            color: var(--text-subtle);
+            border: 1px solid transparent;
+            padding: 0.45rem 0.9rem;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+        }
+
+        .nav-btn:hover {
+            color: var(--foreground);
+            background: rgba(148, 163, 184, 0.12);
+        }
+
+        .nav-btn.primary {
+            background: linear-gradient(135deg, var(--brand-from), var(--brand-to));
+            color: var(--primary-foreground);
+            border: none;
+            box-shadow: 0 6px 18px rgba(34, 211, 238, 0.25);
         }
 
         .btn {
@@ -212,6 +299,150 @@
             max-width: 960px;
             margin: 0 auto;
             align-items: stretch;
+        }
+
+        .landing-section {
+            width: 100%;
+            padding: 5rem 0;
+            border-top: 1px solid rgba(148, 163, 184, 0.15);
+            position: relative;
+            z-index: 1;
+        }
+
+        .section-container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0 1.5rem;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .section-title {
+            font-size: clamp(2rem, 4vw, 2.8rem);
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+            background: linear-gradient(90deg, #ffffff, #cbd5f5, #94a3b8);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .section-subtitle {
+            color: var(--text-muted);
+            font-size: 1.05rem;
+        }
+
+        .how-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 2rem;
+        }
+
+        .how-card {
+            text-align: center;
+        }
+
+        .how-icon {
+            width: 64px;
+            height: 64px;
+            margin: 0 auto 1rem;
+            border-radius: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid rgba(34, 211, 238, 0.2);
+            background: linear-gradient(135deg, rgba(34, 211, 238, 0.2), rgba(37, 99, 235, 0.2));
+            color: #22d3ee;
+            font-weight: 700;
+            font-size: 1.25rem;
+        }
+
+        .how-icon.alt {
+            border-color: rgba(59, 130, 246, 0.2);
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(99, 102, 241, 0.2));
+            color: #60a5fa;
+        }
+
+        .how-icon.purple {
+            border-color: rgba(139, 92, 246, 0.2);
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(168, 85, 247, 0.2));
+            color: #a78bfa;
+        }
+
+        .how-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--foreground);
+            margin-bottom: 0.5rem;
+        }
+
+        .how-text {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 2rem;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: clamp(2rem, 4vw, 2.6rem);
+            font-weight: 800;
+            margin-bottom: 0.35rem;
+            background: linear-gradient(90deg, #22d3ee, #3b82f6);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .stat-value.alt {
+            background: linear-gradient(90deg, #60a5fa, #818cf8);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .stat-value.purple {
+            background: linear-gradient(90deg, #818cf8, #a855f7);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .stat-label {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .landing-footer {
+            width: 100%;
+            border-top: 1px solid rgba(148, 163, 184, 0.15);
+            padding: 3rem 0;
+        }
+
+        .footer-content {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            align-items: center;
+            justify-content: space-between;
+            text-align: center;
+        }
+
+        @media (min-width: 768px) {
+            .footer-content {
+                flex-direction: row;
+                text-align: left;
+            }
         }
 
         .feature-card {
@@ -1017,9 +1248,28 @@
 <body class="dark">
     <!-- Landing Page -->
     <div class="landing" id="landing">
+        <header class="landing-header">
+            <div class="landing-logo" onclick="showLanding()" style="cursor: pointer;">
+                <div style="width: 32px; height: 32px; background: linear-gradient(135deg, var(--brand-from), var(--brand-to)); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                    <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" style="width: 18px; height: 18px; color: white;">
+                        <polyline points="16 18 22 12 16 6" />
+                        <polyline points="8 6 2 12 8 18" />
+                    </svg>
+                </div>
+                <span style="font-size: 1.1rem; font-weight: 700; background: linear-gradient(90deg, var(--brand-from), var(--brand-to)); -webkit-background-clip: text; background-clip: text; color: transparent;">problemhunt.cc</span>
+            </div>
+            <nav class="landing-nav">
+                <button class="nav-btn" onclick="showApp()">Browse</button>
+                <button class="nav-btn" onclick="showApp()">Dashboard</button>
+                <button class="nav-btn primary" onclick="showApp(); showModal()">Post Problem</button>
+            </nav>
+        </header>
         <div class="hero">
-            <h1>Problem Hunt</h1>
-            <p class="tagline">Houston, we have a problem.</p>
+            <div class="hero-badge">Decentralized Problem Solving</div>
+            <h1>
+                <span class="hero-title-line hero-gradient">Signal demand.</span>
+                <span class="hero-title-line hero-gradient-accent">Get solutions built.</span>
+            </h1>
             <p class="subheadline">The marketplace where people post problems they'd pay to solve - and builders compete to solve them.</p>
             
             <div class="cta-buttons">
@@ -1040,45 +1290,109 @@
                     Post a Problem
                 </button>
             </div>
+        </div>
 
-            <div class="feature-grid">
-                <div class="feature-card" onclick="showApp()" style="cursor: pointer;">
-                    <div class="feature-glow"></div>
-                    <div class="feature-surface">
-                        <div class="feature-icon">
-                            <svg viewBox="0 0 24 24" aria-hidden="true">
-                                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-                            </svg>
+        <section class="landing-section">
+            <div class="section-container">
+                <div class="feature-grid">
+                    <div class="feature-card" onclick="showApp()" style="cursor: pointer;">
+                        <div class="feature-glow"></div>
+                        <div class="feature-surface">
+                            <div class="feature-icon">
+                                <svg viewBox="0 0 24 24" aria-hidden="true">
+                                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                                </svg>
+                            </div>
+                            <h3 class="feature-title">For people with problems</h3>
+                            <p class="feature-text">Signal demand. Get solutions built.</p>
+                            <ul class="feature-list">
+                                <li><span class="feature-arrow">→</span><span>Post your problem with bounty details</span></li>
+                                <li><span class="feature-arrow">→</span><span>Track builder progress in real-time</span></li>
+                                <li><span class="feature-arrow">→</span><span>Only pay when satisfied with solution</span></li>
+                            </ul>
                         </div>
-                        <h3 class="feature-title">For people with problems</h3>
-                        <p class="feature-text">Signal demand. Get solutions built.</p>
-                        <ul class="feature-list">
-                            <li><span class="feature-arrow">→</span><span>Post your problem with bounty details</span></li>
-                            <li><span class="feature-arrow">→</span><span>Track builder progress in real-time</span></li>
-                            <li><span class="feature-arrow">→</span><span>Only pay when satisfied with solution</span></li>
-                        </ul>
                     </div>
-                </div>
-                <div class="feature-card alt" onclick="showAuthModal('signup')" style="cursor: pointer;">
-                    <div class="feature-glow alt"></div>
-                    <div class="feature-surface">
-                        <div class="feature-icon">
-                            <svg viewBox="0 0 24 24" aria-hidden="true">
-                                <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
-                                <polyline points="17 6 23 6 23 12" />
-                            </svg>
+                    <div class="feature-card alt" onclick="showAuthModal('signup')" style="cursor: pointer;">
+                        <div class="feature-glow alt"></div>
+                        <div class="feature-surface">
+                            <div class="feature-icon">
+                                <svg viewBox="0 0 24 24" aria-hidden="true">
+                                    <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
+                                    <polyline points="17 6 23 6 23 12" />
+                                </svg>
+                            </div>
+                            <h3 class="feature-title">For builders</h3>
+                            <p class="feature-text">Find validated problems. Build what people actually want.</p>
+                            <ul class="feature-list">
+                                <li><span class="feature-arrow">→</span><span>Browse problems with real market demand</span></li>
+                                <li><span class="feature-arrow">→</span><span>Post progress updates to get tipped</span></li>
+                                <li><span class="feature-arrow">→</span><span>Earn bounties for successful solutions</span></li>
+                            </ul>
                         </div>
-                        <h3 class="feature-title">For builders</h3>
-                        <p class="feature-text">Find validated problems. Build what people actually want.</p>
-                        <ul class="feature-list">
-                            <li><span class="feature-arrow">→</span><span>Browse problems with real market demand</span></li>
-                            <li><span class="feature-arrow">→</span><span>Post progress updates to get tipped</span></li>
-                            <li><span class="feature-arrow">→</span><span>Earn bounties for successful solutions</span></li>
-                        </ul>
                     </div>
                 </div>
             </div>
-        </div>
+        </section>
+
+        <section class="landing-section">
+            <div class="section-container">
+                <div class="section-header">
+                    <h2 class="section-title">How It Works</h2>
+                    <p class="section-subtitle">Simple, transparent, decentralized</p>
+                </div>
+                <div class="how-grid">
+                    <div class="how-card">
+                        <div class="how-icon">1</div>
+                        <div class="how-title">Post Problem</div>
+                        <p class="how-text">Define your problem, set a bounty, and specify timeline requirements</p>
+                    </div>
+                    <div class="how-card">
+                        <div class="how-icon alt">2</div>
+                        <div class="how-title">Builders Compete</div>
+                        <p class="how-text">Builders create accounts and post progress updates to earn tips</p>
+                    </div>
+                    <div class="how-card">
+                        <div class="how-icon purple">3</div>
+                        <div class="how-title">Get Paid</div>
+                        <p class="how-text">Successful solutions earn the bounty. Failed attempts lose held tips</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="landing-section">
+            <div class="section-container">
+                <div class="stats-grid">
+                    <div>
+                        <div class="stat-value">$247K</div>
+                        <div class="stat-label">In Bounties</div>
+                    </div>
+                    <div>
+                        <div class="stat-value alt">1,284</div>
+                        <div class="stat-label">Active Builders</div>
+                    </div>
+                    <div>
+                        <div class="stat-value purple">892</div>
+                        <div class="stat-label">Problems Solved</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <footer class="landing-footer">
+            <div class="footer-content">
+                <div class="landing-logo" onclick="showLanding()" style="cursor: pointer;">
+                    <div style="width: 32px; height: 32px; background: linear-gradient(135deg, var(--brand-from), var(--brand-to)); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" style="width: 18px; height: 18px; color: white;">
+                            <polyline points="16 18 22 12 16 6" />
+                            <polyline points="8 6 2 12 8 18" />
+                        </svg>
+                    </div>
+                    <span style="font-size: 1.1rem; font-weight: 700; background: linear-gradient(90deg, var(--brand-from), var(--brand-to)); -webkit-background-clip: text; background-clip: text; color: transparent;">problemhunt.cc</span>
+                </div>
+                <div style="color: var(--text-muted); font-size: 0.9rem;">© 2026 Problem Hunt. Decentralized problem solving.</div>
+            </div>
+        </footer>
     </div>
 
     <!-- App Interface -->
