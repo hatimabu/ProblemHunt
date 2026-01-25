@@ -27,6 +27,8 @@ const MOCK_PROBLEMS = [
     builders: 12,
     tips: 450,
     status: "active",
+    upvotes: 127,
+    upvoted: false,
   },
   {
     id: "2",
@@ -40,6 +42,8 @@ const MOCK_PROBLEMS = [
     builders: 8,
     tips: 980,
     status: "active",
+    upvotes: 98,
+    upvoted: false,
   },
   {
     id: "3",
@@ -53,6 +57,8 @@ const MOCK_PROBLEMS = [
     builders: 15,
     tips: 620,
     status: "active",
+    upvotes: 156,
+    upvoted: false,
   },
   {
     id: "4",
@@ -66,6 +72,8 @@ const MOCK_PROBLEMS = [
     builders: 6,
     tips: 1100,
     status: "active",
+    upvotes: 203,
+    upvoted: false,
   },
   {
     id: "5",
@@ -79,6 +87,8 @@ const MOCK_PROBLEMS = [
     builders: 9,
     tips: 780,
     status: "active",
+    upvotes: 87,
+    upvoted: false,
   },
   {
     id: "6",
@@ -92,6 +102,8 @@ const MOCK_PROBLEMS = [
     builders: 11,
     tips: 1450,
     status: "active",
+    upvotes: 142,
+    upvoted: false,
   },
 ];
 
@@ -110,8 +122,48 @@ export function BrowseProblems() {
   const [selectedCategory, setSelectedCategory] =
     useState("All");
   const [sortBy, setSortBy] = useState("bounty");
+  const [problems, setProblems] = useState(MOCK_PROBLEMS);
 
-  const filteredProblems = MOCK_PROBLEMS.filter((problem) => {
+  const handleUpvote = async (problemId: string, event: React.MouseEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+    
+    const problem = problems.find(p => p.id === problemId);
+    if (!problem) return;
+
+    try {
+      // Optimistically update UI
+      setProblems(problems.map(p => {
+        if (p.id === problemId) {
+          return {
+            ...p,
+            upvoted: !p.upvoted,
+            upvotes: p.upvoted ? p.upvotes - 1 : p.upvotes + 1,
+          };
+        }
+        return p;
+      }));
+
+      // TODO: Call API when backend is connected
+      // const endpoint = problem.upvoted ? 'RemoveUpvote' : 'UpvoteProblem';
+      // await fetch(`/api/${endpoint}/${problemId}`, { method: 'POST' });
+    } catch (error) {
+      console.error('Failed to toggle upvote:', error);
+      // Revert on error
+      setProblems(problems.map(p => {
+        if (p.id === problemId) {
+          return {
+            ...p,
+            upvoted: problem.upvoted,
+            upvotes: problem.upvotes,
+          };
+        }
+        return p;
+      }));
+    }
+  };
+
+  const filteredProblems = problems.filter((problem) => {
     const matchesSearch =
       problem.title
         .toLowerCase()
@@ -246,6 +298,17 @@ export function BrowseProblems() {
                       </p>
 
                       <div className="flex flex-wrap gap-4 text-sm">
+                        <button
+                          onClick={(e) => handleUpvote(problem.id, e)}
+                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border transition-all ${
+                            problem.upvoted
+                              ? 'bg-cyan-500/20 border-cyan-500/50 text-cyan-400'
+                              : 'border-gray-700 text-gray-400 hover:border-cyan-500/30 hover:text-cyan-400'
+                          }`}
+                        >
+                          <TrendingUp className="w-4 h-4" />
+                          <span className="font-medium">{problem.upvotes}</span>
+                        </button>
                         <div className="flex items-center gap-1.5 text-gray-400">
                           <User className="w-4 h-4" />
                           <span>
