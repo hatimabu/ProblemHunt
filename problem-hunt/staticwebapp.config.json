@@ -17,6 +17,10 @@
         "rewrite": "/index.html"
       }
     },
-    "buildCommand": "echo 'No build required'",
-    "outputLocation": "."
+    "buildCommand": "npm run build",
+    "outputLocation": ".",
+    "environmentVariables": {
+      "SUPABASE_URL": "https://ajvobbpwgopinxtbpcpu.supabase.co",
+      "SUPABASE_ANON_KEY": "sb_publishable_D82LguYseqDD2AUMTI-chA_3OX8Jbaf"
+    }
   }
