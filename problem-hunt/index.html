@@ -904,10 +904,11 @@
             
             <div class="cta-buttons">
                 <button class="btn btn-primary" onclick="showApp()">
-                    <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
-                        <path d="M4 11V9a3 3 0 0 1 3-3h4l2-2h4a3 3 0 0 1 3 3v2" />
-                        <path d="M3 15l3-4 3 3 3-4 4 5 3-3 2 2" />
-                        <path d="M5 21h14" />
+                    <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" style="width: 20px; height: 20px; margin-right: 0.25rem;">
+                        <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z" />
+                        <path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z" />
+                        <path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0" />
+                        <path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5" />
                     </svg>
                     Browse Problems
                 </button>
@@ -937,14 +938,15 @@
     <div class="app" id="app">
         <header class="app-header">
             <div class="header-content">
-                <div class="logo" onclick="showLanding()">
-                    <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
-                        <path d="M16 18a4 4 0 0 0 2-7.5V10a6 6 0 1 0-11.3 2.8" />
-                        <path d="M12 14l2-2" />
-                        <path d="M8 16l4-4" />
-                    </svg>
-                    <span>Problem Hunt</span>
-                </div>
+                <a class="logo" onclick="showLanding()">
+                    <div style="width: 32px; height: 32px; background: linear-gradient(135deg, var(--brand-from), var(--brand-to)); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" style="width: 20px; height: 20px; color: white;">
+                            <polyline points="16 18 22 12 16 6" />
+                            <polyline points="8 6 2 12 8 18" />
+                        </svg>
+                    </div>
+                    <span style="font-size: 1.25rem; font-weight: 700; background: linear-gradient(90deg, var(--brand-from), var(--brand-to)); -webkit-background-clip: text; background-clip: text; color: transparent;">problemhunt.cc</span>
+                </a>
                 <button class="mobile-menu-btn" onclick="toggleMobileMenu()">☰ Filters</button>
                 <div class="search-bar">
                     <input type="text" placeholder="Search problems..." id="searchInput" onkeyup="filterProblems()">
