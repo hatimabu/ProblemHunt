@@ -1,4 +1,11 @@
 const { v4: uuidv4 } = require('uuid');
+const { createClient } = require('@supabase/supabase-js');
+
+// Supabase client for JWT verification
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_ANON_KEY
+);
 
 /**
  * Create a standardized API response
@@ -26,16 +33,31 @@ function errorResponse(statusCode, message) {
 }
 
 /**
- * Get user ID from request (for now, generate from IP or use anonymous)
+ * Get user ID from request (JWT verification)
  */
-function getUserId(req) {
-  // In production, this would come from authentication
-  // For now, use a combination of IP and user agent as a simple identifier
-  const ip = req.headers['x-forwarded-for'] || req.headers['x-real-ip'] || 'unknown';
-  const userAgent = req.headers['user-agent'] || 'unknown';
-  
-  // Return a consistent ID for the same user
-  return Buffer.from(`${ip}-${userAgent}`).toString('base64').substring(0, 32);
+async function getUserId(req) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    // Fallback to IP-based ID for anonymous users
+    const ip = req.headers['x-forwarded-for'] || req.headers['x-real-ip'] || 'unknown';
+    const userAgent = req.headers['user-agent'] || 'unknown';
+    return Buffer.from(`${ip}-${userAgent}`).toString('base64').substring(0, 32);
+  }
+
+  const token = authHeader.substring(7); // Remove 'Bearer '
+
+  try {
+    const { data: { user }, error } = await supabase.auth.getUser(token);
+    if (error || !user) {
+      throw new Error('Invalid token');
+    }
+    return user.id;
+  } catch (error) {
+    // Fallback to IP-based ID
+    const ip = req.headers['x-forwarded-for'] || req.headers['x-real-ip'] || 'unknown';
+    const userAgent = req.headers['user-agent'] || 'unknown';
+    return Buffer.from(`${ip}-${userAgent}`).toString('base64').substring(0, 32);
+  }
 }
 
 /**

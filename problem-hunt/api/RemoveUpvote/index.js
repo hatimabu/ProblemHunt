@@ -4,7 +4,7 @@ const { createResponse, errorResponse, timestamp, getUserId } = require('../shar
 module.exports = async function (context, req) {
   try {
     const problemId = req.params.id;
-    const userId = getUserId(req);
+    const userId = await getUserId(req);
     const upvoteId = `${problemId}-${userId}`;
 
     // Check if upvote exists

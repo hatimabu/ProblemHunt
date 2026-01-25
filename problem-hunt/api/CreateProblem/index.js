@@ -30,7 +30,7 @@ module.exports = async function (context, req) {
       upvotes: 0,
       proposals: 0,
       author: data.author || 'Anonymous User',
-      authorId: getUserId(req),
+      authorId: await getUserId(req),
       createdAt: timestamp(),
       updatedAt: timestamp()
     };

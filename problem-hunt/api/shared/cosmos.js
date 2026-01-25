@@ -18,7 +18,8 @@ if (!endpoint || !key || endpoint.includes('your-account')) {
   const containers = {
     problems: database.container(process.env.COSMOS_CONTAINER_PROBLEMS || "Problems"),
     proposals: database.container(process.env.COSMOS_CONTAINER_PROPOSALS || "Proposals"),
-    upvotes: database.container(process.env.COSMOS_CONTAINER_UPVOTES || "Upvotes")
+    upvotes: database.container(process.env.COSMOS_CONTAINER_UPVOTES || "Upvotes"),
+    tips: database.container(process.env.COSMOS_CONTAINER_TIPS || "Tips")
   };
 
   console.log('✅ Connected to Cosmos DB');

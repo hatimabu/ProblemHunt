@@ -5,7 +5,7 @@ module.exports = async function (context, req) {
   try {
     const problemId = req.params.id;
     const updates = req.body;
-    const userId = getUserId(req);
+    const userId = await getUserId(req);
 
     // Get existing problem
     const { resource: problem } = await containers.problems.item(problemId, problemId).read();

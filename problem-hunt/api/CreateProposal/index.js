@@ -5,7 +5,7 @@ module.exports = async function (context, req) {
   try {
     const problemId = req.params.id;
     const data = req.body;
-    const userId = getUserId(req);
+    const userId = await getUserId(req);
 
     // Validate required fields
     const validationError = validateRequired(data, ['title', 'description']);

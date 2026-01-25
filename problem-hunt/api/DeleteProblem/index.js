@@ -4,7 +4,7 @@ const { createResponse, errorResponse, getUserId } = require('../shared/utils');
 module.exports = async function (context, req) {
   try {
     const problemId = req.params.id;
-    const userId = getUserId(req);
+    const userId = await getUserId(req);
 
     // Get problem to verify ownership
     const { resource: problem } = await containers.problems.item(problemId, problemId).read();

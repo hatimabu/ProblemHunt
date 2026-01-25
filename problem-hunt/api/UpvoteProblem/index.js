@@ -4,7 +4,7 @@ const { createResponse, errorResponse, generateId, timestamp, getUserId } = requ
 module.exports = async function (context, req) {
   try {
     const problemId = req.params.id;
-    const userId = getUserId(req);
+    const userId = await getUserId(req);
 
     // Check if problem exists
     const { resource: problem } = await containers.problems.item(problemId, problemId).read();

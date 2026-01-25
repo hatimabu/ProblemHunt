@@ -191,7 +191,8 @@ class MockContainer {
   const containers = {
     problems: problemsContainer,
     proposals: proposalsContainer,
-    upvotes: upvotesContainer
+    upvotes: upvotesContainer,
+    tips: new MockContainer('Tips')
   };
   
   module.exports = { containers };
