@@ -12,15 +12,17 @@ const isDev = process.argv.includes('--dev');
 const SUPABASE_URL = process.env.SUPABASE_URL || 'YOUR_SUPABASE_URL';
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || 'YOUR_SUPABASE_ANON_KEY';
 
-// Path to config.js
+// Path to config template and output
+const templatePath = path.join(process.cwd(), 'lib', 'config.template.js');
 const configPath = path.join(process.cwd(), 'lib', 'config.js');
 
 console.log('Current working directory:', process.cwd());
+console.log('Template path:', templatePath);
 console.log('Config path:', configPath);
-console.log('Config file exists:', fs.existsSync(configPath));
+console.log('Template file exists:', fs.existsSync(templatePath));
 
-// Read the current config.js
-let configContent = fs.readFileSync(configPath, 'utf8');
+// Read the template config.js
+let configContent = fs.readFileSync(templatePath, 'utf8');
 
 // Replace placeholders with actual values
 configContent = configContent.replace(

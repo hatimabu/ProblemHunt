@@ -15,6 +15,7 @@ obj/
 
 # Built files with secrets
 problem-hunt/lib/config.js
+# Keep the template file: problem-hunt/lib/config.template.js
 
 # IDEs
 
