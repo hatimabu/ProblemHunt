@@ -1154,11 +1154,6 @@
 
         // Modal functions
         function showModal() {
-            if (!currentUser) {
-                alert('Please sign in to post a problem.');
-                showAuthModal('signin');
-                return;
-            }
             document.getElementById('modal').classList.add('active');
         }
 
@@ -1433,12 +1428,16 @@
             };
 
             try {
+                const headers = { 'Content-Type': 'application/json' };
+                
+                // Only add authorization header if user is signed in
+                if (currentUser) {
+                    headers['Authorization'] = `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`;
+                }
+
                 const response = await fetch(`${API_BASE_URL}/problems`, {
                     method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
-                    },
+                    headers: headers,
                     body: JSON.stringify(newProblem)
                 });
 
