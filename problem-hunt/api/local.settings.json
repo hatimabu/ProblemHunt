@@ -8,7 +8,10 @@
       "COSMOS_DATABASE": "ProblemHuntDB",
       "COSMOS_CONTAINER_PROBLEMS": "Problems",
       "COSMOS_CONTAINER_PROPOSALS": "Proposals",
-      "COSMOS_CONTAINER_UPVOTES": "Upvotes"
+      "COSMOS_CONTAINER_UPVOTES": "Upvotes",
+      "COSMOS_CONTAINER_TIPS": "Tips",
+      "SUPABASE_URL": "https://placeholder.supabase.co",
+      "SUPABASE_ANON_KEY": "placeholder-key"
     },
     "Host": {
       "CORS": "*",

@@ -1,11 +1,22 @@
 const { v4: uuidv4 } = require('uuid');
 const { createClient } = require('@supabase/supabase-js');
 
-// Supabase client for JWT verification
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_ANON_KEY
-);
+// Supabase client - initialized lazily
+let supabaseClient = null;
+
+function getSupabaseClient() {
+  if (!supabaseClient) {
+    const url = process.env.SUPABASE_URL;
+    const key = process.env.SUPABASE_ANON_KEY;
+    
+    if (!url || !key || url === 'YOUR_SUPABASE_PROJECT_URL') {
+      throw new Error('Supabase configuration missing. Please set SUPABASE_URL and SUPABASE_ANON_KEY environment variables.');
+    }
+    
+    supabaseClient = createClient(url, key);
+  }
+  return supabaseClient;
+}
 
 /**
  * Create a standardized API response
@@ -47,6 +58,7 @@ async function getUserId(req) {
   const token = authHeader.substring(7); // Remove 'Bearer '
 
   try {
+    const supabase = getSupabaseClient();
     const { data: { user }, error } = await supabase.auth.getUser(token);
     if (error || !user) {
       throw new Error('Invalid token');
