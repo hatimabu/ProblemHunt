@@ -1,6 +1,6 @@
 {
   "engines": {
-    "node": "18.20.8"
+    "node": ">=20.0.0"
   },
   "scripts": {
     "build": "node scripts/build.js",

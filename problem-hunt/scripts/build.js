@@ -13,7 +13,11 @@ const SUPABASE_URL = process.env.SUPABASE_URL || 'YOUR_SUPABASE_URL';
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || 'YOUR_SUPABASE_ANON_KEY';
 
 // Path to config.js
-const configPath = path.join(__dirname, '..', 'lib', 'config.js');
+const configPath = path.join(process.cwd(), 'lib', 'config.js');
+
+console.log('Current working directory:', process.cwd());
+console.log('Config path:', configPath);
+console.log('Config file exists:', fs.existsSync(configPath));
 
 // Read the current config.js
 let configContent = fs.readFileSync(configPath, 'utf8');
