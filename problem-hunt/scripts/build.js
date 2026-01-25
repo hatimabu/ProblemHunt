@@ -1,10 +1,11 @@
 #!/usr/bin/env node
 
-const fs = require('fs');
-const path = require('path');
+import fs from 'node:fs';
+import path from 'node:path';
+import dotenv from 'dotenv';
 
 // Load environment variables from .env file if it exists
-require('dotenv').config();
+dotenv.config();
 
 const isDev = process.argv.includes('--dev');
 
