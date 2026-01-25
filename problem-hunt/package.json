@@ -1,11 +1,4 @@
 {
-  "engines": {
-    "node": "18.20.8"
-  },
-  "scripts": {
-    "build": "echo 'No build step required for static HTML app'",
-    "build:azure": "echo 'No build step required for static HTML app'"
-  },
   "dependencies": {
     "@supabase/supabase-js": "^2.91.1"
   }
