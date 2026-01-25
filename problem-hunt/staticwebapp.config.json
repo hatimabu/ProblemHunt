@@ -16,7 +16,5 @@
       "404": {
         "rewrite": "/index.html"
       }
-    },
-    "buildCommand": "echo 'No build required'",
-    "outputLocation": "."
+    }
   }
