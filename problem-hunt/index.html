@@ -157,6 +157,21 @@
             font-family: inherit;
             min-width: 200px;
             min-height: 56px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .icon {
+            width: 1rem;
+            height: 1rem;
+            stroke: currentColor;
+            fill: none;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            flex-shrink: 0;
         }
 
         .btn-primary {
@@ -246,6 +261,14 @@
             font-weight: 700;
             color: var(--brand-accent);
             cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .logo .icon {
+            width: 1.25rem;
+            height: 1.25rem;
         }
 
         .search-bar {
@@ -880,8 +903,21 @@
             <p class="subheadline">The marketplace where people post problems they'd pay to solve - and builders compete to solve them.</p>
             
             <div class="cta-buttons">
-                <button class="btn btn-primary" onclick="showApp()">Browse Problems</button>
-                <button class="btn btn-secondary" onclick="showApp(); showModal()">Post a Problem</button>
+                <button class="btn btn-primary" onclick="showApp()">
+                    <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M4 11V9a3 3 0 0 1 3-3h4l2-2h4a3 3 0 0 1 3 3v2" />
+                        <path d="M3 15l3-4 3 3 3-4 4 5 3-3 2 2" />
+                        <path d="M5 21h14" />
+                    </svg>
+                    Browse Problems
+                </button>
+                <button class="btn btn-secondary" onclick="showApp(); showModal()">
+                    <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M12 5v14" />
+                        <path d="M5 12h14" />
+                    </svg>
+                    Post a Problem
+                </button>
             </div>
 
             <div class="value-props">
@@ -901,14 +937,37 @@
     <div class="app" id="app">
         <header class="app-header">
             <div class="header-content">
-                <div class="logo" onclick="showLanding()">Problem Hunt</div>
+                <div class="logo" onclick="showLanding()">
+                    <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M16 18a4 4 0 0 0 2-7.5V10a6 6 0 1 0-11.3 2.8" />
+                        <path d="M12 14l2-2" />
+                        <path d="M8 16l4-4" />
+                    </svg>
+                    <span>Problem Hunt</span>
+                </div>
                 <button class="mobile-menu-btn" onclick="toggleMobileMenu()">☰ Filters</button>
                 <div class="search-bar">
                     <input type="text" placeholder="Search problems..." id="searchInput" onkeyup="filterProblems()">
                 </div>
                 <div id="authButtons" class="auth-buttons">
-                    <button class="btn btn-secondary" onclick="showAuthModal('signin')">Sign In</button>
-                    <button class="btn btn-primary" onclick="showAuthModal('signup')">Sign Up</button>
+                    <button class="btn btn-secondary" onclick="showAuthModal('signin')">
+                        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M15 3h4a2 2 0 0 1 2 2v4" />
+                            <path d="M10 14l4-4-4-4" />
+                            <path d="M14 10H3" />
+                            <path d="M15 21h4a2 2 0 0 0 2-2v-4" />
+                        </svg>
+                        Sign In
+                    </button>
+                    <button class="btn btn-primary" onclick="showAuthModal('signup')">
+                        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                            <circle cx="9" cy="7" r="4" />
+                            <path d="M19 8v6" />
+                            <path d="M22 11h-6" />
+                        </svg>
+                        Sign Up
+                    </button>
                 </div>
             </div>
         </header>
@@ -916,7 +975,14 @@
         <div class="app-container">
             <!-- Left Sidebar -->
             <aside class="sidebar" id="sidebar">
-                <h3>Filters</h3>
+                <h3>
+                    <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M3 6h18" />
+                        <path d="M7 12h10" />
+                        <path d="M10 18h4" />
+                    </svg>
+                    Filters
+                </h3>
                 
                 <div class="filter-group">
                     <label>Category</label>
@@ -962,7 +1028,14 @@
             <!-- Right Sidebar -->
             <aside class="right-sidebar">
                 <div class="widget">
-                    <h3>🚀 Getting Started</h3>
+                    <h3>
+                        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M5 15l-2 6 6-2" />
+                            <path d="M14 3c4.4 0 7 2.6 7 7l-7 7-6-1-1-6 7-7z" />
+                            <path d="M9 14l5-5" />
+                        </svg>
+                        Getting Started
+                    </h3>
                     <p style="color: #6B7280; margin-bottom: 1rem;">Welcome to Problem Hunt! Here's how it works:</p>
                     <ol style="color: #6B7280; padding-left: 1.25rem;">
                         <li style="margin-bottom: 0.5rem;">Browse problems people want solved</li>
@@ -972,9 +1045,21 @@
                 </div>
 
                 <div class="widget">
-                    <h3>💡 Post Your Problem</h3>
+                    <h3>
+                        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M12 3a6 6 0 0 0-3 11.2V17a3 3 0 0 0 6 0v-2.8A6 6 0 0 0 12 3z" />
+                            <path d="M9 21h6" />
+                        </svg>
+                        Post Your Problem
+                    </h3>
                     <p style="color: #6B7280; margin-bottom: 1rem;">Have a problem that needs solving? Post it and see if builders want to help!</p>
-                    <button class="btn btn-primary" style="width: 100%; min-width: auto;" onclick="showModal()">Post Problem</button>
+                    <button class="btn btn-primary" style="width: 100%; min-width: auto;" onclick="showModal()">
+                        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M12 5v14" />
+                            <path d="M5 12h14" />
+                        </svg>
+                        Post Problem
+                    </button>
                 </div>
             </aside>
         </div>
