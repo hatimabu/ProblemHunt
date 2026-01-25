@@ -189,6 +189,17 @@
             min-width: 200px;
         }
 
+        .auth-buttons {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .auth-buttons span {
+            color: #374151;
+            font-weight: 500;
+        }
+
         .search-bar input {
             width: 100%;
             padding: 0.75rem 1rem;
@@ -457,6 +468,21 @@
             justify-content: space-between;
             align-items: start;
             margin-bottom: 0.5rem;
+        }
+
+        .tip-btn {
+            background: #10B981;
+            color: white;
+            border: none;
+            padding: 0.25rem 0.75rem;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .tip-btn:hover {
+            background: #059669;
         }
 
         .proposal-title {
@@ -794,6 +820,10 @@
                 <div class="search-bar">
                     <input type="text" placeholder="Search problems..." id="searchInput" onkeyup="filterProblems()">
                 </div>
+                <div id="authButtons" class="auth-buttons">
+                    <button class="btn btn-secondary" onclick="showAuthModal('signin')">Sign In</button>
+                    <button class="btn btn-primary" onclick="showAuthModal('signup')">Sign Up</button>
+                </div>
             </div>
         </header>
 
@@ -964,11 +994,130 @@
         </div>
     </div>
 
+    <!-- Auth Modal -->
+    <div class="modal" id="authModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="authModalTitle">Sign In</h2>
+                <button class="close-modal" onclick="closeAuthModal()">×</button>
+            </div>
+            
+            <div id="authForms">
+                <!-- Sign In Form -->
+                <form id="signInForm" style="display: block;">
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" id="signInEmail" placeholder="your@email.com" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="password" id="signInPassword" placeholder="Your password" required>
+                    </div>
+
+                    <button type="submit" class="submit-btn">Sign In</button>
+                    <p style="text-align: center; margin-top: 1rem;">
+                        Don't have an account? 
+                        <a href="#" onclick="showSignUpForm()">Sign up</a>
+                    </p>
+                </form>
+
+                <!-- Sign Up Form -->
+                <form id="signUpForm" style="display: none;">
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" id="signUpEmail" placeholder="your@email.com" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="password" id="signUpPassword" placeholder="Create a password" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Display Name</label>
+                        <input type="text" id="signUpName" placeholder="Your name or username" required>
+                    </div>
+
+                    <button type="submit" class="submit-btn">Sign Up</button>
+                    <p style="text-align: center; margin-top: 1rem;">
+                        Already have an account? 
+                        <a href="#" onclick="showSignInForm()">Sign in</a>
+                    </p>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
         // API Configuration
         const API_BASE_URL = window.location.hostname === 'localhost' 
             ? '/api'
             : '/api';
+
+        // Supabase Configuration
+        const SUPABASE_URL = 'YOUR_SUPABASE_URL'; // Replace with your Supabase URL
+        const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY'; // Replace with your Supabase anon key
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // Current user state
+        let currentUser = null;
+
+        // Auth functions
+        async function initAuth() {
+            const { data: { session } } = await supabase.auth.getSession();
+            currentUser = session?.user || null;
+            updateAuthUI();
+        }
+
+        function updateAuthUI() {
+            const authButtons = document.getElementById('authButtons');
+            if (currentUser) {
+                authButtons.innerHTML = `
+                    <span>Welcome, ${currentUser.user_metadata?.name || currentUser.email}!</span>
+                    <button class="btn btn-secondary" onclick="signOut()">Sign Out</button>
+                `;
+            } else {
+                authButtons.innerHTML = `
+                    <button class="btn btn-secondary" onclick="showAuthModal('signin')">Sign In</button>
+                    <button class="btn btn-primary" onclick="showAuthModal('signup')">Sign Up</button>
+                `;
+            }
+        }
+
+        function showAuthModal(type) {
+            document.getElementById('authModal').classList.add('active');
+            if (type === 'signup') {
+                showSignUpForm();
+            } else {
+                showSignInForm();
+            }
+        }
+
+        function closeAuthModal() {
+            document.getElementById('authModal').classList.remove('active');
+            document.getElementById('signInForm').reset();
+            document.getElementById('signUpForm').reset();
+        }
+
+        function showSignInForm() {
+            document.getElementById('signInForm').style.display = 'block';
+            document.getElementById('signUpForm').style.display = 'none';
+            document.getElementById('authModalTitle').textContent = 'Sign In';
+        }
+
+        function showSignUpForm() {
+            document.getElementById('signInForm').style.display = 'none';
+            document.getElementById('signUpForm').style.display = 'block';
+            document.getElementById('authModalTitle').textContent = 'Sign Up';
+        }
+
+        async function signOut() {
+            await supabase.auth.signOut();
+            currentUser = null;
+            updateAuthUI();
+        }
 
         // Initial data - just one example
         let problems = [
@@ -1006,6 +1155,11 @@
 
         // Modal functions
         function showModal() {
+            if (!currentUser) {
+                alert('Please sign in to post a problem.');
+                showAuthModal('signin');
+                return;
+            }
             document.getElementById('modal').classList.add('active');
         }
 
@@ -1015,6 +1169,11 @@
         }
 
         function showProposalModal(problemId, problemTitle) {
+            if (!currentUser) {
+                alert('Please sign in to submit a proposal.');
+                showAuthModal('signin');
+                return;
+            }
             document.getElementById('proposalModal').classList.add('active');
             document.getElementById('proposalProblemId').value = problemId;
             document.getElementById('proposalProblemTitle').textContent = problemTitle;
@@ -1152,6 +1311,7 @@
                                             <span class="proposal-badge">${proposal.status}</span>
                                         </div>
                                     </div>
+                                    <button class="tip-btn" onclick="tipBuilder('${proposal.id}', '${proposal.builderName}')">💰 Tip</button>
                                 </div>
                                 <p class="proposal-description">${proposal.description}</p>
                                 ${proposal.githubUrl || proposal.demoUrl ? `
@@ -1169,6 +1329,40 @@
             } catch (error) {
                 console.error('Error loading proposals:', error);
                 proposalsSection.innerHTML = '<div class="empty-proposals">Failed to load proposals. Please try again.</div>';
+            }
+        }
+
+        // Tip builder
+        async function tipBuilder(proposalId, builderName) {
+            if (!currentUser) {
+                alert('Please sign in to tip builders.');
+                showAuthModal('signin');
+                return;
+            }
+
+            const amount = prompt(`How much would you like to tip ${builderName}? (e.g., 5, 10, 25)`);
+            if (!amount || isNaN(amount) || amount <= 0) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/proposals/${proposalId}/tip`, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
+                    },
+                    body: JSON.stringify({ amount: parseFloat(amount) })
+                });
+
+                if (response.ok) {
+                    alert(`Thank you for tipping ${builderName} $${amount}!`);
+                } else {
+                    throw new Error('Failed to process tip');
+                }
+            } catch (error) {
+                console.error('Error tipping builder:', error);
+                alert('Failed to process tip. Please try again.');
             }
         }
 
@@ -1235,13 +1429,17 @@
                 description: document.getElementById('problemDescription').value,
                 category: document.getElementById('problemCategory').value,
                 budget: document.getElementById('problemBudget').value,
-                author: document.getElementById('problemAuthor').value || 'Anonymous User'
+                author: currentUser?.user_metadata?.name || currentUser?.email || document.getElementById('problemAuthor').value || 'Anonymous User',
+                userId: currentUser?.id
             };
 
             try {
                 const response = await fetch(`${API_BASE_URL}/problems`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
+                    },
                     body: JSON.stringify(newProblem)
                 });
 
@@ -1277,6 +1475,12 @@
         document.getElementById('proposalForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             
+            if (!currentUser) {
+                alert('Please sign in to submit a proposal.');
+                showAuthModal('signin');
+                return;
+            }
+
             const problemId = document.getElementById('proposalProblemId').value;
             
             const proposalData = {
@@ -1285,13 +1489,17 @@
                 timeline: document.getElementById('proposalTimeline').value,
                 builderName: document.getElementById('proposalBuilderName').value,
                 githubUrl: document.getElementById('proposalGithubUrl').value || null,
-                demoUrl: document.getElementById('proposalDemoUrl').value || null
+                demoUrl: document.getElementById('proposalDemoUrl').value || null,
+                userId: currentUser.id
             };
 
             try {
                 const response = await fetch(`${API_BASE_URL}/problems/${problemId}/proposals`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
+                    },
                     body: JSON.stringify(proposalData)
                 });
 
@@ -1313,7 +1521,59 @@
             }
         });
 
+        // Auth form submissions
+        document.getElementById('signInForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const email = document.getElementById('signInEmail').value;
+            const password = document.getElementById('signInPassword').value;
+
+            try {
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email,
+                    password
+                });
+
+                if (error) throw error;
+
+                currentUser = data.user;
+                updateAuthUI();
+                closeAuthModal();
+                alert('Welcome back!');
+            } catch (error) {
+                alert('Sign in failed: ' + error.message);
+            }
+        });
+
+        document.getElementById('signUpForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const email = document.getElementById('signUpEmail').value;
+            const password = document.getElementById('signUpPassword').value;
+            const name = document.getElementById('signUpName').value;
+
+            try {
+                const { data, error } = await supabase.auth.signUp({
+                    email,
+                    password,
+                    options: {
+                        data: {
+                            name: name
+                        }
+                    }
+                });
+
+                if (error) throw error;
+
+                alert('Check your email for confirmation!');
+                closeAuthModal();
+            } catch (error) {
+                alert('Sign up failed: ' + error.message);
+            }
+        });
+
         // Initialize on page load
+        initAuth();
         renderProblems(problems);
     </script>
 </body>
