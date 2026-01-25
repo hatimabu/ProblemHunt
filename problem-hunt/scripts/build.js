@@ -48,6 +48,29 @@ if (!isDev) {
 // Write the updated config
 fs.writeFileSync(configPath, configContent);
 
+// Build dist output for Static Web Apps
+const distPath = path.join(process.cwd(), 'dist');
+const indexPath = path.join(process.cwd(), 'index.html');
+const staticConfigPath = path.join(process.cwd(), 'staticwebapp.config.json');
+const distLibPath = path.join(distPath, 'lib');
+
+fs.rmSync(distPath, { recursive: true, force: true });
+fs.mkdirSync(distPath, { recursive: true });
+
+if (fs.existsSync(indexPath)) {
+  fs.copyFileSync(indexPath, path.join(distPath, 'index.html'));
+}
+
+if (fs.existsSync(staticConfigPath)) {
+  fs.copyFileSync(staticConfigPath, path.join(distPath, 'staticwebapp.config.json'));
+}
+
+if (fs.existsSync(path.join(process.cwd(), 'lib'))) {
+  fs.mkdirSync(distLibPath, { recursive: true });
+  fs.cpSync(path.join(process.cwd(), 'lib'), distLibPath, { recursive: true });
+}
+
 console.log('✅ Config built successfully!');
+console.log('✅ Dist output prepared successfully!');
 console.log(`SUPABASE_URL: ${SUPABASE_URL === 'YOUR_SUPABASE_URL' ? 'NOT SET' : 'SET'}`);
 console.log(`SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY === 'YOUR_SUPABASE_ANON_KEY' ? 'NOT SET' : 'SET'}`);
