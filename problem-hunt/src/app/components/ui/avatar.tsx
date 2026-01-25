@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-// @ts-expect-error - module type declarations may be provided at build time
 import * as AvatarPrimitive from "@radix-ui/react-avatar";
 
 import { cn } from "./utils";
