@@ -180,6 +180,22 @@
             margin-bottom: 4rem;
         }
 
+        .hero-btn {
+            min-width: auto;
+            font-size: 1.05rem;
+            padding: 0.95rem 2.25rem;
+        }
+
+        .hero-btn.outline {
+            background: transparent;
+            color: #ffffff;
+            border: 1px solid rgba(148, 163, 184, 0.35);
+        }
+
+        .hero-btn.outline:hover {
+            background: rgba(148, 163, 184, 0.12);
+        }
+
         .landing-header {
             width: 100%;
             max-width: 1200px;
@@ -210,7 +226,7 @@
 
         .nav-btn {
             background: transparent;
-            color: var(--text-subtle);
+            color: var(--text-muted);
             border: 1px solid transparent;
             padding: 0.45rem 0.9rem;
             border-radius: 10px;
@@ -222,8 +238,8 @@
         }
 
         .nav-btn:hover {
-            color: var(--foreground);
-            background: rgba(148, 163, 184, 0.12);
+            color: #ffffff;
+            background: rgba(148, 163, 184, 0.14);
         }
 
         .nav-btn.primary {
@@ -1273,7 +1289,7 @@
             <p class="subheadline">The marketplace where people post problems they'd pay to solve - and builders compete to solve them.</p>
             
             <div class="cta-buttons">
-                <button class="btn btn-primary" onclick="showApp()">
+                <button class="btn btn-primary hero-btn" onclick="showApp()">
                     <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" style="width: 20px; height: 20px; margin-right: 0.25rem;">
                         <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z" />
                         <path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z" />
@@ -1282,7 +1298,7 @@
                     </svg>
                     Browse Problems
                 </button>
-                <button class="btn btn-secondary" onclick="showApp(); showModal()">
+                <button class="btn btn-secondary hero-btn outline" onclick="showApp(); showModal()">
                     <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
                         <path d="M12 5v14" />
                         <path d="M5 12h14" />
