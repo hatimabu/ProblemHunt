@@ -9,9 +9,9 @@ import {
   TrendingUp,
   User,
 } from "lucide-react";
-import { Button } from "@/app/components/ui/button";
-import { Input } from "@/app/components/ui/input";
-import { Badge } from "@/app/components/ui/badge";
+import { Button } from "./ui/button";
+import { Input } from "./ui/input";
+import { Badge } from "./ui/badge";
 
 // Mock data
 const MOCK_PROBLEMS = [
@@ -145,6 +145,14 @@ export function BrowseProblems() {
                 className="text-white hover:text-cyan-400 hover:bg-gray-800"
               >
                 Browse
+              </Button>
+            </Link>
+            <Link to="/auth">
+              <Button
+                variant="ghost"
+                className="text-gray-300 hover:text-white hover:bg-gray-800"
+              >
+                Sign In
               </Button>
             </Link>
             <Link to="/dashboard">

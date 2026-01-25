@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { Link, useParams } from "react-router";
 import { Code, Clock, DollarSign, TrendingUp, User, Calendar, Send, Heart } from "lucide-react";
-import { Button } from "@/app/components/ui/button";
-import { Badge } from "@/app/components/ui/badge";
-import { Textarea } from "@/app/components/ui/textarea";
-import { Avatar, AvatarFallback } from "@/app/components/ui/avatar";
-import { Progress } from "@/app/components/ui/progress";
+import { Button } from "./ui/button";
+import { Badge } from "./ui/badge";
+import { Textarea } from "./ui/textarea";
+import { Avatar, AvatarFallback } from "./ui/avatar";
+import { Progress } from "./ui/progress";
+
+// ...existing code...import { useState } from "react";
 
 // Mock data
 const MOCK_PROBLEM = {
@@ -117,8 +119,16 @@ export function ProblemDetail() {
           </Link>
           <nav className="flex items-center gap-4">
             <Link to="/browse">
-              <Button variant="ghost" className="text-gray-300 hover:text-white hover:bg-gray-800">
+              <Button
+                variant="ghost"
+                className="text-white hover:text-cyan-400 hover:bg-gray-800"
+              >
                 Browse
+              </Button>
+            </Link>
+            <Link to="/auth">
+              <Button variant="ghost" className="text-gray-300 hover:text-white hover:bg-gray-800">
+                Sign In
               </Button>
             </Link>
             <Link to="/dashboard">

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import {
   Code,
@@ -11,12 +11,13 @@ import {
   Award,
   ChevronRight,
 } from "lucide-react";
-import { Button } from "@/app/components/ui/button";
-import { Badge } from "@/app/components/ui/badge";
-import { Textarea } from "@/app/components/ui/textarea";
-import { Avatar, AvatarFallback } from "@/app/components/ui/avatar";
-import { Progress } from "@/app/components/ui/progress";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/app/components/ui/tabs";
+import { Button } from "./ui/button";
+import { Badge } from "./ui/badge";
+import { Textarea } from "./ui/textarea";
+import { Avatar, AvatarFallback } from "./ui/avatar";
+import { Progress } from "./ui/progress";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
+import { supabase } from "../lib/supabase";
 
 // Mock data
 const BUILDER_STATS = {
@@ -79,6 +80,93 @@ const COMPLETED_PROJECTS = [
 
 export function BuilderDashboard() {
   const [updateText, setUpdateText] = useState("");
+  const [sessionUser, setSessionUser] = useState<any | null>(null);
+  const [loadingUser, setLoadingUser] = useState(true);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadSession = async () => {
+      const { data, error } = await supabase.auth.getSession();
+      if (!isMounted) return;
+      if (error) {
+        console.error("Failed to load auth session", error);
+      }
+      setSessionUser(data.session?.user ?? null);
+      setLoadingUser(false);
+    };
+
+    loadSession();
+
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!isMounted) return;
+      setSessionUser(session?.user ?? null);
+    });
+
+    return () => {
+      isMounted = false;
+      authListener.subscription?.unsubscribe();
+    };
+  }, []);
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    setSessionUser(null);
+  };
+
+  const displayName =
+    sessionUser?.user_metadata?.displayName || sessionUser?.email || BUILDER_STATS.name;
+  const avatarLetters = (displayName || "").substring(0, 2).toUpperCase();
+
+  if (!loadingUser && !sessionUser) {
+    return (
+      <div className="min-h-screen bg-[#0a0a0f] text-gray-100">
+        <header className="border-b border-gray-800/50 backdrop-blur-sm sticky top-0 z-50 bg-[#0a0a0f]/80">
+          <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+            <Link to="/" className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-gradient-to-br from-cyan-400 to-blue-600 rounded-lg flex items-center justify-center">
+                <Code className="w-5 h-5 text-white" />
+              </div>
+              <span className="text-xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
+                problemhunt.cc
+              </span>
+            </Link>
+            <nav className="flex items-center gap-4">
+              <Link to="/browse">
+                <Button variant="ghost" className="text-gray-300 hover:text-white hover:bg-gray-800">
+                  Browse
+                </Button>
+              </Link>
+              <Link to="/auth">
+                <Button variant="ghost" className="text-white hover:text-cyan-400 hover:bg-gray-800">
+                  Sign In
+                </Button>
+              </Link>
+              <Link to="/post">
+                <Button className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white border-0">
+                  Post Problem
+                </Button>
+              </Link>
+            </nav>
+          </div>
+        </header>
+
+        <div className="container mx-auto px-4 py-16">
+          <div className="max-w-2xl mx-auto text-center bg-gray-900/60 border border-gray-800 rounded-2xl p-10">
+            <h1 className="text-3xl font-bold text-white mb-4">Sign in to view your dashboard</h1>
+            <p className="text-gray-400 mb-6">
+              Create an account or sign in to track your builds, post updates, and collect tips from problem posters.
+            </p>
+            <Link to="/auth">
+              <Button className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white border-0">
+                Go to sign in
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#0a0a0f] text-gray-100">
@@ -109,6 +197,13 @@ export function BuilderDashboard() {
                 Post Problem
               </Button>
             </Link>
+            <Button
+              variant="outline"
+              className="border-gray-700 hover:bg-gray-800 text-white"
+              onClick={handleSignOut}
+            >
+              Sign Out
+            </Button>
           </nav>
         </div>
       </header>
@@ -121,13 +216,13 @@ export function BuilderDashboard() {
             <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
               <Avatar className="w-20 h-20 border-4 border-cyan-500/30">
                 <AvatarFallback className="bg-gradient-to-br from-cyan-500 to-blue-600 text-white font-bold text-2xl">
-                  {BUILDER_STATS.avatar}
+                  {avatarLetters}
                 </AvatarFallback>
               </Avatar>
 
               <div className="flex-1">
                 <div className="flex items-center gap-3 mb-2">
-                  <h1 className="text-3xl font-bold text-white">{BUILDER_STATS.name}</h1>
+                  <h1 className="text-3xl font-bold text-white">{displayName}</h1>
                   <Badge className="bg-cyan-500/20 text-cyan-400 border-cyan-500/30">
                     Rank {BUILDER_STATS.rank}
                   </Badge>

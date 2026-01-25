@@ -1,6 +1,6 @@
 import { Link } from "react-router";
 import { Rocket, Zap, TrendingUp, Code, DollarSign } from "lucide-react";
-import { Button } from "@/app/components/ui/button";
+import { Button } from "./ui/button";
 
 export function LandingPage() {
   return (
@@ -20,6 +20,11 @@ export function LandingPage() {
             <Link to="/browse">
               <Button variant="ghost" className="text-gray-300 hover:text-white hover:bg-gray-800">
                 Browse
+              </Button>
+            </Link>
+            <Link to="/auth">
+              <Button variant="ghost" className="text-gray-300 hover:text-white hover:bg-gray-800">
+                Sign In
               </Button>
             </Link>
             <Link to="/dashboard">

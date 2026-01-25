@@ -4,6 +4,7 @@ import { BrowseProblems } from "@/app/components/browse-problems";
 import { ProblemDetail } from "@/app/components/problem-detail";
 import { BuilderDashboard } from "@/app/components/builder-dashboard";
 import { PostProblem } from "@/app/components/post-problem";
+import { AuthPage } from "@/app/components/auth-page";
 
 export const router = createBrowserRouter([
   {
@@ -25,5 +26,9 @@ export const router = createBrowserRouter([
   {
     path: "/dashboard",
     Component: BuilderDashboard,
+  },
+  {
+    path: "/auth",
+    Component: AuthPage,
   },
 ]);

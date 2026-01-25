@@ -1,17 +1,17 @@
 import { useState } from "react";
 import { Link } from "react-router";
 import { Code, DollarSign, Calendar, FileText, Tag } from "lucide-react";
-import { Button } from "@/app/components/ui/button";
-import { Input } from "@/app/components/ui/input";
-import { Textarea } from "@/app/components/ui/textarea";
-import { Label } from "@/app/components/ui/label";
+import { Button } from "./ui/button";
+import { Input } from "./ui/input";
+import { Textarea } from "./ui/textarea";
+import { Label } from "./ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/app/components/ui/select";
+} from "./ui/select";
 
 const CATEGORIES = ["AI/ML", "Web3", "Finance", "Governance", "Trading", "Infrastructure"];
 
@@ -48,6 +48,11 @@ export function PostProblem() {
             <Link to="/browse">
               <Button variant="ghost" className="text-gray-300 hover:text-white hover:bg-gray-800">
                 Browse
+              </Button>
+            </Link>
+            <Link to="/auth">
+              <Button variant="ghost" className="text-gray-300 hover:text-white hover:bg-gray-800">
+                Sign In
               </Button>
             </Link>
             <Link to="/dashboard">
