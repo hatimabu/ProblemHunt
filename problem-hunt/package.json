@@ -3,10 +3,12 @@
     "node": "18.20.8"
   },
   "scripts": {
-    "build": "echo 'No build step required for static HTML app'",
-    "build:azure": "echo 'No build step required for static HTML app'"
+    "build": "node scripts/build.js",
+    "build:azure": "node scripts/build.js",
+    "dev": "node scripts/build.js --dev"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.91.1"
+    "@supabase/supabase-js": "^2.91.1",
+    "dotenv": "^16.3.1"
   }
 }

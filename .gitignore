@@ -11,6 +11,10 @@ obj/
 # Environment variables
 .env
 .env.local
+.env.production
+
+# Built files with secrets
+problem-hunt/lib/config.js
 
 # IDEs
 
