@@ -1259,6 +1259,525 @@
                 align-self: flex-start;
             }
         }
+
+        /* Dashboard Styles */
+        #dashboard {
+            display: none;
+            min-height: 100vh;
+            background: #0a0a0f;
+            color: #e5e7eb;
+        }
+
+        #dashboard.active {
+            display: block;
+        }
+
+        .dashboard-header {
+            border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+            backdrop-filter: blur(8px);
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            background: rgba(10, 10, 15, 0.8);
+        }
+
+        .dashboard-header-content {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 1rem 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .dashboard-logo {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+        }
+
+        .dashboard-logo-icon {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, #22d3ee, #2563eb);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .dashboard-logo-text {
+            font-size: 1.25rem;
+            font-weight: 700;
+            background: linear-gradient(90deg, #22d3ee, #2563eb);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .dashboard-nav {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .dashboard-nav-btn {
+            background: transparent;
+            color: #94a3b8;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+        }
+
+        .dashboard-nav-btn:hover {
+            color: white;
+            background: rgba(148, 163, 184, 0.1);
+        }
+
+        .dashboard-nav-btn.active {
+            color: white;
+        }
+
+        .dashboard-nav-btn.primary {
+            background: linear-gradient(135deg, #22d3ee, #2563eb);
+            color: white;
+            border: none;
+        }
+
+        .dashboard-container {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 3rem 1.5rem;
+        }
+
+        .profile-header {
+            position: relative;
+            margin-bottom: 3rem;
+        }
+
+        .profile-header-bg {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to right, rgba(34, 211, 238, 0.05), rgba(37, 99, 235, 0.05));
+            border-radius: 1rem;
+            filter: blur(40px);
+        }
+
+        .profile-header-content {
+            position: relative;
+            background: rgba(17, 24, 39, 0.5);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 1rem;
+            padding: 2rem;
+        }
+
+        .profile-main {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        @media (min-width: 768px) {
+            .profile-main {
+                flex-direction: row;
+                align-items: center;
+            }
+        }
+
+        .profile-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            border: 4px solid rgba(34, 211, 238, 0.3);
+            background: linear-gradient(135deg, #22d3ee, #2563eb);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+            font-size: 1.5rem;
+        }
+
+        .profile-info {
+            flex: 1;
+        }
+
+        .profile-name {
+            font-size: 1.875rem;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 0.5rem;
+        }
+
+        .profile-badges {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-bottom: 0.5rem;
+        }
+
+        .profile-badge {
+            background: rgba(34, 211, 238, 0.2);
+            color: #22d3ee;
+            border: 1px solid rgba(34, 211, 238, 0.3);
+            padding: 0.25rem 0.75rem;
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+
+        .profile-meta {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+            font-size: 0.875rem;
+            color: #94a3b8;
+        }
+
+        .profile-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+        }
+
+        .profile-stat {
+            text-align: center;
+        }
+
+        .profile-stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: white;
+        }
+
+        .profile-stat-label {
+            font-size: 0.75rem;
+            color: #94a3b8;
+        }
+
+        .dashboard-tabs {
+            margin-bottom: 1.5rem;
+        }
+
+        .tabs-list {
+            display: inline-flex;
+            background: rgba(17, 24, 39, 0.5);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 0.5rem;
+            padding: 0.25rem;
+        }
+
+        .tab-trigger {
+            background: transparent;
+            color: #94a3b8;
+            border: none;
+            padding: 0.5rem 1.5rem;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+        }
+
+        .tab-trigger.active {
+            background: rgba(34, 211, 238, 0.2);
+            color: #22d3ee;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .projects-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .project-card {
+            position: relative;
+        }
+
+        .project-card-bg {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to right, rgba(37, 99, 235, 0.05), rgba(99, 102, 241, 0.05));
+            border-radius: 1rem;
+            filter: blur(40px);
+        }
+
+        .project-card-content {
+            position: relative;
+            background: rgba(17, 24, 39, 0.5);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            transition: border-color 0.2s ease;
+        }
+
+        .project-card-content:hover {
+            border-color: rgba(34, 211, 238, 0.3);
+        }
+
+        .project-card-main {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        @media (min-width: 1024px) {
+            .project-card-main {
+                flex-direction: row;
+            }
+        }
+
+        .project-card-body {
+            flex: 1;
+        }
+
+        .project-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .project-card-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 0.5rem;
+        }
+
+        .project-card-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            font-size: 0.875rem;
+            color: #94a3b8;
+        }
+
+        .project-card-bounty {
+            text-align: right;
+        }
+
+        .project-card-bounty-label {
+            font-size: 0.875rem;
+            color: #94a3b8;
+            margin-bottom: 0.25rem;
+        }
+
+        .project-card-bounty-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #22d3ee;
+        }
+
+        .project-progress {
+            margin-bottom: 1rem;
+        }
+
+        .project-progress-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.875rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .project-progress-label {
+            color: #94a3b8;
+        }
+
+        .project-progress-value {
+            color: white;
+            font-weight: 600;
+        }
+
+        .project-progress-bar {
+            height: 0.5rem;
+            background: rgba(31, 41, 55, 1);
+            border-radius: 9999px;
+            overflow: hidden;
+        }
+
+        .project-progress-fill {
+            height: 100%;
+            background: linear-gradient(to right, #22d3ee, #2563eb);
+            border-radius: 9999px;
+            transition: width 0.3s ease;
+        }
+
+        .project-update-section {
+            background: rgba(31, 41, 55, 0.3);
+            border-radius: 0.5rem;
+            padding: 1rem;
+            border: 1px solid rgba(107, 114, 128, 0.5);
+        }
+
+        .project-update-title {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: white;
+            margin-bottom: 0.5rem;
+        }
+
+        .project-update-textarea {
+            width: 100%;
+            background: rgba(31, 41, 55, 0.5);
+            border: 1px solid rgba(107, 114, 128, 1);
+            border-radius: 0.5rem;
+            padding: 0.75rem;
+            color: white;
+            font-family: inherit;
+            font-size: 0.875rem;
+            min-height: 80px;
+            resize: vertical;
+            margin-bottom: 0.5rem;
+        }
+
+        .project-update-textarea:focus {
+            outline: none;
+            border-color: rgba(34, 211, 238, 0.5);
+        }
+
+        .project-update-textarea::placeholder {
+            color: #6b7280;
+        }
+
+        .project-update-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .project-update-last {
+            font-size: 0.75rem;
+            color: #6b7280;
+        }
+
+        .project-update-btn {
+            background: linear-gradient(135deg, #22d3ee, #2563eb);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-family: inherit;
+            transition: transform 0.2s ease;
+        }
+
+        .project-update-btn:hover {
+            transform: translateY(-1px);
+        }
+
+        .project-card-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            min-width: 180px;
+        }
+
+        .project-action-btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            font-size: 0.875rem;
+        }
+
+        .project-action-btn.primary {
+            background: linear-gradient(135deg, #22d3ee, #2563eb);
+            color: white;
+            border: none;
+        }
+
+        .project-action-btn.primary:hover {
+            transform: translateY(-1px);
+        }
+
+        .project-action-btn.secondary {
+            background: transparent;
+            color: white;
+            border: 1px solid rgba(107, 114, 128, 1);
+        }
+
+        .project-action-btn.secondary:hover {
+            background: rgba(31, 41, 55, 1);
+        }
+
+        .completed-project-card {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .completed-project-info {
+            flex: 1;
+        }
+
+        .completed-project-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 0.5rem;
+        }
+
+        .completed-project-date {
+            font-size: 0.875rem;
+            color: #94a3b8;
+        }
+
+        .completed-project-earnings {
+            text-align: right;
+        }
+
+        .completed-project-earnings-label {
+            font-size: 0.875rem;
+            color: #94a3b8;
+            margin-bottom: 0.25rem;
+        }
+
+        .completed-project-earnings-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #34d399;
+        }
+
+        .completed-project-earnings-bounty {
+            font-size: 0.75rem;
+            color: #6b7280;
+        }
     </style>
 </head>
 <body class="dark">
@@ -1276,7 +1795,7 @@
             </div>
             <nav class="landing-nav">
                 <button class="nav-btn" onclick="showApp()">Browse</button>
-                <button class="nav-btn" onclick="showApp()">Dashboard</button>
+                <button class="nav-btn" onclick="showDashboard()">Dashboard</button>
                 <button class="nav-btn primary" onclick="showApp(); showModal()">Post Problem</button>
             </nav>
         </header>
@@ -1514,6 +2033,335 @@
         </div>
 
         <button class="fab" onclick="showModal()">+</button>
+    </div>
+
+    <!-- Builder Dashboard -->
+    <div id="dashboard">
+        <header class="dashboard-header">
+            <div class="dashboard-header-content">
+                <div class="dashboard-logo" onclick="showLanding()">
+                    <div class="dashboard-logo-icon">
+                        <svg style="width: 18px; height: 18px; color: white; stroke: currentColor; fill: none; stroke-width: 2;" viewBox="0 0 24 24">
+                            <polyline points="16 18 22 12 16 6" />
+                            <polyline points="8 6 2 12 8 18" />
+                        </svg>
+                    </div>
+                    <span class="dashboard-logo-text">problemhunt.cc</span>
+                </div>
+                <nav class="dashboard-nav">
+                    <button class="dashboard-nav-btn" onclick="showApp()">Browse</button>
+                    <button class="dashboard-nav-btn active">Dashboard</button>
+                    <button class="dashboard-nav-btn primary" onclick="showApp(); showModal()">Post Problem</button>
+                </nav>
+            </div>
+        </header>
+
+        <div class="dashboard-container">
+            <!-- Profile Header -->
+            <div class="profile-header">
+                <div class="profile-header-bg"></div>
+                <div class="profile-header-content">
+                    <div class="profile-main">
+                        <div class="profile-avatar" id="dashboardAvatar">SS</div>
+                        <div class="profile-info">
+                            <h1 class="profile-name" id="dashboardUsername">solidity_sage</h1>
+                            <div class="profile-badges">
+                                <span class="profile-badge">Rank #12</span>
+                            </div>
+                            <div class="profile-meta">
+                                <div style="display: flex; align-items: center; gap: 0.25rem;">
+                                    <svg style="width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2;" viewBox="0 0 24 24">
+                                        <path d="M12 15c-3.7 0-7-2.4-7-5.5S8.3 4 12 4s7 2.4 7 5.5S15.7 15 12 15z" />
+                                        <path d="M5 21c0-4.4 3.1-8 7-8s7 3.6 7 8" />
+                                    </svg>
+                                    <span>⭐ 4.9 reputation</span>
+                                </div>
+                                <div>•</div>
+                                <div>31 projects completed</div>
+                            </div>
+                        </div>
+                        <div class="profile-stats">
+                            <div class="profile-stat">
+                                <div class="profile-stat-value">$24,500</div>
+                                <div class="profile-stat-label">Total Earned</div>
+                            </div>
+                            <div class="profile-stat">
+                                <div class="profile-stat-value" style="color: #22d3ee;">3</div>
+                                <div class="profile-stat-label">Active</div>
+                            </div>
+                            <div class="profile-stat">
+                                <div class="profile-stat-value" style="color: #2563eb;">$3,420</div>
+                                <div class="profile-stat-label">Tips</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabs -->
+            <div class="dashboard-tabs">
+                <div class="tabs-list">
+                    <button class="tab-trigger active" onclick="switchTab('active')">Active Projects (3)</button>
+                    <button class="tab-trigger" onclick="switchTab('completed')">Completed (2)</button>
+                </div>
+            </div>
+
+            <!-- Active Projects Tab -->
+            <div class="tab-content active" id="activeTab">
+                <div class="projects-list">
+                    <!-- Project 1 -->
+                    <div class="project-card">
+                        <div class="project-card-bg"></div>
+                        <div class="project-card-content">
+                            <div class="project-card-main">
+                                <div class="project-card-body">
+                                    <div class="project-card-header">
+                                        <div>
+                                            <h3 class="project-card-title">AI-Powered Code Review Tool</h3>
+                                            <div class="project-card-meta">
+                                                <div style="display: flex; align-items: center; gap: 0.25rem;">
+                                                    <svg style="width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2;" viewBox="0 0 24 24">
+                                                        <circle cx="12" cy="12" r="10" />
+                                                        <polyline points="12 6 12 12 16 14" />
+                                                    </svg>
+                                                    <span>12 days left</span>
+                                                </div>
+                                                <div style="display: flex; align-items: center; gap: 0.25rem;">
+                                                    <svg style="width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2;" viewBox="0 0 24 24">
+                                                        <path d="M20.8 4.6a5.5 5.5 0 0 0-7.7 0l-1.1 1-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1 7.8 7.8 7.8-7.8 1-1a5.5 5.5 0 0 0 0-7.8z" />
+                                                    </svg>
+                                                    <span>$680 in tips</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="project-card-bounty">
+                                            <div class="project-card-bounty-label">Bounty</div>
+                                            <div class="project-card-bounty-value">$5,000</div>
+                                        </div>
+                                    </div>
+
+                                    <div class="project-progress">
+                                        <div class="project-progress-header">
+                                            <span class="project-progress-label">Your Progress</span>
+                                            <span class="project-progress-value">60%</span>
+                                        </div>
+                                        <div class="project-progress-bar">
+                                            <div class="project-progress-fill" style="width: 60%;"></div>
+                                        </div>
+                                    </div>
+
+                                    <div class="project-update-section">
+                                        <div class="project-update-title">Post Progress Update</div>
+                                        <textarea class="project-update-textarea" placeholder="Share your progress to earn tips..."></textarea>
+                                        <div class="project-update-footer">
+                                            <span class="project-update-last">Last updated: 1 hour ago</span>
+                                            <button class="project-update-btn">
+                                                <svg style="width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2;" viewBox="0 0 24 24">
+                                                    <path d="m22 2-7 20-4-9-9-4Z" />
+                                                    <path d="M22 2 11 13" />
+                                                </svg>
+                                                Post Update
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="project-card-actions">
+                                    <button class="project-action-btn primary" onclick="alert('View problem details')">
+                                        View Problem
+                                        <svg style="width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2;" viewBox="0 0 24 24">
+                                            <polyline points="9 18 15 12 9 6" />
+                                        </svg>
+                                    </button>
+                                    <button class="project-action-btn secondary">Submit Solution</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Project 2 -->
+                    <div class="project-card">
+                        <div class="project-card-bg"></div>
+                        <div class="project-card-content">
+                            <div class="project-card-main">
+                                <div class="project-card-body">
+                                    <div class="project-card-header">
+                                        <div>
+                                            <h3 class="project-card-title">Cross-Chain NFT Marketplace</h3>
+                                            <div class="project-card-meta">
+                                                <div style="display: flex; align-items: center; gap: 0.25rem;">
+                                                    <svg style="width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2;" viewBox="0 0 24 24">
+                                                        <circle cx="12" cy="12" r="10" />
+                                                        <polyline points="12 6 12 12 16 14" />
+                                                    </svg>
+                                                    <span>28 days left</span>
+                                                </div>
+                                                <div style="display: flex; align-items: center; gap: 0.25rem;">
+                                                    <svg style="width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2;" viewBox="0 0 24 24">
+                                                        <path d="M20.8 4.6a5.5 5.5 0 0 0-7.7 0l-1.1 1-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1 7.8 7.8 7.8-7.8 1-1a5.5 5.5 0 0 0 0-7.8z" />
+                                                    </svg>
+                                                    <span>$420 in tips</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="project-card-bounty">
+                                            <div class="project-card-bounty-label">Bounty</div>
+                                            <div class="project-card-bounty-value">$12,000</div>
+                                        </div>
+                                    </div>
+
+                                    <div class="project-progress">
+                                        <div class="project-progress-header">
+                                            <span class="project-progress-label">Your Progress</span>
+                                            <span class="project-progress-value">35%</span>
+                                        </div>
+                                        <div class="project-progress-bar">
+                                            <div class="project-progress-fill" style="width: 35%;"></div>
+                                        </div>
+                                    </div>
+
+                                    <div class="project-update-section">
+                                        <div class="project-update-title">Post Progress Update</div>
+                                        <textarea class="project-update-textarea" placeholder="Share your progress to earn tips..."></textarea>
+                                        <div class="project-update-footer">
+                                            <span class="project-update-last">Last updated: 1 day ago</span>
+                                            <button class="project-update-btn">
+                                                <svg style="width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2;" viewBox="0 0 24 24">
+                                                    <path d="m22 2-7 20-4-9-9-4Z" />
+                                                    <path d="M22 2 11 13" />
+                                                </svg>
+                                                Post Update
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="project-card-actions">
+                                    <button class="project-action-btn primary" onclick="alert('View problem details')">
+                                        View Problem
+                                        <svg style="width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2;" viewBox="0 0 24 24">
+                                            <polyline points="9 18 15 12 9 6" />
+                                        </svg>
+                                    </button>
+                                    <button class="project-action-btn secondary">Submit Solution</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Project 3 -->
+                    <div class="project-card">
+                        <div class="project-card-bg"></div>
+                        <div class="project-card-content">
+                            <div class="project-card-main">
+                                <div class="project-card-body">
+                                    <div class="project-card-header">
+                                        <div>
+                                            <h3 class="project-card-title">DeFi Yield Aggregator</h3>
+                                            <div class="project-card-meta">
+                                                <div style="display: flex; align-items: center; gap: 0.25rem;">
+                                                    <svg style="width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2;" viewBox="0 0 24 24">
+                                                        <circle cx="12" cy="12" r="10" />
+                                                        <polyline points="12 6 12 12 16 14" />
+                                                    </svg>
+                                                    <span>5 days left</span>
+                                                </div>
+                                                <div style="display: flex; align-items: center; gap: 0.25rem;">
+                                                    <svg style="width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2;" viewBox="0 0 24 24">
+                                                        <path d="M20.8 4.6a5.5 5.5 0 0 0-7.7 0l-1.1 1-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1 7.8 7.8 7.8-7.8 1-1a5.5 5.5 0 0 0 0-7.8z" />
+                                                    </svg>
+                                                    <span>$920 in tips</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="project-card-bounty">
+                                            <div class="project-card-bounty-label">Bounty</div>
+                                            <div class="project-card-bounty-value">$7,500</div>
+                                        </div>
+                                    </div>
+
+                                    <div class="project-progress">
+                                        <div class="project-progress-header">
+                                            <span class="project-progress-label">Your Progress</span>
+                                            <span class="project-progress-value">75%</span>
+                                        </div>
+                                        <div class="project-progress-bar">
+                                            <div class="project-progress-fill" style="width: 75%;"></div>
+                                        </div>
+                                    </div>
+
+                                    <div class="project-update-section">
+                                        <div class="project-update-title">Post Progress Update</div>
+                                        <textarea class="project-update-textarea" placeholder="Share your progress to earn tips..."></textarea>
+                                        <div class="project-update-footer">
+                                            <span class="project-update-last">Last updated: 3 hours ago</span>
+                                            <button class="project-update-btn">
+                                                <svg style="width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2;" viewBox="0 0 24 24">
+                                                    <path d="m22 2-7 20-4-9-9-4Z" />
+                                                    <path d="M22 2 11 13" />
+                                                </svg>
+                                                Post Update
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="project-card-actions">
+                                    <button class="project-action-btn primary" onclick="alert('View problem details')">
+                                        View Problem
+                                        <svg style="width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2;" viewBox="0 0 24 24">
+                                            <polyline points="9 18 15 12 9 6" />
+                                        </svg>
+                                    </button>
+                                    <button class="project-action-btn secondary">Submit Solution</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Completed Projects Tab -->
+            <div class="tab-content" id="completedTab">
+                <div class="projects-list">
+                    <!-- Completed Project 1 -->
+                    <div class="project-card">
+                        <div class="project-card-bg" style="background: linear-gradient(to right, rgba(52, 211, 153, 0.05), rgba(16, 185, 129, 0.05));"></div>
+                        <div class="project-card-content">
+                            <div class="completed-project-card">
+                                <div class="completed-project-info">
+                                    <h3 class="completed-project-title">DAO Governance Platform</h3>
+                                    <div class="completed-project-date">Completed on Jan 20, 2026</div>
+                                </div>
+                                <div class="completed-project-earnings">
+                                    <div class="completed-project-earnings-label">Total Earned</div>
+                                    <div class="completed-project-earnings-value">$8,450</div>
+                                    <div class="completed-project-earnings-bounty">Bounty: $8,000</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Completed Project 2 -->
+                    <div class="project-card">
+                        <div class="project-card-bg" style="background: linear-gradient(to right, rgba(52, 211, 153, 0.05), rgba(16, 185, 129, 0.05));"></div>
+                        <div class="project-card-content">
+                            <div class="completed-project-card">
+                                <div class="completed-project-info">
+                                    <h3 class="completed-project-title">NFT Minting Tool</h3>
+                                    <div class="completed-project-date">Completed on Jan 15, 2026</div>
+                                </div>
+                                <div class="completed-project-earnings">
+                                    <div class="completed-project-earnings-label">Total Earned</div>
+                                    <div class="completed-project-earnings-value">$4,890</div>
+                                    <div class="completed-project-earnings-bounty">Bounty: $4,500</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Problem Modal -->
@@ -1760,12 +2608,42 @@
         function showLanding() {
             document.getElementById('landing').style.display = 'flex';
             document.getElementById('app').classList.remove('active');
+            document.getElementById('dashboard').classList.remove('active');
         }
 
         function showApp() {
             document.getElementById('landing').style.display = 'none';
             document.getElementById('app').classList.add('active');
+            document.getElementById('dashboard').classList.remove('active');
             loadProblems();
+        }
+
+        function showDashboard() {
+            document.getElementById('landing').style.display = 'none';
+            document.getElementById('app').classList.remove('active');
+            document.getElementById('dashboard').classList.add('active');
+            
+            // Update dashboard with current user info if logged in
+            if (currentUser) {
+                const username = currentUser.user_metadata?.name || currentUser.email?.split('@')[0] || 'builder';
+                const avatar = username.substring(0, 2).toUpperCase();
+                document.getElementById('dashboardUsername').textContent = username;
+                document.getElementById('dashboardAvatar').textContent = avatar;
+            }
+        }
+
+        function switchTab(tabName) {
+            // Update tab triggers
+            document.querySelectorAll('.tab-trigger').forEach(trigger => {
+                trigger.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // Update tab content
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(tabName + 'Tab').classList.add('active');
         }
 
         function toggleMobileMenu() {
