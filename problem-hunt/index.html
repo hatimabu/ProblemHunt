@@ -1795,7 +1795,7 @@
             </div>
             <nav class="landing-nav">
                 <button class="nav-btn" onclick="showApp()">Browse</button>
-                <button class="nav-btn" onclick="showDashboard()">Dashboard</button>
+                <button class="nav-btn" onclick="handleDashboardClick()">Dashboard</button>
                 <button class="nav-btn primary" onclick="showApp(); showModal()">Post Problem</button>
             </nav>
         </header>
@@ -2050,7 +2050,7 @@
                 </div>
                 <nav class="dashboard-nav">
                     <button class="dashboard-nav-btn" onclick="showApp()">Browse</button>
-                    <button class="dashboard-nav-btn active">Dashboard</button>
+                    <button class="dashboard-nav-btn active" onclick="handleDashboardClick()">Dashboard</button>
                     <button class="dashboard-nav-btn primary" onclick="showApp(); showModal()">Post Problem</button>
                 </nav>
             </div>
@@ -2618,18 +2618,32 @@
             loadProblems();
         }
 
+        function handleDashboardClick() {
+            if (!currentUser) {
+                alert('Please sign in to access your dashboard.');
+                showAuthModal('signin');
+                return;
+            }
+            showDashboard();
+        }
+
         function showDashboard() {
+            // Double-check authentication
+            if (!currentUser) {
+                alert('Please sign in to access your dashboard.');
+                showAuthModal('signin');
+                return;
+            }
+            
             document.getElementById('landing').style.display = 'none';
             document.getElementById('app').classList.remove('active');
             document.getElementById('dashboard').classList.add('active');
             
-            // Update dashboard with current user info if logged in
-            if (currentUser) {
-                const username = currentUser.user_metadata?.name || currentUser.email?.split('@')[0] || 'builder';
-                const avatar = username.substring(0, 2).toUpperCase();
-                document.getElementById('dashboardUsername').textContent = username;
-                document.getElementById('dashboardAvatar').textContent = avatar;
-            }
+            // Update dashboard with current user info
+            const username = currentUser.user_metadata?.name || currentUser.email?.split('@')[0] || 'builder';
+            const avatar = username.substring(0, 2).toUpperCase();
+            document.getElementById('dashboardUsername').textContent = username;
+            document.getElementById('dashboardAvatar').textContent = avatar;
         }
 
         function switchTab(tabName) {
@@ -3036,6 +3050,7 @@
                 updateAuthUI();
                 closeAuthModal();
                 alert('Welcome back!');
+                showDashboard();
             } catch (error) {
                 alert('Sign in failed: ' + error.message);
             }
