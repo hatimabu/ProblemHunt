@@ -2,6 +2,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { execSync } from 'node:child_process';
 import dotenv from 'dotenv';
 
 // Load environment variables from .env file if it exists
@@ -13,14 +14,29 @@ const isDev = process.argv.includes('--dev');
 const SUPABASE_URL = process.env.SUPABASE_URL || 'YOUR_SUPABASE_URL';
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || 'YOUR_SUPABASE_ANON_KEY';
 
-// Path to config template and output
+console.log('🔨 Building ProblemHunt...\n');
+
+// Step 1: Build the Vite app
+console.log('📦 Building React app with Vite...');
+try {
+  execSync('npx vite build --config ../vite.config.ts', { 
+    stdio: 'inherit', 
+    cwd: process.cwd(),
+    env: { ...process.env, NODE_ENV: 'production' }
+  });
+  console.log('✅ Vite build complete!\n');
+} catch (error) {
+  console.error('❌ Vite build failed');
+  process.exit(1);
+}
+
+// Step 2: Generate config.js (for backward compatibility with old HTML if needed)
 const templatePath = path.join(process.cwd(), 'lib', 'config.template.js');
 const configPath = path.join(process.cwd(), 'lib', 'config.js');
 
-console.log('Current working directory:', process.cwd());
+console.log('⚙️  Generating config.js...');
 console.log('Template path:', templatePath);
 console.log('Config path:', configPath);
-console.log('Template file exists:', fs.existsSync(templatePath));
 
 // Read the template config.js
 let configContent = fs.readFileSync(templatePath, 'utf8');
@@ -36,41 +52,10 @@ configContent = configContent.replace(
   `SUPABASE_ANON_KEY = '${SUPABASE_ANON_KEY}'`
 );
 
-// For development, keep the fallback comments
-if (!isDev) {
-  // Remove development comments in production
-  configContent = configContent.replace(
-    /\/\/ For local development, you can set these in the browser console:[\s\S]*?\/\/ SUPABASE_ANON_KEY = 'your-anon-key-here';/g,
-    ''
-  );
-}
-
 // Write the updated config
 fs.writeFileSync(configPath, configContent);
 
-// Build dist output for Static Web Apps
-const distPath = path.join(process.cwd(), 'dist');
-const indexPath = path.join(process.cwd(), 'index.html');
-const staticConfigPath = path.join(process.cwd(), 'staticwebapp.config.json');
-const distLibPath = path.join(distPath, 'lib');
-
-fs.rmSync(distPath, { recursive: true, force: true });
-fs.mkdirSync(distPath, { recursive: true });
-
-if (fs.existsSync(indexPath)) {
-  fs.copyFileSync(indexPath, path.join(distPath, 'index.html'));
-}
-
-if (fs.existsSync(staticConfigPath)) {
-  fs.copyFileSync(staticConfigPath, path.join(distPath, 'staticwebapp.config.json'));
-}
-
-if (fs.existsSync(path.join(process.cwd(), 'lib'))) {
-  fs.mkdirSync(distLibPath, { recursive: true });
-  fs.cpSync(path.join(process.cwd(), 'lib'), distLibPath, { recursive: true });
-}
-
 console.log('✅ Config built successfully!');
-console.log('✅ Dist output prepared successfully!');
-console.log(`SUPABASE_URL: ${SUPABASE_URL === 'YOUR_SUPABASE_URL' ? 'NOT SET' : 'SET'}`);
-console.log(`SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY === 'YOUR_SUPABASE_ANON_KEY' ? 'NOT SET' : 'SET'}`);
+console.log(`🔐 SUPABASE_URL: ${SUPABASE_URL === 'YOUR_SUPABASE_URL' ? 'NOT SET' : 'SET'}`);
+console.log(`🔑 SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY === 'YOUR_SUPABASE_ANON_KEY' ? 'NOT SET' : 'SET'}`);
+console.log('\n✨ Build complete! Run `npm run server` to start.\n');
