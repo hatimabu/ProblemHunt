@@ -10,7 +10,9 @@
     "dev": "node scripts/build.js --dev",
     "build": "node scripts/build.js",
     "build:azure": "node scripts/build.js",
-    "build:figma": "vite build"
+    "build:figma": "vite build",
+    "server": "node server.js",
+    "start": "npm run build && npm run server"
   },
   "dependencies": {
     "@emotion/react": "11.14.0",
@@ -51,6 +53,7 @@
     "date-fns": "3.6.0",
     "dotenv": "^16.3.1",
     "embla-carousel-react": "8.6.0",
+    "express": "^4.18.2",
     "input-otp": "1.4.2",
     "lucide-react": "0.487.0",
     "motion": "12.23.24",
