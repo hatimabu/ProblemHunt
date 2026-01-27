@@ -1,4 +1,12 @@
 {
+  "private": true,
+  "scripts": {
+    "install:all": "cd problem-hunt && npm install && cd api && npm install",
+    "dev": "cd problem-hunt && npm run build && npm run server",
+    "start": "cd problem-hunt && npm start",
+    "build": "cd problem-hunt && npm run build",
+    "server": "cd problem-hunt && npm run server"
+  },
   "dependencies": {
     "@supabase/supabase-js": "^2.91.1"
   }
