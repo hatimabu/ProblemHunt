@@ -1,17 +1,21 @@
 import { useState } from "react";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { Code, Mail, Lock, User, Briefcase } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "./ui/button";
+import { Input } from "./ui/input";
+import { Label } from "./ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
+import { useAuth } from "../contexts/AuthContext";
 
 export function AuthPage() {
+  const navigate = useNavigate();
+  const { login, signup } = useAuth();
+  
   const [signupData, setSignupData] = useState({
     username: "",
     email: "",
     password: "",
-    role: "builder",
+    role: "builder" as "builder" | "client",
   });
 
   const [loginData, setLoginData] = useState({
@@ -19,16 +23,30 @@ export function AuthPage() {
     password: "",
   });
 
-  const handleSignup = (e: React.FormEvent) => {
+  const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Signing up:", signupData);
-    // Handle signup
+    try {
+      await signup(signupData.username, signupData.email, signupData.password, signupData.role);
+      // Redirect to dashboard if builder, otherwise to browse
+      if (signupData.role === 'builder') {
+        navigate('/dashboard');
+      } else {
+        navigate('/browse');
+      }
+    } catch (error) {
+      console.error("Signup failed:", error);
+    }
   };
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Logging in:", loginData);
-    // Handle login
+    try {
+      await login(loginData.email, loginData.password);
+      // After login, redirect to dashboard
+      navigate('/dashboard');
+    } catch (error) {
+      console.error("Login failed:", error);
+    }
   };
 
   return (
@@ -208,9 +226,9 @@ export function AuthPage() {
                         </button>
                         <button
                           type="button"
-                          onClick={() => setSignupData({ ...signupData, role: "poster" })}
+                          onClick={() => setSignupData({ ...signupData, role: "client" })}
                           className={`p-4 rounded-lg border transition-all ${
-                            signupData.role === "poster"
+                            signupData.role === "client"
                               ? "bg-blue-500/20 border-blue-500/50 text-blue-400"
                               : "bg-gray-800/30 border-gray-700 text-gray-400 hover:border-gray-600"
                           }`}
