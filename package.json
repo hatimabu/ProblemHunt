@@ -1,13 +1,20 @@
 {
   "private": true,
+  "type": "module",
   "scripts": {
     "install:all": "cd problem-hunt && npm install && cd api && npm install",
-    "dev": "cd problem-hunt && npm run build && npm run server",
+    "dev": "cd problem-hunt && npm run dev",
     "start": "cd problem-hunt && npm start",
     "build": "cd problem-hunt && npm run build",
     "server": "cd problem-hunt && npm run server"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.91.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "4.1.12",
+    "@vitejs/plugin-react": "4.7.0",
+    "tailwindcss": "4.1.12",
+    "vite": "6.3.5"
   }
 }

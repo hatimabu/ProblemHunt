@@ -7,8 +7,8 @@
     "node": ">=20.0.0"
   },
   "scripts": {
-    "dev": "vite --config ../vite.config.js",
-    "build": "vite build --config ../vite.config.js",
+    "dev": "vite",
+    "build": "vite build",
     "build:config": "node scripts/build.js",
     "build:azure": "node scripts/build.js",
     "build:figma": "vite build",
