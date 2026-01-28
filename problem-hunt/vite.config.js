@@ -13,11 +13,26 @@ export default defineConfig({
     emptyOutDir: true,
     rollupOptions: {
       input: path.resolve(__dirname, 'index-react.html'),
+      output: {
+        entryFileNames: 'assets/[name]-[hash].js',
+        chunkFileNames: 'assets/[name]-[hash].js',
+        assetFileNames: 'assets/[name]-[hash].[ext]',
+      },
     },
   },
   plugins: [
     react(),
     tailwindcss(),
+    {
+      name: 'rename-index',
+      generateBundle(options, bundle) {
+        const htmlFile = Object.keys(bundle).find(name => name.endsWith('.html'));
+        if (htmlFile && htmlFile !== 'index.html') {
+          bundle['index.html'] = bundle[htmlFile];
+          delete bundle[htmlFile];
+        }
+      },
+    },
   ],
   resolve: {
     alias: {
