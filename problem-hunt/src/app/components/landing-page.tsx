@@ -1,8 +1,11 @@
 import { Link } from "react-router";
 import { Rocket, Zap, TrendingUp, Code, DollarSign } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/AuthContext";
 
 export function LandingPage() {
+  const { user, logout } = useAuth();
+  
   return (
     <div className="min-h-screen bg-[#0a0a0f] text-gray-100">
       {/* Header */}
@@ -27,11 +30,21 @@ export function LandingPage() {
                 Dashboard
               </Button>
             </Link>
-            <Link to="/post">
-              <Button className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white border-0">
-                Post Problem
+            {user ? (
+              <Button 
+                onClick={logout}
+                variant="outline" 
+                className="border-gray-700 hover:bg-gray-800 text-gray-300 hover:text-white"
+              >
+                Sign Out
               </Button>
-            </Link>
+            ) : (
+              <Link to="/auth">
+                <Button className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white border-0">
+                  Sign In
+                </Button>
+              </Link>
+            )}
           </nav>
         </div>
       </header>
@@ -66,14 +79,14 @@ export function LandingPage() {
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link to="/browse">
-                <Button size="lg" className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white border-0 text-lg px-8">
+                <Button size="lg" variant="outline" className="border-gray-700 hover:bg-gray-800 text-white text-lg px-8">
                   <Rocket className="w-5 h-5 mr-2" />
                   Browse Problems
                 </Button>
               </Link>
               <Link to="/post">
-                <Button size="lg" variant="outline" className="border-gray-700 hover:bg-gray-800 text-white text-lg px-8">
-                  Post a Problem
+                <Button size="lg" className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white border-0 text-lg px-10 py-6 shadow-lg shadow-cyan-500/30 hover:shadow-xl hover:shadow-cyan-500/40 transform hover:scale-105 transition-all duration-200 font-semibold">
+                  Post a Problem →
                 </Button>
               </Link>
             </div>
@@ -183,32 +196,6 @@ export function LandingPage() {
               <p className="text-gray-400 text-sm">
                 Successful solutions earn the bounty. Failed attempts lose held tips
               </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Stats */}
-      <section className="py-24 border-t border-gray-800/50">
-        <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto grid grid-cols-3 gap-8">
-            <div className="text-center">
-              <div className="text-4xl font-bold mb-2 bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
-                $247K
-              </div>
-              <div className="text-sm text-gray-400">In Bounties</div>
-            </div>
-            <div className="text-center">
-              <div className="text-4xl font-bold mb-2 bg-gradient-to-r from-blue-400 to-indigo-500 bg-clip-text text-transparent">
-                1,284
-              </div>
-              <div className="text-sm text-gray-400">Active Builders</div>
-            </div>
-            <div className="text-center">
-              <div className="text-4xl font-bold mb-2 bg-gradient-to-r from-indigo-400 to-purple-500 bg-clip-text text-transparent">
-                892
-              </div>
-              <div className="text-sm text-gray-400">Problems Solved</div>
             </div>
           </div>
         </div>
