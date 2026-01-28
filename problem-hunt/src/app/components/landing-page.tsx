@@ -1,6 +1,6 @@
 import { Link } from "react-router";
 import { Rocket, Zap, TrendingUp, Code, DollarSign } from "lucide-react";
-import { Button } from "@/app/components/ui/button";
+import { Button } from "@/components/ui/button";
 
 export function LandingPage() {
   return (

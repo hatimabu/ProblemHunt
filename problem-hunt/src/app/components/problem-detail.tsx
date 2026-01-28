@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { Link, useParams } from "react-router";
 import { Code, Clock, DollarSign, TrendingUp, User, Calendar, Send, Heart } from "lucide-react";
-import { Button } from "@/app/components/ui/button";
-import { Badge } from "@/app/components/ui/badge";
-import { Textarea } from "@/app/components/ui/textarea";
-import { Avatar, AvatarFallback } from "@/app/components/ui/avatar";
-import { Progress } from "@/app/components/ui/progress";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Progress } from "@/components/ui/progress";
 
 // Mock data
 const MOCK_PROBLEM = {
