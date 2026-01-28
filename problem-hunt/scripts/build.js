@@ -19,7 +19,7 @@ console.log('🔨 Building ProblemHunt...\n');
 // Step 1: Build the Vite app
 console.log('📦 Building React app with Vite...');
 try {
-  execSync('npx vite build --config ../vite.config.ts', { 
+  execSync('npx vite build', { 
     stdio: 'inherit', 
     cwd: process.cwd(),
     env: { ...process.env, NODE_ENV: 'production' }
