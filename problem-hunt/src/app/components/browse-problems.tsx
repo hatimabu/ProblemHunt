@@ -115,7 +115,7 @@ export function BrowseProblems() {
             <div className="flex gap-2">
               <Button
                 variant="outline"
-                className="border-gray-800 hover:bg-gray-800 text-gray-300"
+                className="border-gray-700 hover:bg-gray-700/50 text-gray-200 hover:text-white hover:border-gray-600"
               >
                 <Filter className="w-4 h-4 mr-2" />
                 Filter
@@ -133,8 +133,8 @@ export function BrowseProblems() {
                 onClick={() => setSelectedCategory(category)}
                 className={
                   selectedCategory === category
-                    ? "bg-cyan-500/20 border-cyan-500/50 text-cyan-400 hover:bg-cyan-500/30"
-                    : "border-gray-800 hover:bg-gray-800 text-gray-400 hover:text-white"
+                    ? "bg-cyan-500/20 border-cyan-500/60 text-cyan-300 hover:bg-cyan-500/30 hover:border-cyan-500/70"
+                    : "border-gray-700 hover:bg-gray-700/50 text-gray-200 hover:text-white hover:border-gray-600"
                 }
               >
                 {category}
