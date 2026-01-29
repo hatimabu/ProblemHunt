@@ -1,7 +1,7 @@
 import { Link } from "react-router";
 import { Rocket, Zap, TrendingUp, Code, DollarSign } from "lucide-react";
 import { Button } from "./ui/button";
-import { useAuth } from "../../contexts/AuthContext";
+import { useAuth } from "../contexts/AuthContext";
 
 export function LandingPage() {
   const { user, logout } = useAuth();
