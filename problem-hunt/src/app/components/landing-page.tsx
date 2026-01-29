@@ -79,13 +79,13 @@ export function LandingPage() {
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link to="/browse">
-                <Button size="lg" variant="outline" className="border-gray-700 hover:bg-gray-800 text-white text-lg px-8">
+                <Button size="lg" className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white border-0 text-lg px-8 shadow-lg shadow-cyan-500/30 hover:shadow-xl hover:shadow-cyan-500/40 transform hover:scale-105 transition-all duration-200 font-semibold">
                   <Rocket className="w-5 h-5 mr-2" />
                   Browse Problems
                 </Button>
               </Link>
               <Link to="/post">
-                <Button size="lg" className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white border-0 text-lg px-10 py-6 shadow-lg shadow-cyan-500/30 hover:shadow-xl hover:shadow-cyan-500/40 transform hover:scale-105 transition-all duration-200 font-semibold">
+                <Button size="lg" className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white border-0 text-lg px-8 shadow-lg shadow-cyan-500/30 hover:shadow-xl hover:shadow-cyan-500/40 transform hover:scale-105 transition-all duration-200 font-semibold">
                   Post a Problem →
                 </Button>
               </Link>

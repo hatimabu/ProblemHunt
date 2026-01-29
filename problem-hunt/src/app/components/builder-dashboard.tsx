@@ -11,6 +11,7 @@ import {
   Award,
   ChevronRight,
 } from "lucide-react";
+import { useAuth } from "../contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
@@ -79,6 +80,7 @@ const COMPLETED_PROJECTS = [
 
 export function BuilderDashboard() {
   const [updateText, setUpdateText] = useState("");
+  const { user, logout } = useAuth();
 
   return (
     <div className="min-h-screen bg-[#0a0a0f] text-gray-100">
@@ -104,11 +106,21 @@ export function BuilderDashboard() {
                 Dashboard
               </Button>
             </Link>
-            <Link to="/post">
-              <Button className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white border-0">
-                Post Problem
+            {user ? (
+              <Button 
+                onClick={logout}
+                variant="outline" 
+                className="border-gray-700 hover:bg-gray-800 text-gray-300 hover:text-white"
+              >
+                Sign Out
               </Button>
-            </Link>
+            ) : (
+              <Link to="/auth">
+                <Button className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white border-0">
+                  Sign In
+                </Button>
+              </Link>
+            )}
           </nav>
         </div>
       </header>
