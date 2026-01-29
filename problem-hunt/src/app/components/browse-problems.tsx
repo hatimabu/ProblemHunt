@@ -9,91 +9,9 @@ import {
   TrendingUp,
   User,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-
-// Mock data
-const MOCK_PROBLEMS = [
-  {
-    id: "1",
-    title: "AI-Powered Code Review Tool for Web3 Projects",
-    description:
-      "Need a tool that can automatically review smart contract code and identify potential security vulnerabilities using AI/ML models.",
-    bounty: 5000,
-    currency: "USD",
-    deadline: "14 days",
-    category: "AI/ML",
-    builders: 12,
-    tips: 450,
-    status: "active",
-  },
-  {
-    id: "2",
-    title: "Cross-Chain NFT Marketplace",
-    description:
-      "Build a marketplace that allows users to buy, sell, and trade NFTs across multiple blockchains (Ethereum, Solana, Polygon).",
-    bounty: 12000,
-    currency: "USD",
-    deadline: "30 days",
-    category: "Web3",
-    builders: 8,
-    tips: 980,
-    status: "active",
-  },
-  {
-    id: "3",
-    title: "Real-time Crypto Portfolio Tracker",
-    description:
-      "Dashboard that tracks crypto holdings across multiple wallets and exchanges with real-time price updates and P&L analytics.",
-    bounty: 3500,
-    currency: "USD",
-    deadline: "21 days",
-    category: "Finance",
-    builders: 15,
-    tips: 620,
-    status: "active",
-  },
-  {
-    id: "4",
-    title: "Decentralized Social Media Platform",
-    description:
-      "Build a censorship-resistant social platform using IPFS for storage and blockchain for content verification.",
-    bounty: 8000,
-    currency: "USD",
-    deadline: "45 days",
-    category: "Web3",
-    builders: 6,
-    tips: 1100,
-    status: "active",
-  },
-  {
-    id: "5",
-    title: "On-Chain Voting System for DAOs",
-    description:
-      "Create a transparent voting system with delegation, proposal creation, and execution features for decentralized organizations.",
-    bounty: 6500,
-    currency: "USD",
-    deadline: "28 days",
-    category: "Governance",
-    builders: 9,
-    tips: 780,
-    status: "active",
-  },
-  {
-    id: "6",
-    title: "Automated Trading Bot with ML Predictions",
-    description:
-      "Trading bot that uses machine learning to predict market movements and execute trades automatically on DEXs.",
-    bounty: 10000,
-    currency: "USD",
-    deadline: "35 days",
-    category: "Trading",
-    builders: 11,
-    tips: 1450,
-    status: "active",
-  },
-];
+import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
+import { Badge } from "../components/ui/badge";
 
 const CATEGORIES = [
   "All",
@@ -105,13 +23,26 @@ const CATEGORIES = [
   "Infrastructure",
 ];
 
+interface Problem {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  builders: number;
+  tips: number;
+  deadline: string;
+  bounty: number;
+  currency: string;
+}
+
 export function BrowseProblems() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] =
     useState("All");
   const [sortBy, setSortBy] = useState("bounty");
+  const [problems] = useState<Problem[]>([]);
 
-  const filteredProblems = MOCK_PROBLEMS.filter((problem) => {
+  const filteredProblems = problems.filter((problem) => {
     const matchesSearch =
       problem.title
         .toLowerCase()
