@@ -27,65 +27,6 @@ interface ProfileData {
   user_type: string;
 }
 
-// Mock data
-const BUILDER_STATS = {
-  name: "solidity_sage",
-  avatar: "SS",
-  reputation: 4.9,
-  totalEarned: 24500,
-  activeProjects: 3,
-  completedProjects: 31,
-  totalTips: 3420,
-  rank: "#12",
-};
-
-const ACTIVE_PROJECTS = [
-  {
-    id: "1",
-    title: "AI-Powered Code Review Tool",
-    bounty: 5000,
-    progress: 60,
-    deadline: "12 days",
-    tips: 680,
-    lastUpdate: "1 hour ago",
-  },
-  {
-    id: "2",
-    title: "Cross-Chain NFT Marketplace",
-    bounty: 12000,
-    progress: 35,
-    deadline: "28 days",
-    tips: 420,
-    lastUpdate: "1 day ago",
-  },
-  {
-    id: "3",
-    title: "DeFi Yield Aggregator",
-    bounty: 7500,
-    progress: 75,
-    deadline: "5 days",
-    tips: 920,
-    lastUpdate: "3 hours ago",
-  },
-];
-
-const COMPLETED_PROJECTS = [
-  {
-    id: "1",
-    title: "DAO Governance Platform",
-    bounty: 8000,
-    earned: 8450,
-    completedDate: "Jan 20, 2026",
-  },
-  {
-    id: "2",
-    title: "NFT Minting Tool",
-    bounty: 4500,
-    earned: 4890,
-    completedDate: "Jan 15, 2026",
-  },
-];
-
 export function BuilderDashboard() {
   const [updateText, setUpdateText] = useState("");
   const { user, logout } = useAuth();
@@ -193,27 +134,6 @@ export function BuilderDashboard() {
                       <Award className="w-4 h-4" />
                       <span>⭐ {reputationScore} reputation</span>
                     </div>
-                    <div>•</div>
-                    <div>{BUILDER_STATS.completedProjects} projects completed</div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-3 gap-6">
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-white">
-                      ${BUILDER_STATS.totalEarned.toLocaleString()}
-                    </div>
-                    <div className="text-xs text-gray-400">Total Earned</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-cyan-400">{BUILDER_STATS.activeProjects}</div>
-                    <div className="text-xs text-gray-400">Active</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-blue-400">
-                      ${BUILDER_STATS.totalTips.toLocaleString()}
-                    </div>
-                    <div className="text-xs text-gray-400">Tips</div>
                   </div>
                 </div>
               </div>
@@ -221,25 +141,42 @@ export function BuilderDashboard() {
           </div>
         </div>
 
-        {/* Tabs */}
-        <Tabs defaultValue="active" className="space-y-6">
-          <TabsList className="bg-gray-900/50 border border-gray-800 p-1">
-            <TabsTrigger
-              value="active"
-              className="data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-400 text-gray-400"
-            >
-              Active Projects ({ACTIVE_PROJECTS.length})
-            </TabsTrigger>
-            <TabsTrigger
-              value="completed"
-              className="data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-400 text-gray-400"
-            >
-              Completed ({COMPLETED_PROJECTS.length})
-            </TabsTrigger>
-          </TabsList>
+        {/* Projects Section */}
+        <div className="space-y-6">
+          <div className="text-center py-12">
+            <div className="text-gray-400 mb-4">
+              <Target className="w-16 h-16 mx-auto mb-4 opacity-50" />
+              <h3 className="text-xl font-semibold text-white mb-2">No Projects Yet</h3>
+              <p className="text-sm">Start browsing problems to begin working on projects</p>
+            </div>
+            <Link to="/browse">
+              <Button className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white border-0 mt-4">
+                Browse Problems
+              </Button>
+            </Link>
+          </div>
+        </div>
 
-          <TabsContent value="active" className="space-y-6">
-            {ACTIVE_PROJECTS.map((project) => (
+        {/* Hidden for now - will be populated with real data */}
+        {false && (
+          <Tabs defaultValue="active" className="space-y-6">
+            <TabsList className="bg-gray-900/50 border border-gray-800 p-1">
+              <TabsTrigger
+                value="active"
+                className="data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-400 text-gray-400"
+              >
+                Active Projects (0)
+              </TabsTrigger>
+              <TabsTrigger
+                value="completed"
+                className="data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-400 text-gray-400"
+              >
+                Completed (0)
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="active" className="space-y-6">
+              {[].map((project: any) => (
               <div key={project.id} className="relative">
                 <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-indigo-500/5 rounded-2xl blur-xl" />
                 <div className="relative bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-2xl p-6 hover:border-cyan-500/30 transition-colors">
@@ -327,7 +264,7 @@ export function BuilderDashboard() {
           </TabsContent>
 
           <TabsContent value="completed" className="space-y-6">
-            {COMPLETED_PROJECTS.map((project) => (
+            {[].map((project: any) => (
               <div key={project.id} className="relative">
                 <div className="absolute inset-0 bg-gradient-to-r from-green-500/5 to-emerald-500/5 rounded-2xl blur-xl" />
                 <div className="relative bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-2xl p-6">
@@ -353,6 +290,7 @@ export function BuilderDashboard() {
             ))}
           </TabsContent>
         </Tabs>
+        )}
       </div>
     </div>
   );
