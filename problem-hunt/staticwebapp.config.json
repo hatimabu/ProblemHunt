@@ -20,7 +20,7 @@
     "buildCommand": "npm run build",
     "outputLocation": "dist",
     "environmentVariables": {
-      "SUPABASE_URL": "https://ajvobbpwgopinxtbpcpu.supabase.co",
-      "SUPABASE_ANON_KEY": "sb_publishable_D82LguYseqDD2AUMTI-chA_3OX8Jbaf"
+      "VITE_SUPABASE_URL": "https://ajvobbpwgopinxtbpcpu.supabase.co",
+      "VITE_SUPABASE_ANON_KEY": "sb_publishable_D82LguYseqDD2AUMTI-chA_3OX8Jbaf"
     }
   }
