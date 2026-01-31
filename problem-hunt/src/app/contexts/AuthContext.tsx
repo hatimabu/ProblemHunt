@@ -1,4 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { supabase } from '../../../lib/supabaseClient';
+import type { User as SupabaseUser } from '@supabase/supabase-js';
 
 interface User {
   id: string;
@@ -11,8 +13,8 @@ interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  signup: (username: string, email: string, password: string, role: 'builder' | 'client') => Promise<void>;
-  logout: () => void;
+  signup: (username: string, fullName: string, email: string, password: string, userType: 'problem_poster' | 'builder') => Promise<void>;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -22,43 +24,121 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check if user is logged in (from localStorage or session)
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
-    setIsLoading(false);
+    // Check active session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        fetchUserProfile(session.user);
+      } else {
+        setIsLoading(false);
+      }
+    });
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        fetchUserProfile(session.user);
+      } else {
+        setUser(null);
+        setIsLoading(false);
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
+  const fetchUserProfile = async (supabaseUser: SupabaseUser) => {
+    try {
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('username, user_type')
+        .eq('id', supabaseUser.id)
+        .single();
+
+      if (error) throw error;
+
+      setUser({
+        id: supabaseUser.id,
+        email: supabaseUser.email || '',
+        username: profile?.username || '',
+        role: profile?.user_type === 'builder' ? 'builder' : 'client',
+      });
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const login = async (email: string, password: string) => {
-    // TODO: Implement actual authentication with Supabase
-    // For now, mock login
-    const mockUser: User = {
-      id: '1',
-      email,
-      username: email.split('@')[0],
-      role: 'builder',
-    };
-    setUser(mockUser);
-    localStorage.setItem('user', JSON.stringify(mockUser));
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) throw error;
+
+      if (data.user) {
+        await fetchUserProfile(data.user);
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      throw error;
+    }
   };
 
-  const signup = async (username: string, email: string, password: string, role: 'builder' | 'client') => {
-    // TODO: Implement actual signup with Supabase
-    // For now, mock signup
-    const mockUser: User = {
-      id: Date.now().toString(),
-      email,
-      username,
-      role,
-    };
-    setUser(mockUser);
-    localStorage.setItem('user', JSON.stringify(mockUser));
+  const signup = async (
+    username: string,
+    fullName: string,
+    email: string,
+    password: string,
+    userType: 'problem_poster' | 'builder'
+  ) => {
+    try {
+      // First check if username is available
+      const { data: existingProfile } = await supabase
+        .from('profiles')
+        .select('username')
+        .eq('username', username)
+        .single();
+
+      if (existingProfile) {
+        throw new Error('Username already taken');
+      }
+
+      // Sign up with Supabase Auth and pass metadata
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            username,
+            full_name: fullName,
+            user_type: userType,
+          },
+        },
+      });
+
+      if (error) throw error;
+
+      if (data.user) {
+        await fetchUserProfile(data.user);
+      }
+    } catch (error) {
+      console.error('Signup error:', error);
+      throw error;
+    }
   };
 
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem('user');
+  const logout = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      setUser(null);
+    } catch (error) {
+      console.error('Logout error:', error);
+      throw error;
+    }
   };
 
   return (

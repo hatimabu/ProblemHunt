@@ -5,6 +5,7 @@ import { ProblemDetail } from "./components/problem-detail.tsx";
 import { BuilderDashboard } from "./components/builder-dashboard.tsx";
 import { PostProblem } from "./components/post-problem.tsx";
 import { AuthPage } from "./components/auth-page.tsx";
+import { Profile } from "./components/Profile.tsx";
 import { ProtectedRoute } from "./components/ProtectedRoute.tsx";
 
 export const router = createBrowserRouter([
@@ -33,7 +34,16 @@ export const router = createBrowserRouter([
     ),
   },
   {
+    path: "/profile",
+    element: (
+      <ProtectedRoute>
+        <Profile />
+      </ProtectedRoute>
+    ),
+  },
+  {
     path: "/auth",
     Component: AuthPage,
   },
 ]);
+

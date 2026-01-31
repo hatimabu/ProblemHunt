@@ -13,9 +13,10 @@ export function AuthPage() {
   
   const [signupData, setSignupData] = useState({
     username: "",
+    fullName: "",
     email: "",
     password: "",
-    role: "builder" as "builder" | "client",
+    userType: "builder" as "problem_poster" | "builder",
   });
 
   const [loginData, setLoginData] = useState({
@@ -23,29 +24,51 @@ export function AuthPage() {
     password: "",
   });
 
+  const [signupError, setSignupError] = useState("");
+  const [loginError, setLoginError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSignupError("");
+    setIsSubmitting(true);
+
     try {
-      await signup(signupData.username, signupData.email, signupData.password, signupData.role);
+      await signup(
+        signupData.username,
+        signupData.fullName,
+        signupData.email,
+        signupData.password,
+        signupData.userType
+      );
       // Redirect to dashboard if builder, otherwise to browse
-      if (signupData.role === 'builder') {
+      if (signupData.userType === 'builder') {
         navigate('/dashboard');
       } else {
         navigate('/browse');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Signup failed:", error);
+      setSignupError(error.message || "Signup failed. Please try again.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoginError("");
+    setIsSubmitting(true);
+
     try {
       await login(loginData.email, loginData.password);
       // After login, redirect to dashboard
       navigate('/dashboard');
-    } catch (error) {
+    } catch (error: any) {
       console.error("Login failed:", error);
+      setLoginError(error.message || "Login failed. Please check your credentials.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -140,11 +163,18 @@ export function AuthPage() {
                       />
                     </div>
 
+                    {loginError && (
+                      <div className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg p-3">
+                        {loginError}
+                      </div>
+                    )}
+
                     <Button
                       type="submit"
-                      className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white border-0"
+                      disabled={isSubmitting}
+                      className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white border-0 disabled:opacity-50"
                     >
-                      Login
+                      {isSubmitting ? "Logging in..." : "Login"}
                     </Button>
 
                     <div className="text-center">
@@ -163,7 +193,25 @@ export function AuthPage() {
                         <User className="w-4 h-4 inline mr-2" />
                         Username
                       </Label>
+                      <IminLength={3}
+                        maxLength={30}
+                        required
+                      />
+                      <p className="text-xs text-gray-500 mt-1">3-30 characters, will be publicly visible</p>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="signup-fullname" className="text-white mb-2 block">
+                        <User className="w-4 h-4 inline mr-2" />
+                        Full Name
+                      </Label>
                       <Input
+                        id="signup-fullname"
+                        type="text"
+                        placeholder="John Doe"
+                        value={signupData.fullName}
+                        onChange={(e) => setSignupData({ ...signupData, fullName: e.target.value })}
+                        className="bg-gray-800/50 border-gray-700 focus:border-cyan-500/50 text-white placeholder:text-gray-500"
                         id="signup-username"
                         type="text"
                         placeholder="crypto_builder"
@@ -189,36 +237,43 @@ export function AuthPage() {
                         required
                       />
                     </div>
-
-                    <div>
-                      <Label htmlFor="signup-password" className="text-white mb-2 block">
-                        <Lock className="w-4 h-4 inline mr-2" />
-                        Password
-                      </Label>
-                      <Input
-                        id="signup-password"
-                        type="password"
-                        placeholder="••••••••"
-                        value={signupData.password}
-                        onChange={(e) => setSignupData({ ...signupData, password: e.target.value })}
-                        className="bg-gray-800/50 border-gray-700 focus:border-cyan-500/50 text-white placeholder:text-gray-500"
-                        required
-                      />
-                    </div>
-
-                    <div>
-                      <Label htmlFor="signup-role" className="text-white mb-2 block">
-                        <Briefcase className="w-4 h-4 inline mr-2" />
-                        I want to...
-                      </Label>
-                      <div className="grid grid-cols-2 gap-3">
-                        <button
-                          type="button"
-                          onClick={() => setSignupData({ ...signupData, role: "builder" })}
+userType: "builder" })}
                           className={`p-4 rounded-lg border transition-all ${
-                            signupData.role === "builder"
+                            signupData.userType === "builder"
                               ? "bg-cyan-500/20 border-cyan-500/50 text-cyan-400"
                               : "bg-gray-800/30 border-gray-700 text-gray-400 hover:border-gray-600"
+                          }`}
+                        >
+                          <div className="font-medium mb-1">Build</div>
+                          <div className="text-xs opacity-80">Solve problems</div>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setSignupData({ ...signupData, userType: "problem_poster" })}
+                          className={`p-4 rounded-lg border transition-all ${
+                            signupData.userType === "problem_poster"
+                              ? "bg-blue-500/20 border-blue-500/50 text-blue-400"
+                              : "bg-gray-800/30 border-gray-700 text-gray-400 hover:border-gray-600"
+                          }`}
+                        >
+                          <div className="font-medium mb-1">Post</div>
+                          <div className="text-xs opacity-80">Find solutions</div>
+                        </button>
+                      </div>
+                    </div>
+
+                    {signupError && (
+                      <div className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg p-3">
+                        {signupError}
+                      </div>
+                    )}
+
+                    <Button
+                      type="submit"
+                      disabled={isSubmitting}
+                      className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white border-0 disabled:opacity-50"
+                    >
+                      {isSubmitting ? "Creating Account..." : "Create Account"}gray-800/30 border-gray-700 text-gray-400 hover:border-gray-600"
                           }`}
                         >
                           <div className="font-medium mb-1">Build</div>
