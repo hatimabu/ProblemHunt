@@ -9,6 +9,7 @@
     "server": "cd problem-hunt && npm run server"
   },
   "dependencies": {
+    "@sentry/react": "^10.38.0",
     "@supabase/supabase-js": "^2.91.1",
     "@types/react": "^19.2.10"
   },
