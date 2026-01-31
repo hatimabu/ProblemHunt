@@ -1,4 +1,3 @@
-/* stylelint-disable-next-line scss/at-rule-no-unknown */
 @custom-variant dark (&:is(.dark *));
 
 :root {
@@ -122,7 +121,6 @@
 
 @layer base {
   * {
-    /* stylelint-disable-next-line at-rule-no-unknown */
     @apply border-border outline-ring/50;
   }
 
