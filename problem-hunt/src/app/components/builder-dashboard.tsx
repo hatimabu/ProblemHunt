@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router";
 import {
   Code,
@@ -12,12 +12,20 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Textarea } from "@/components/ui/textarea";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Progress } from "@/components/ui/progress";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { supabase } from "../../../lib/supabaseClient";
+import { Button } from "./ui/button";
+import { Badge } from "./ui/badge";
+import { Textarea } from "./ui/textarea";
+import { Avatar, AvatarFallback } from "./ui/avatar";
+import { Progress } from "./ui/progress";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
+
+interface ProfileData {
+  username: string;
+  full_name: string | null;
+  reputation_score: number;
+  user_type: string;
+}
 
 // Mock data
 const BUILDER_STATS = {
@@ -81,6 +89,37 @@ const COMPLETED_PROJECTS = [
 export function BuilderDashboard() {
   const [updateText, setUpdateText] = useState("");
   const { user, logout } = useAuth();
+  const [profile, setProfile] = useState<ProfileData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    if (user) {
+      fetchProfile();
+    }
+  }, [user]);
+
+  const fetchProfile = async () => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('username, full_name, reputation_score, user_type')
+        .eq('id', user.id)
+        .single();
+
+      if (error) throw error;
+      setProfile(data);
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const displayName = profile?.full_name || profile?.username || user?.username || "Builder";
+  const avatarInitials = displayName.substring(0, 2).toUpperCase();
+  const reputationScore = profile?.reputation_score || 0;
 
   return (
     <div className="min-h-screen bg-[#0a0a0f] text-gray-100">
@@ -130,49 +169,55 @@ export function BuilderDashboard() {
         <div className="relative mb-12">
           <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/5 to-blue-500/5 rounded-2xl blur-xl" />
           <div className="relative bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-2xl p-8">
-            <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
-              <Avatar className="w-20 h-20 border-4 border-cyan-500/30">
-                <AvatarFallback className="bg-gradient-to-br from-cyan-500 to-blue-600 text-white font-bold text-2xl">
-                  {BUILDER_STATS.avatar}
-                </AvatarFallback>
-              </Avatar>
+            {isLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-500"></div>
+              </div>
+            ) : (
+              <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
+                <Avatar className="w-20 h-20 border-4 border-cyan-500/30">
+                  <AvatarFallback className="bg-gradient-to-br from-cyan-500 to-blue-600 text-white font-bold text-2xl">
+                    {avatarInitials}
+                  </AvatarFallback>
+                </Avatar>
 
-              <div className="flex-1">
-                <div className="flex items-center gap-3 mb-2">
-                  <h1 className="text-3xl font-bold text-white">{BUILDER_STATS.name}</h1>
-                  <Badge className="bg-cyan-500/20 text-cyan-400 border-cyan-500/30">
-                    Rank {BUILDER_STATS.rank}
-                  </Badge>
-                </div>
-                <div className="flex items-center gap-4 text-sm text-gray-400">
-                  <div className="flex items-center gap-1">
-                    <Award className="w-4 h-4" />
-                    <span>⭐ {BUILDER_STATS.reputation} reputation</span>
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-2">
+                    <h1 className="text-3xl font-bold text-white">{displayName}</h1>
+                    <Badge className="bg-cyan-500/20 text-cyan-400 border-cyan-500/30">
+                      {profile?.user_type === 'builder' ? 'Builder' : 'Problem Poster'}
+                    </Badge>
                   </div>
-                  <div>•</div>
-                  <div>{BUILDER_STATS.completedProjects} projects completed</div>
+                  <div className="flex items-center gap-4 text-sm text-gray-400">
+                    <div className="flex items-center gap-1">
+                      <Award className="w-4 h-4" />
+                      <span>⭐ {reputationScore} reputation</span>
+                    </div>
+                    <div>•</div>
+                    <div>{BUILDER_STATS.completedProjects} projects completed</div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-6">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-white">
+                      ${BUILDER_STATS.totalEarned.toLocaleString()}
+                    </div>
+                    <div className="text-xs text-gray-400">Total Earned</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-cyan-400">{BUILDER_STATS.activeProjects}</div>
+                    <div className="text-xs text-gray-400">Active</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-blue-400">
+                      ${BUILDER_STATS.totalTips.toLocaleString()}
+                    </div>
+                    <div className="text-xs text-gray-400">Tips</div>
+                  </div>
                 </div>
               </div>
-
-              <div className="grid grid-cols-3 gap-6">
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-white">
-                    ${BUILDER_STATS.totalEarned.toLocaleString()}
-                  </div>
-                  <div className="text-xs text-gray-400">Total Earned</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-cyan-400">{BUILDER_STATS.activeProjects}</div>
-                  <div className="text-xs text-gray-400">Active</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-blue-400">
-                    ${BUILDER_STATS.totalTips.toLocaleString()}
-                  </div>
-                  <div className="text-xs text-gray-400">Tips</div>
-                </div>
-              </div>
-            </div>
+            )}
           </div>
         </div>
 
@@ -243,7 +288,7 @@ export function BuilderDashboard() {
                         <Textarea
                           placeholder="Share your progress to earn tips..."
                           value={updateText}
-                          onChange={(e) => setUpdateText(e.target.value)}
+                          onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setUpdateText(e.target.value)}
                           className="bg-gray-800/50 border-gray-700 focus:border-cyan-500/50 text-white placeholder:text-gray-500 mb-2 min-h-[80px]"
                         />
                         <div className="flex justify-between items-center">
