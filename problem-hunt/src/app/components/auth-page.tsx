@@ -193,7 +193,14 @@ export function AuthPage() {
                         <User className="w-4 h-4 inline mr-2" />
                         Username
                       </Label>
-                      <IminLength={3}
+                      <Input
+                        id="signup-username"
+                        type="text"
+                        placeholder="crypto_builder"
+                        value={signupData.username}
+                        onChange={(e) => setSignupData({ ...signupData, username: e.target.value })}
+                        className="bg-gray-800/50 border-gray-700 focus:border-cyan-500/50 text-white placeholder:text-gray-500"
+                        minLength={3}
                         maxLength={30}
                         required
                       />
@@ -212,13 +219,6 @@ export function AuthPage() {
                         value={signupData.fullName}
                         onChange={(e) => setSignupData({ ...signupData, fullName: e.target.value })}
                         className="bg-gray-800/50 border-gray-700 focus:border-cyan-500/50 text-white placeholder:text-gray-500"
-                        id="signup-username"
-                        type="text"
-                        placeholder="crypto_builder"
-                        value={signupData.username}
-                        onChange={(e) => setSignupData({ ...signupData, username: e.target.value })}
-                        className="bg-gray-800/50 border-gray-700 focus:border-cyan-500/50 text-white placeholder:text-gray-500"
-                        required
                       />
                     </div>
 
@@ -237,7 +237,32 @@ export function AuthPage() {
                         required
                       />
                     </div>
-userType: "builder" })}
+
+                    <div>
+                      <Label htmlFor="signup-password" className="text-white mb-2 block">
+                        <Lock className="w-4 h-4 inline mr-2" />
+                        Password
+                      </Label>
+                      <Input
+                        id="signup-password"
+                        type="password"
+                        placeholder="••••••••"
+                        value={signupData.password}
+                        onChange={(e) => setSignupData({ ...signupData, password: e.target.value })}
+                        className="bg-gray-800/50 border-gray-700 focus:border-cyan-500/50 text-white placeholder:text-gray-500"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="signup-role" className="text-white mb-2 block">
+                        <Briefcase className="w-4 h-4 inline mr-2" />
+                        I want to...
+                      </Label>
+                      <div className="grid grid-cols-2 gap-3">
+                        <button
+                          type="button"
+                          onClick={() => setSignupData({ ...signupData, userType: "builder" })}
                           className={`p-4 rounded-lg border transition-all ${
                             signupData.userType === "builder"
                               ? "bg-cyan-500/20 border-cyan-500/50 text-cyan-400"
@@ -273,32 +298,7 @@ userType: "builder" })}
                       disabled={isSubmitting}
                       className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white border-0 disabled:opacity-50"
                     >
-                      {isSubmitting ? "Creating Account..." : "Create Account"}gray-800/30 border-gray-700 text-gray-400 hover:border-gray-600"
-                          }`}
-                        >
-                          <div className="font-medium mb-1">Build</div>
-                          <div className="text-xs opacity-80">Solve problems</div>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setSignupData({ ...signupData, role: "client" })}
-                          className={`p-4 rounded-lg border transition-all ${
-                            signupData.role === "client"
-                              ? "bg-blue-500/20 border-blue-500/50 text-blue-400"
-                              : "bg-gray-800/30 border-gray-700 text-gray-400 hover:border-gray-600"
-                          }`}
-                        >
-                          <div className="font-medium mb-1">Post</div>
-                          <div className="text-xs opacity-80">Find solutions</div>
-                        </button>
-                      </div>
-                    </div>
-
-                    <Button
-                      type="submit"
-                      className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white border-0"
-                    >
-                      Create Account
+                      {isSubmitting ? "Creating Account..." : "Create Account"}
                     </Button>
 
                     <p className="text-xs text-gray-500 text-center">
