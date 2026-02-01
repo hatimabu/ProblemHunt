@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { Code, DollarSign, Calendar, FileText, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,6 +16,7 @@ import {
 const CATEGORIES = ["AI/ML", "Web3", "Finance", "Governance", "Trading", "Infrastructure"];
 
 export function PostProblem() {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -24,11 +25,44 @@ export function PostProblem() {
     bounty: "",
     deadline: "",
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Posting problem:", formData);
-    // Handle form submission
+    setIsSubmitting(true);
+    setError(null);
+    
+    try {
+      const response = await fetch('/api/CreateProblem', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: formData.title,
+          description: formData.description,
+          category: formData.category,
+          budget: formData.bounty,
+          requirements: formData.requirements,
+          deadline: formData.deadline,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create problem');
+      }
+
+      const problem = await response.json();
+      // Navigate to the newly created problem
+      navigate(`/problem/${problem.id}`);
+    } catch (err) {
+      console.error('Error posting problem:', err);
+      setError(err instanceof Error ? err.message : 'Failed to post problem');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -71,6 +105,13 @@ export function PostProblem() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Error Message */}
+            {error && (
+              <div className="bg-red-500/10 border border-red-500/50 text-red-400 px-4 py-3 rounded-lg">
+                {error}
+              </div>
+            )}
+
             {/* Title */}
             <div className="relative">
               <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/5 to-blue-500/5 rounded-2xl blur-xl" />
@@ -217,9 +258,10 @@ export function PostProblem() {
                   </Link>
                   <Button
                     type="submit"
-                    className="flex-1 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white border-0"
+                    disabled={isSubmitting}
+                    className="flex-1 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white border-0 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Post Problem
+                    {isSubmitting ? 'Posting...' : 'Post Problem'}
                   </Button>
                 </div>
               </div>
