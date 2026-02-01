@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { User, Edit2, Save, X, Award } from "lucide-react";
+import { User, Edit2, Save, X, Award, Wallet as WalletIcon, ExternalLink } from "lucide-react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
@@ -21,9 +21,18 @@ interface ProfileData {
   created_at: string;
 }
 
+interface WalletData {
+  id: string;
+  chain: string;
+  address: string;
+  is_primary: boolean;
+  created_at: string;
+}
+
 export function Profile() {
   const { user } = useAuth();
   const [profile, setProfile] = useState<ProfileData | null>(null);
+  const [wallets, setWallets] = useState<WalletData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -40,6 +49,7 @@ export function Profile() {
   useEffect(() => {
     if (user) {
       fetchProfile();
+      fetchWallets();
     }
   }, [user]);
 
@@ -69,6 +79,24 @@ export function Profile() {
       setError(err.message || 'Failed to load profile');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const fetchWallets = async () => {
+    if (!user) return;
+
+    try {
+      const { data, error: fetchError } = await supabase
+        .from('wallets')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (fetchError) throw fetchError;
+
+      setWallets(data || []);
+    } catch (err: any) {
+      console.error('Error fetching wallets:', err);
     }
   };
 
@@ -334,7 +362,80 @@ export function Profile() {
             )}
           </CardContent>
         </Card>
+
+        {/* Linked Wallets Card */}
+        <Card className="bg-gray-900/50 border-gray-800 backdrop-blur-sm">
+          <CardHeader>
+            <CardTitle className="text-white flex items-center gap-2">
+              <WalletIcon className="w-5 h-5 text-cyan-400" />
+              Linked Wallets
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {wallets.length === 0 ? (
+              <p className="text-gray-500 text-center py-4">
+                No wallets linked yet
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {wallets.map((wallet) => (
+                  <div
+                    key={wallet.id}
+                    className="bg-gray-800/30 border border-gray-700 rounded-lg p-4"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Badge
+                            variant="outline"
+                            className="bg-cyan-500/10 border-cyan-500/30 text-cyan-400"
+                          >
+                            {wallet.chain.charAt(0).toUpperCase() + wallet.chain.slice(1)}
+                          </Badge>
+                          {wallet.is_primary && (
+                            <Badge
+                              variant="outline"
+                              className="bg-green-500/10 border-green-500/30 text-green-400"
+                            >
+                              Primary
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <code className="text-sm text-gray-300 font-mono bg-gray-900/50 px-2 py-1 rounded">
+                            {wallet.address.slice(0, 6)}...{wallet.address.slice(-4)}
+                          </code>
+                          <a
+                            href={getExplorerUrl(wallet.chain, wallet.address)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-cyan-400 hover:text-cyan-300"
+                          >
+                            <ExternalLink className="w-4 h-4" />
+                          </a>
+                        </div>
+                      </div>
+                      <p className="text-xs text-gray-500">
+                        {new Date(wallet.created_at).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
+}
+
+function getExplorerUrl(chain: string, address: string): string {
+  const explorers: Record<string, string> = {
+    ethereum: `https://etherscan.io/address/${address}`,
+    polygon: `https://polygonscan.com/address/${address}`,
+    arbitrum: `https://arbiscan.io/address/${address}`,
+    solana: `https://explorer.solana.com/address/${address}`,
+  };
+  return explorers[chain] || '#';
 }

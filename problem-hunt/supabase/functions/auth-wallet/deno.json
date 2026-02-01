@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "lib": ["deno.window", "deno.unstable"],
+    "strict": true,
+    "allowJs": false
+  },
+  "imports": {
+    "supabase": "https://esm.sh/@supabase/supabase-js@2.38.4",
+    "djwt": "https://deno.land/x/djwt@v2.8/mod.ts",
+    "http-server": "https://deno.land/std@0.177.0/http/server.ts"
+  }
+}
