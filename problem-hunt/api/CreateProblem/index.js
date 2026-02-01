@@ -13,7 +13,7 @@ module.exports = async function (context, req) {
     }
 
     // Validate category
-    const validCategories = ['Productivity', 'Social', 'Finance', 'Health', 'Developer Tools', 'Entertainment'];
+    const validCategories = ['AI/ML', 'Web3', 'Finance', 'Governance', 'Trading', 'Infrastructure'];
     if (!validCategories.includes(data.category)) {
       context.res = errorResponse(400, 'Invalid category');
       return;

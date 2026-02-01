@@ -9,8 +9,8 @@ function getSupabaseClient() {
     const url = process.env.SUPABASE_URL;
     const key = process.env.SUPABASE_ANON_KEY;
     
-    if (!url || !key || url === 'YOUR_SUPABASE_PROJECT_URL') {
-      throw new Error('Supabase configuration missing. Please set SUPABASE_URL and SUPABASE_ANON_KEY environment variables.');
+    if (!url || !key || url === 'YOUR_SUPABASE_PROJECT_URL' || url.includes('placeholder')) {
+      return null; // Return null if not configured
     }
     
     supabaseClient = createClient(url, key);
@@ -59,6 +59,13 @@ async function getUserId(req) {
 
   try {
     const supabase = getSupabaseClient();
+    if (!supabase) {
+      // Supabase not configured, use fallback
+      const ip = req.headers['x-forwarded-for'] || req.headers['x-real-ip'] || 'unknown';
+      const userAgent = req.headers['user-agent'] || 'unknown';
+      return Buffer.from(`${ip}-${userAgent}`).toString('base64').substring(0, 32);
+    }
+    
     const { data: { user }, error } = await supabase.auth.getUser(token);
     if (error || !user) {
       throw new Error('Invalid token');

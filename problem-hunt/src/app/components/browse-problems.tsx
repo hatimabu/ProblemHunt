@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router";
 import {
   Code,
@@ -28,11 +28,14 @@ interface Problem {
   title: string;
   description: string;
   category: string;
-  builders: number;
-  tips: number;
-  deadline: string;
-  bounty: number;
-  currency: string;
+  budget: string;
+  budgetValue: number;
+  upvotes: number;
+  proposals: number;
+  author: string;
+  authorId: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export function BrowseProblems() {
@@ -40,7 +43,32 @@ export function BrowseProblems() {
   const [selectedCategory, setSelectedCategory] =
     useState("All");
   const [sortBy, setSortBy] = useState("bounty");
-  const [problems] = useState<Problem[]>([]);
+  const [problems, setProblems] = useState<Problem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchProblems = async () => {
+      try {
+        setLoading(true);
+        const category = selectedCategory === "All" ? "all" : selectedCategory;
+        const response = await fetch(`/api/problems?category=${category}&sortBy=${sortBy}`);
+        if (response.ok) {
+          const data = await response.json();
+          // API returns { problems: [...], total, limit, offset }
+          setProblems(Array.isArray(data.problems) ? data.problems : Array.isArray(data) ? data : []);
+        } else {
+          setProblems([]);
+        }
+      } catch (error) {
+        console.error('Error fetching problems:', error);
+        setProblems([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProblems();
+  }, [selectedCategory, sortBy]);
 
   const filteredProblems = problems.filter((problem) => {
     const matchesSearch =
@@ -145,85 +173,74 @@ export function BrowseProblems() {
 
         {/* Problems Grid */}
         <div className="grid gap-6">
-          {filteredProblems.map((problem) => (
-            <Link
-              key={problem.id}
-              to={`/problem/${problem.id}`}
-            >
-              <div className="relative group">
-                <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/5 to-blue-500/5 rounded-2xl blur-xl group-hover:blur-2xl transition-all" />
-                <div className="relative bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-2xl p-6 hover:border-cyan-500/30 transition-all">
-                  <div className="flex flex-col lg:flex-row gap-6">
-                    {/* Main Content */}
-                    <div className="flex-1">
-                      <div className="flex items-start justify-between mb-3">
-                        <h3 className="text-2xl font-bold text-white group-hover:text-cyan-400 transition-colors">
-                          {problem.title}
-                        </h3>
-                        <Badge className="bg-cyan-500/20 text-cyan-400 border-cyan-500/30">
-                          {problem.category}
-                        </Badge>
-                      </div>
-                      <p className="text-gray-400 mb-4 line-clamp-2">
-                        {problem.description}
-                      </p>
+          {loading ? (
+            <div className="text-center text-gray-400 py-12">Loading problems...</div>
+          ) : filteredProblems.length === 0 ? (
+            <div className="text-center text-gray-400 py-12">No problems found</div>
+          ) : (
+            filteredProblems.map((problem) => (
+              <Link
+                key={problem.id}
+                to={`/problem/${problem.id}`}
+              >
+                <div className="relative group">
+                  <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/5 to-blue-500/5 rounded-2xl blur-xl group-hover:blur-2xl transition-all" />
+                  <div className="relative bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-2xl p-6 hover:border-cyan-500/30 transition-all">
+                    <div className="flex flex-col lg:flex-row gap-6">
+                      {/* Main Content */}
+                      <div className="flex-1">
+                        <div className="flex items-start justify-between mb-3">
+                          <h3 className="text-2xl font-bold text-white group-hover:text-cyan-400 transition-colors">
+                            {problem.title}
+                          </h3>
+                          <Badge className="bg-cyan-500/20 text-cyan-400 border-cyan-500/30">
+                            {problem.category}
+                          </Badge>
+                        </div>
+                        <p className="text-gray-400 mb-4 line-clamp-2">
+                          {problem.description}
+                        </p>
 
-                      <div className="flex flex-wrap gap-4 text-sm">
-                        <div className="flex items-center gap-1.5 text-gray-400">
-                          <User className="w-4 h-4" />
-                          <span>
-                            {problem.builders} builders
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-1.5 text-gray-400">
-                          <TrendingUp className="w-4 h-4" />
-                          <span>${problem.tips} in tips</span>
-                        </div>
-                        <div className="flex items-center gap-1.5 text-gray-400">
-                          <Clock className="w-4 h-4" />
-                          <span>{problem.deadline} left</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Bounty */}
-                    <div className="flex flex-col items-end justify-between lg:min-w-[200px]">
-                      <div className="text-right">
-                        <div className="text-sm text-gray-400 mb-1">
-                          Total Bounty
-                        </div>
-                        <div className="text-3xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
-                          ${problem.bounty.toLocaleString()}
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          {problem.currency}
+                        <div className="flex flex-wrap gap-4 text-sm">
+                          <div className="flex items-center gap-1.5 text-gray-400">
+                            <User className="w-4 h-4" />
+                            <span>
+                              {problem.proposals || 0} proposals
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1.5 text-gray-400">
+                            <TrendingUp className="w-4 h-4" />
+                            <span>{problem.upvotes || 0} upvotes</span>
+                          </div>
+                          <div className="flex items-center gap-1.5 text-gray-400">
+                            <Clock className="w-4 h-4" />
+                            <span>{new Date(problem.createdAt).toLocaleDateString()}</span>
+                          </div>
                         </div>
                       </div>
 
-                      <Button className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white border-0 w-full">
-                        View Details
-                      </Button>
+                      {/* Bounty */}
+                      <div className="flex flex-col items-end justify-between lg:min-w-[200px]">
+                        <div className="text-right">
+                          <div className="text-sm text-gray-400 mb-1">
+                            Total Bounty
+                          </div>
+                          <div className="text-3xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
+                            ${problem.budgetValue?.toLocaleString() || problem.budget}
+                          </div>
+                        </div>
+
+                        <Button className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white border-0 w-full">
+                          View Details
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            </Link>
-          ))}
+              </Link>
+            ))
+          )}
         </div>
-
-        {filteredProblems.length === 0 && (
-          <div className="text-center py-16">
-            <div className="w-16 h-16 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Search className="w-8 h-8 text-gray-600" />
-            </div>
-            <h3 className="text-xl font-bold mb-2 text-gray-400">
-              No problems found
-            </h3>
-            <p className="text-gray-500">
-              Try adjusting your search or filters
-            </p>
-          </div>
-        )}
       </div>
     </div>
   );

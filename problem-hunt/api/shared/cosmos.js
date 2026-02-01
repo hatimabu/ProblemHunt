@@ -2,8 +2,12 @@
 const endpoint = process.env.COSMOS_ENDPOINT;
 const key = process.env.COSMOS_KEY;
 
-// Use mock if no Cosmos credentials
-if (!endpoint || !key || endpoint.includes('your-account')) {
+// Use mock if no Cosmos credentials or if using placeholder values
+if (!endpoint || !key || 
+    endpoint.includes('your-account') || 
+    key.includes('PASTE_YOUR') || 
+    key === 'placeholder-key' ||
+    key.length < 20) {
   console.log('⚠️  Using MOCK in-memory database (local development mode)');
   console.log('   To use real Cosmos DB, set COSMOS_ENDPOINT and COSMOS_KEY in local.settings.json');
   module.exports = require('./cosmos-mock');

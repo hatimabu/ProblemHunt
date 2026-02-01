@@ -34,7 +34,7 @@ export function PostProblem() {
     setError(null);
     
     try {
-      const response = await fetch('/api/CreateProblem', {
+      const response = await fetch('/api/problems', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
