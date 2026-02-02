@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useParams } from "react-router";
 import { Code, Clock, DollarSign, TrendingUp, User, Calendar, Send, Heart } from "lucide-react";
 import { Button } from "../components/ui/button";
@@ -31,20 +31,69 @@ interface Problem {
   title: string;
   description: string;
   requirements?: string[];
-  bounty: number;
-  currency: string;
-  deadline: string;
+  budget: string;
+  budgetValue: number;
   category: string;
-  postedBy: string;
-  postedDate: string;
-  status: string;
+  author: string;
+  authorId: string;
+  upvotes: number;
+  proposals: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export function ProblemDetail() {
   const { id } = useParams();
   const [tipAmount, setTipAmount] = useState("");
-  const [problem] = useState<Problem | null>(null);
+  const [problem, setProblem] = useState<Problem | null>(null);
   const [builders] = useState<Builder[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchProblem = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch(`/api/problems/${id}`);
+        if (response.ok) {
+          const data = await response.json();
+          setProblem(data);
+        } else {
+          setProblem(null);
+        }
+      } catch (error) {
+        console.error('Error fetching problem:', error);
+        setProblem(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (id) {
+      fetchProblem();
+    }
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#0a0a0f] text-gray-100">
+        <header className="border-b border-gray-800/50 backdrop-blur-sm sticky top-0 z-50 bg-[#0a0a0f]/80">
+          <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+            <Link to="/" className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-gradient-to-br from-cyan-400 to-blue-600 rounded-lg flex items-center justify-center">
+                <Code className="w-5 h-5 text-white" />
+              </div>
+              <span className="text-xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
+                problemhunt.cc
+              </span>
+            </Link>
+          </div>
+        </header>
+        <div className="container mx-auto px-4 py-16 text-center">
+          <div className="text-xl text-gray-400">Loading...</div>
+        </div>
+      </div>
+    );
+  }
 
   if (!problem) {
     return (
@@ -138,15 +187,15 @@ export function ProblemDetail() {
                 <div className="flex flex-wrap gap-4 text-sm text-gray-400 mb-6">
                   <div className="flex items-center gap-1.5">
                     <User className="w-4 h-4" />
-                    <span>Posted by {problem.postedBy}</span>
+                    <span>Posted by {problem.author}</span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <Calendar className="w-4 h-4" />
-                    <span>{problem.postedDate}</span>
+                    <span>{new Date(problem.createdAt).toLocaleDateString()}</span>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <Clock className="w-4 h-4" />
-                    <span>{problem.deadline} left</span>
+                    <TrendingUp className="w-4 h-4" />
+                    <span>{problem.upvotes} upvotes</span>
                   </div>
                 </div>
 
@@ -154,15 +203,19 @@ export function ProblemDetail() {
                   <h3 className="text-xl font-bold mb-3 text-white">Problem Description</h3>
                   <p className="text-gray-300 leading-relaxed mb-6">{problem.description}</p>
 
-                  <h3 className="text-xl font-bold mb-3 text-white">Requirements</h3>
-                  <ul className="space-y-2">
-                    {problem.requirements?.map((req, index) => (
-                      <li key={index} className="text-gray-300 flex items-start gap-2">
-                        <span className="text-cyan-400 mt-1">→</span>
-                        <span>{req}</span>
-                      </li>
-                    ))}
-                  </ul>
+                  {problem.requirements && problem.requirements.length > 0 && (
+                    <>
+                      <h3 className="text-xl font-bold mb-3 text-white">Requirements</h3>
+                      <ul className="space-y-2">
+                        {problem.requirements.map((req, index) => (
+                          <li key={index} className="text-gray-300 flex items-start gap-2">
+                            <span className="text-cyan-400 mt-1">→</span>
+                            <span>{req}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
@@ -255,17 +308,20 @@ export function ProblemDetail() {
               <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 to-blue-500/10 rounded-2xl blur-xl" />
               <div className="relative bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-2xl p-6">
                 <div className="text-center mb-4">
-                  <div className="text-sm text-gray-400 mb-2">Total Bounty</div>
+                  <div className="text-sm text-gray-400 mb-2">Bounty</div>
                   <div className="text-5xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
-                    ${problem.bounty?.toLocaleString()}
+                    {problem.budget}
                   </div>
-                  <div className="text-sm text-gray-500">{problem.currency}</div>
                 </div>
 
                 <div className="space-y-3 mb-6">
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-400">Time Remaining</span>
-                    <span className="text-white font-medium">{problem.deadline}</span>
+                    <span className="text-gray-400">Upvotes</span>
+                    <span className="text-white font-medium">{problem.upvotes}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-400">Proposals</span>
+                    <span className="text-white font-medium">{problem.proposals}</span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-gray-400">Active Builders</span>
