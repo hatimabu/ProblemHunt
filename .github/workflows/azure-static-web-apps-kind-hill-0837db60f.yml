@@ -1,5 +1,6 @@
 name: Azure Static Web Apps CI/CD
 
+# Triggers on push to main branch and pull requests
 on:
   push:
     branches:
