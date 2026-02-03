@@ -17,6 +17,9 @@ obj/
 problem-hunt/lib/config.js
 # Keep the template file: problem-hunt/lib/config.template.js
 
+# Mock database (local development only)
+problem-hunt/mock-db-data.json
+
 # IDEs
 
 .idea/

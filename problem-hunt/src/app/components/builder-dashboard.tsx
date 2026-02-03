@@ -10,6 +10,7 @@ import {
   Heart,
   Award,
   ChevronRight,
+  Tag,
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { supabase } from "../../../lib/supabaseClient";
@@ -27,15 +28,33 @@ interface ProfileData {
   user_type: string;
 }
 
+interface Problem {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  budget: string;
+  budgetValue: number;
+  upvotes: number;
+  proposals: number;
+  author: string;
+  authorId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export function BuilderDashboard() {
   const [updateText, setUpdateText] = useState("");
   const { user, logout } = useAuth();
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [userProblems, setUserProblems] = useState<Problem[]>([]);
+  const [problemsLoading, setProblemsLoading] = useState(true);
 
   useEffect(() => {
     if (user) {
       fetchProfile();
+      fetchUserProblems();
     }
   }, [user]);
 
@@ -55,6 +74,36 @@ export function BuilderDashboard() {
       console.error('Error fetching profile:', error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const fetchUserProblems = async () => {
+    if (!user) return;
+
+    try {
+      setProblemsLoading(true);
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+
+      const response = await fetch('/api/user/problems?sortBy=newest', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setUserProblems(Array.isArray(data.problems) ? data.problems : []);
+      } else {
+        console.error('Failed to fetch user problems');
+        setUserProblems([]);
+      }
+    } catch (error) {
+      console.error('Error fetching user problems:', error);
+      setUserProblems([]);
+    } finally {
+      setProblemsLoading(false);
     }
   };
 
@@ -143,18 +192,98 @@ export function BuilderDashboard() {
 
         {/* Projects Section */}
         <div className="space-y-6">
-          <div className="text-center py-12">
-            <div className="text-gray-400 mb-4">
-              <Target className="w-16 h-16 mx-auto mb-4 opacity-50" />
-              <h3 className="text-xl font-semibold text-white mb-2">No Projects Yet</h3>
-              <p className="text-sm">Start browsing problems to begin working on projects</p>
-            </div>
-            <Link to="/browse">
-              <Button className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white border-0 mt-4">
-                Browse Problems
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold text-white">My Posted Problems</h2>
+            <Link to="/post">
+              <Button className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white border-0">
+                Post New Problem
               </Button>
             </Link>
           </div>
+
+          {problemsLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-500"></div>
+            </div>
+          ) : userProblems.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="text-gray-400 mb-4">
+                <Target className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                <h3 className="text-xl font-semibold text-white mb-2">No Problems Posted Yet</h3>
+                <p className="text-sm">Start by posting a problem you need solved</p>
+              </div>
+              <Link to="/post">
+                <Button className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white border-0 mt-4">
+                  Post Your First Problem
+                </Button>
+              </Link>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {userProblems.map((problem) => (
+                <div key={problem.id} className="relative">
+                  <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-indigo-500/5 rounded-2xl blur-xl" />
+                  <div className="relative bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-2xl p-6 hover:border-cyan-500/30 transition-colors">
+                    <div className="flex flex-col lg:flex-row gap-6">
+                      <div className="flex-1">
+                        <div className="flex items-start justify-between mb-4">
+                          <div className="flex-1">
+                            <Link to={`/problem/${problem.id}`}>
+                              <h3 className="text-2xl font-bold text-white mb-2 hover:text-cyan-400 transition-colors">
+                                {problem.title}
+                              </h3>
+                            </Link>
+                            <p className="text-gray-400 mb-3 line-clamp-2">{problem.description}</p>
+                            <div className="flex flex-wrap gap-4 text-sm text-gray-400">
+                              <div className="flex items-center gap-1">
+                                <Tag className="w-4 h-4" />
+                                <span>{problem.category}</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Clock className="w-4 h-4" />
+                                <span>{new Date(problem.createdAt).toLocaleDateString()}</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <TrendingUp className="w-4 h-4" />
+                                <span>{problem.upvotes} upvotes</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Send className="w-4 h-4" />
+                                <span>{problem.proposals} proposals</span>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="text-right ml-4">
+                            <Badge className="bg-cyan-500/20 text-cyan-400 border-cyan-500/30 mb-2">
+                              {problem.category}
+                            </Badge>
+                            <div className="text-sm text-gray-400 mb-1">Budget</div>
+                            <div className="text-2xl font-bold text-cyan-400">
+                              {problem.budget}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex flex-col gap-2 lg:min-w-[180px]">
+                        <Link to={`/problem/${problem.id}`}>
+                          <Button className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white border-0 w-full">
+                            View Details
+                            <ChevronRight className="w-4 h-4 ml-2" />
+                          </Button>
+                        </Link>
+                        <Button
+                          variant="outline"
+                          className="border-gray-700 hover:bg-gray-800 text-white w-full"
+                        >
+                          View Proposals
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Hidden for now - will be populated with real data */}

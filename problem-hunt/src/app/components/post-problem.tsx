@@ -12,11 +12,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { supabase } from "../../../lib/supabaseClient";
+import { useAuth } from "../contexts/AuthContext";
 
 const CATEGORIES = ["AI/ML", "Web3", "Finance", "Governance", "Trading", "Infrastructure"];
 
 export function PostProblem() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -34,10 +37,15 @@ export function PostProblem() {
     setError(null);
     
     try {
+      // Get the authentication token
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+
       const response = await fetch('/api/problems', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...(token && { 'Authorization': `Bearer ${token}` }),
         },
         body: JSON.stringify({
           title: formData.title,
@@ -46,6 +54,7 @@ export function PostProblem() {
           budget: formData.bounty,
           requirements: formData.requirements,
           deadline: formData.deadline,
+          author: user?.username || user?.email || 'Anonymous User',
         }),
       });
 

@@ -1,4 +1,39 @@
 // Mock in-memory database for local development
+const fs = require('fs');
+const path = require('path');
+
+// Path to store mock data
+const DATA_FILE = path.join(__dirname, '..', '..', 'mock-db-data.json');
+
+// Load data from file if exists
+let persistedData = { problems: [], proposals: [], upvotes: [], tips: [] };
+try {
+  if (fs.existsSync(DATA_FILE)) {
+    const fileContent = fs.readFileSync(DATA_FILE, 'utf8');
+    persistedData = JSON.parse(fileContent);
+    console.log('📂 Loaded persisted data from mock database file');
+  } else {
+    console.log('🆕 Starting with empty database (no mock data)');
+  }
+} catch (error) {
+  console.log('⚠️  Could not load persisted mock data:', error.message);
+}
+
+// Save data to file
+function saveData() {
+  try {
+    const data = {
+      problems: Array.from(problemsContainer.data.values()),
+      proposals: Array.from(proposalsContainer.data.values()),
+      upvotes: Array.from(upvotesContainer.data.values()),
+      tips: Array.from(tipsContainer.data.values())
+    };
+    fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), 'utf8');
+  } catch (error) {
+    console.error('⚠️  Could not save mock data:', error.message);
+  }
+}
+
 class MockContainer {
     constructor(name) {
       this.name = name;
@@ -8,6 +43,7 @@ class MockContainer {
     items = {
       create: async (item) => {
         this.data.set(item.id, item);
+        saveData(); // Persist to file
         return { resource: item };
       },
   
@@ -15,7 +51,7 @@ class MockContainer {
         fetchAll: async () => {
           let results = Array.from(this.data.values());
           
-          // Simple filtering for category
+          // Simple filtering
           if (querySpec.parameters) {
             querySpec.parameters.forEach(param => {
               if (param.name === '@category') {
@@ -29,6 +65,9 @@ class MockContainer {
               }
               if (param.name === '@problemId') {
                 results = results.filter(r => r.problemId === param.value);
+              }
+              if (param.name === '@authorId') {
+                results = results.filter(r => r.authorId === param.value);
               }
               if (param.name === '@term') {
                 const term = param.value.toLowerCase();
@@ -63,136 +102,35 @@ class MockContainer {
         },
         replace: async (item) => {
           this.data.set(id, item);
+          saveData(); // Persist to file
           return { resource: item };
         },
         delete: async () => {
           this.data.delete(id);
+          saveData(); // Persist to file
           return {};
         }
       };
     }
   }
   
-  // Pre-populate with dummy data
+  // Create containers
   const problemsContainer = new MockContainer('Problems');
   const proposalsContainer = new MockContainer('Proposals');
   const upvotesContainer = new MockContainer('Upvotes');
+  const tipsContainer = new MockContainer('Tips');
   
-  // Add initial dummy problems
-  const dummyProblems = [
-    {
-      id: '1',
-      title: 'I need a way to automatically transcribe and summarize my Zoom calls',
-      description: 'After every meeting, I spend 30 minutes writing notes. I want a tool that records, transcribes, and gives me a 3-bullet summary of action items.',
-      category: 'Productivity',
-      budget: '$50/month',
-      budgetValue: 50,
-      upvotes: 342,
-      proposals: 8,
-      author: 'David Chen',
-      authorId: 'user1',
-      createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
-    },
-    {
-      id: '2',
-      title: 'A tool that tracks when my favorite creators post new content across all platforms',
-      description: 'I follow creators on YouTube, Twitter, Substack, and TikTok. I want one place to see when they post anything new.',
-      category: 'Social',
-      budget: '$15/month',
-      budgetValue: 15,
-      upvotes: 289,
-      proposals: 12,
-      author: 'Emma Wilson',
-      authorId: 'user2',
-      createdAt: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString()
-    },
-    {
-      id: '3',
-      title: 'An app that reminds me to follow up with people I met at conferences',
-      description: 'I collect business cards and LinkedIn connections but never follow up. Need smart reminders based on context and my calendar.',
-      category: 'Productivity',
-      budget: '$20/month',
-      budgetValue: 20,
-      upvotes: 256,
-      proposals: 6,
-      author: 'Jason Park',
-      authorId: 'user3',
-      createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
-    },
-    {
-      id: '4',
-      title: 'A browser extension that blocks LinkedIn recruiters unless they mention salary',
-      description: 'Tired of "exciting opportunity" messages that waste my time. Only show me messages that include actual compensation info.',
-      category: 'Productivity',
-      budget: '$10/month',
-      budgetValue: 10,
-      upvotes: 518,
-      proposals: 15,
-      author: 'Rachel Torres',
-      authorId: 'user4',
-      createdAt: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString()
-    },
-    {
-      id: '5',
-      title: 'Software that automatically categorizes and files my business receipts',
-      description: 'I take photos of receipts but never organize them. Need OCR + smart categorization for tax time.',
-      category: 'Finance',
-      budget: '$30/month',
-      budgetValue: 30,
-      upvotes: 198,
-      proposals: 9,
-      author: 'Marcus Johnson',
-      authorId: 'user5',
-      createdAt: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString()
-    },
-    {
-      id: '6',
-      title: 'A service that negotiates my bills for me automatically',
-      description: 'Cable, phone, insurance - I know I\'m overpaying but hate calling. Want AI to negotiate better rates on my behalf.',
-      category: 'Finance',
-      budget: '$25/month',
-      budgetValue: 25,
-      upvotes: 445,
-      proposals: 11,
-      author: 'Lisa Anderson',
-      authorId: 'user6',
-      createdAt: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString()
-    },
-    {
-      id: '7',
-      title: 'An AI that writes personalized thank-you notes based on gift descriptions',
-      description: 'I\'m terrible at thank-you notes. Tell it what gift I got from whom, and it writes a genuine-sounding note.',
-      category: 'Social',
-      budget: '$5/use',
-      budgetValue: 5,
-      upvotes: 167,
-      proposals: 4,
-      author: 'Kevin Martinez',
-      authorId: 'user7',
-      createdAt: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString()
-    },
-    {
-      id: '8',
-      title: 'A tool that finds the cheapest combination of streaming services for shows I want to watch',
-      description: 'I want to watch 20 specific shows. Tell me the cheapest combo of Netflix/Hulu/etc to get them all, and when to rotate subscriptions.',
-      category: 'Entertainment',
-      budget: '$10/month',
-      budgetValue: 10,
-      upvotes: 623,
-      proposals: 18,
-      author: 'Amy Zhang',
-      authorId: 'user8',
-      createdAt: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString()
-    }
-  ];
-  
-  dummyProblems.forEach(p => problemsContainer.data.set(p.id, p));
+  // Load persisted data (start with empty database if no persisted data exists)
+  persistedData.problems.forEach(p => problemsContainer.data.set(p.id, p));
+  persistedData.proposals.forEach(p => proposalsContainer.data.set(p.id, p));
+  persistedData.upvotes.forEach(u => upvotesContainer.data.set(u.id, u));
+  persistedData.tips.forEach(t => tipsContainer.data.set(t.id, t));
   
   const containers = {
     problems: problemsContainer,
     proposals: proposalsContainer,
     upvotes: upvotesContainer,
-    tips: new MockContainer('Tips')
+    tips: tipsContainer
   };
   
   module.exports = { containers };
