@@ -233,9 +233,9 @@ export function BuilderDashboard() {
         </div>
 
         {/* Projects Section */}
-        <div className="space-y-6">
+        <Tabs defaultValue="problems" className="space-y-6">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-white">My Posted Problems</h2>
+            <h2 className="text-2xl font-bold text-white">My Activity</h2>
             <Link to="/post">
               <Button className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white border-0">
                 Post New Problem
@@ -243,121 +243,148 @@ export function BuilderDashboard() {
             </Link>
           </div>
 
-          {problemsLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-500"></div>
-            </div>
-          ) : userProblems.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="text-gray-400 mb-4">
-                <Target className="w-16 h-16 mx-auto mb-4 opacity-50" />
-                <h3 className="text-xl font-semibold text-white mb-2">No Problems Posted Yet</h3>
-                <p className="text-sm">Start by posting a problem you need solved</p>
+          <TabsList className="bg-gray-900/50 border border-gray-800 p-1">
+            <TabsTrigger
+              value="problems"
+              className="data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-400 text-gray-400"
+            >
+              Posted Problems
+            </TabsTrigger>
+            <TabsTrigger
+              value="proposals"
+              className="data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-400 text-gray-400"
+            >
+              Posted Proposals
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="problems" className="space-y-6">
+            {problemsLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-500"></div>
               </div>
-              <Link to="/post">
-                <Button className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white border-0 mt-4">
-                  Post Your First Problem
-                </Button>
-              </Link>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {userProblems.map((problem) => (
-                <div key={problem.id} className="relative">
-                  <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-indigo-500/5 rounded-2xl blur-xl" />
-                  <div className="relative bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-2xl p-6 hover:border-cyan-500/30 transition-colors">
-                    <div className="flex flex-col lg:flex-row gap-6">
-                      <div className="flex-1">
-                        <div className="flex items-start justify-between mb-4">
-                          <div className="flex-1">
-                            <Link to={`/problem/${problem.id}`}>
-                              <h3 className="text-2xl font-bold text-white mb-2 hover:text-cyan-400 transition-colors">
-                                {problem.title}
-                              </h3>
-                            </Link>
-                            <p className="text-gray-400 mb-3 line-clamp-2">{problem.description}</p>
-                            <div className="flex flex-wrap gap-4 text-sm text-gray-400">
-                              <div className="flex items-center gap-1">
-                                <Tag className="w-4 h-4" />
-                                <span>{problem.category}</span>
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <Clock className="w-4 h-4" />
-                                <span>{new Date(problem.createdAt).toLocaleDateString()}</span>
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <TrendingUp className="w-4 h-4" />
-                                <span>{problem.upvotes} upvotes</span>
-                              </div>
-                              <div className="flex items-center gap-1">
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button
-                              variant="outline"
-                              className="border-red-500/30 text-red-400 hover:bg-red-500/10 hover:border-red-500/50 w-full"
-                              disabled={deletingProblemId === problem.id}
-                            >
-                              <Trash2 className="w-4 h-4 mr-2" />
-                              {deletingProblemId === problem.id ? 'Deleting...' : 'Delete'}
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent className="bg-gray-900 border-gray-800 text-white">
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Delete Problem?</AlertDialogTitle>
-                              <AlertDialogDescription className="text-gray-400">
-                                Are you sure you want to delete "{problem.title}"? This action cannot be undone and will remove all associated proposals and upvotes.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel className="bg-gray-800 border-gray-700 text-white hover:bg-gray-700">
-                                Cancel
-                              </AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={() => handleDeleteProblem(problem.id)}
-                                className="bg-red-600 hover:bg-red-700 text-white"
-                              >
-                                Delete Problem
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                                <Send className="w-4 h-4" />
-                                <span>{problem.proposals} proposals</span>
+            ) : userProblems.length === 0 ? (
+              <div className="text-center py-12">
+                <div className="text-gray-400 mb-4">
+                  <Target className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                  <h3 className="text-xl font-semibold text-white mb-2">No Problems Posted Yet</h3>
+                  <p className="text-sm">Start by posting a problem you need solved</p>
+                </div>
+                <Link to="/post">
+                  <Button className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white border-0 mt-4">
+                    Post Your First Problem
+                  </Button>
+                </Link>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {userProblems.map((problem) => (
+                  <div key={problem.id} className="relative">
+                    <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-indigo-500/5 rounded-2xl blur-xl" />
+                    <div className="relative bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-2xl p-6 hover:border-cyan-500/30 transition-colors">
+                      <div className="flex flex-col lg:flex-row gap-6">
+                        <div className="flex-1">
+                          <div className="flex items-start justify-between mb-4">
+                            <div className="flex-1">
+                              <Link to={`/problem/${problem.id}`}>
+                                <h3 className="text-2xl font-bold text-white mb-2 hover:text-cyan-400 transition-colors">
+                                  {problem.title}
+                                </h3>
+                              </Link>
+                              <p className="text-gray-400 mb-3 line-clamp-2">{problem.description}</p>
+                              <div className="flex flex-wrap gap-4 text-sm text-gray-400">
+                                <div className="flex items-center gap-1">
+                                  <Tag className="w-4 h-4" />
+                                  <span>{problem.category}</span>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <Clock className="w-4 h-4" />
+                                  <span>{new Date(problem.createdAt).toLocaleDateString()}</span>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <TrendingUp className="w-4 h-4" />
+                                  <span>{problem.upvotes} upvotes</span>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <Send className="w-4 h-4" />
+                                  <span>{problem.proposals} proposals</span>
+                                </div>
                               </div>
                             </div>
-                          </div>
-                          <div className="text-right ml-4">
-                            <Badge className="bg-cyan-500/20 text-cyan-400 border-cyan-500/30 mb-2">
-                              {problem.category}
-                            </Badge>
-                            <div className="text-sm text-gray-400 mb-1">Budget</div>
-                            <div className="text-2xl font-bold text-cyan-400">
-                              {problem.budget}
+                            <div className="text-right ml-4">
+                              <Badge className="bg-cyan-500/20 text-cyan-400 border-cyan-500/30 mb-2">
+                                {problem.category}
+                              </Badge>
+                              <div className="text-sm text-gray-400 mb-1">Budget</div>
+                              <div className="text-2xl font-bold text-cyan-400">
+                                {problem.budget}
+                              </div>
                             </div>
                           </div>
                         </div>
-                      </div>
-                      <div className="flex flex-col gap-2 lg:min-w-[180px]">
-                        <Link to={`/problem/${problem.id}`}>
-                          <Button className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white border-0 w-full">
-                            View Details
-                            <ChevronRight className="w-4 h-4 ml-2" />
+                        <div className="flex flex-col gap-2 lg:min-w-[180px]">
+                          <Link to={`/problem/${problem.id}`}>
+                            <Button className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white border-0 w-full">
+                              View Details
+                              <ChevronRight className="w-4 h-4 ml-2" />
+                            </Button>
+                          </Link>
+                          <Button
+                            variant="outline"
+                            className="border-gray-700 hover:bg-gray-800 text-white w-full"
+                          >
+                            View Proposals
                           </Button>
-                        </Link>
-                        <Button
-                          variant="outline"
-                          className="border-gray-700 hover:bg-gray-800 text-white w-full"
-                        >
-                          View Proposals
-                        </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="outline"
+                                className="border-red-500/30 text-red-400 hover:bg-red-500/10 hover:border-red-500/50 w-full"
+                                disabled={deletingProblemId === problem.id}
+                              >
+                                <Trash2 className="w-4 h-4 mr-2" />
+                                {deletingProblemId === problem.id ? 'Deleting...' : 'Delete'}
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent className="bg-gray-900 border-gray-800 text-white">
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Delete Problem?</AlertDialogTitle>
+                                <AlertDialogDescription className="text-gray-400">
+                                  Are you sure you want to delete "{problem.title}"? This action cannot be undone and will remove all associated proposals and upvotes.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel className="bg-gray-800 border-gray-700 text-white hover:bg-gray-700">
+                                  Cancel
+                                </AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => handleDeleteProblem(problem.id)}
+                                  className="bg-red-600 hover:bg-red-700 text-white"
+                                >
+                                  Delete Problem
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="proposals" className="space-y-6">
+            <div className="text-center py-12">
+              <div className="text-gray-400 mb-4">
+                <Target className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                <h3 className="text-xl font-semibold text-white mb-2">No Proposals Posted Yet</h3>
+                <p className="text-sm">Your proposals will show here once you submit them</p>
+              </div>
             </div>
-          )}
-        </div>
+          </TabsContent>
+        </Tabs>
 
         {/* Hidden for now - will be populated with real data */}
         {false && (
