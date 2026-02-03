@@ -11,6 +11,7 @@ import {
   Award,
   ChevronRight,
   Tag,
+  Trash2,
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { supabase } from "../../../lib/supabaseClient";
@@ -20,6 +21,17 @@ import { Textarea } from "./ui/textarea";
 import { Avatar, AvatarFallback } from "./ui/avatar";
 import { Progress } from "./ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "./ui/alert-dialog";
 
 interface ProfileData {
   username: string;
@@ -50,6 +62,7 @@ export function BuilderDashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [userProblems, setUserProblems] = useState<Problem[]>([]);
   const [problemsLoading, setProblemsLoading] = useState(true);
+  const [deletingProblemId, setDeletingProblemId] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -104,6 +117,35 @@ export function BuilderDashboard() {
       setUserProblems([]);
     } finally {
       setProblemsLoading(false);
+    }
+  };
+
+  const handleDeleteProblem = async (problemId: string) => {
+    try {
+      setDeletingProblemId(problemId);
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+
+      const response = await fetch(`/api/problems/${problemId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        // Remove the problem from the local state
+        setUserProblems(prev => prev.filter(p => p.id !== problemId));
+      } else {
+        console.error('Failed to delete problem');
+        alert('Failed to delete problem. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error deleting problem:', error);
+      alert('Error deleting problem. Please try again.');
+    } finally {
+      setDeletingProblemId(null);
     }
   };
 
@@ -248,6 +290,37 @@ export function BuilderDashboard() {
                                 <span>{problem.upvotes} upvotes</span>
                               </div>
                               <div className="flex items-center gap-1">
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="outline"
+                              className="border-red-500/30 text-red-400 hover:bg-red-500/10 hover:border-red-500/50 w-full"
+                              disabled={deletingProblemId === problem.id}
+                            >
+                              <Trash2 className="w-4 h-4 mr-2" />
+                              {deletingProblemId === problem.id ? 'Deleting...' : 'Delete'}
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent className="bg-gray-900 border-gray-800 text-white">
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete Problem?</AlertDialogTitle>
+                              <AlertDialogDescription className="text-gray-400">
+                                Are you sure you want to delete "{problem.title}"? This action cannot be undone and will remove all associated proposals and upvotes.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel className="bg-gray-800 border-gray-700 text-white hover:bg-gray-700">
+                                Cancel
+                              </AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => handleDeleteProblem(problem.id)}
+                                className="bg-red-600 hover:bg-red-700 text-white"
+                              >
+                                Delete Problem
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                                 <Send className="w-4 h-4" />
                                 <span>{problem.proposals} proposals</span>
                               </div>
