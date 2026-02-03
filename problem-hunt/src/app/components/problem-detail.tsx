@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router";
-import { Code, Clock, DollarSign, TrendingUp, User, Calendar, Heart } from "lucide-react";
+import { Code, Clock, DollarSign, TrendingUp, User, Calendar, Send, Heart } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
 import { Textarea } from "../components/ui/textarea";
@@ -44,6 +44,7 @@ interface Problem {
 
 export function ProblemDetail() {
   const { id } = useParams();
+  const [tipAmount, setTipAmount] = useState("");
   const [problem, setProblem] = useState<Problem | null>(null);
   const [builders] = useState<Builder[]>([]);
   const [loading, setLoading] = useState(true);
@@ -247,6 +248,12 @@ export function ProblemDetail() {
                             </div>
                           </div>
                         </div>
+                        <div className="text-right">
+                          <div className="text-sm text-gray-400 mb-1">Total Tips</div>
+                          <div className="text-lg font-bold text-cyan-400">
+                            ${builder.totalTips}
+                          </div>
+                        </div>
                       </div>
 
                       <div className="mb-4">
@@ -281,6 +288,12 @@ export function ProblemDetail() {
                         ))}
                       </div>
 
+                      <div className="mt-4 pt-4 border-t border-gray-700/50">
+                        <Button className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white border-0 w-full">
+                          <Heart className="w-4 h-4 mr-2" />
+                          Tip This Builder
+                        </Button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -314,6 +327,12 @@ export function ProblemDetail() {
                     <span className="text-gray-400">Active Builders</span>
                     <span className="text-white font-medium">{builders.length}</span>
                   </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-400">Total Tips Given</span>
+                    <span className="text-cyan-400 font-medium">
+                      ${builders.reduce((sum, b) => sum + b.totalTips, 0)}
+                    </span>
+                  </div>
                 </div>
 
                 <Button className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white border-0 w-full">
@@ -322,6 +341,33 @@ export function ProblemDetail() {
               </div>
             </div>
 
+            {/* Quick Tip */}
+            <div className="relative">
+              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-indigo-500/10 rounded-2xl blur-xl" />
+              <div className="relative bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-2xl p-6">
+                <h3 className="text-lg font-bold mb-4 text-white">Quick Tip</h3>
+                <p className="text-sm text-gray-400 mb-4">
+                  Support builders making progress on this problem
+                </p>
+                <div className="flex gap-2 mb-3">
+                  {[10, 25, 50, 100].map((amount) => (
+                    <Button
+                      key={amount}
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setTipAmount(String(amount))}
+                      className="flex-1 border-gray-800 hover:bg-gray-800 text-gray-300"
+                    >
+                      ${amount}
+                    </Button>
+                  ))}
+                </div>
+                <Button className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white border-0 w-full">
+                  <Send className="w-4 h-4 mr-2" />
+                  Send Tip
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
