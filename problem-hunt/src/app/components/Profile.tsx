@@ -9,6 +9,9 @@ import { Badge } from "./ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { supabase } from "../../../lib/supabaseClient";
 import { useAuth } from "../contexts/AuthContext";
+import { ethers } from "ethers";
+
+type ChainType = 'ethereum' | 'polygon' | 'arbitrum' | 'solana';
 
 interface ProfileData {
   id: string;
@@ -38,6 +41,11 @@ export function Profile() {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+  const [linkingChain, setLinkingChain] = useState<ChainType | null>(null);
+  const [linkError, setLinkError] = useState("");
+  const [linkSuccess, setLinkSuccess] = useState("");
+  const [isEthereumAvailable, setIsEthereumAvailable] = useState(false);
+  const [isSolanaAvailable, setIsSolanaAvailable] = useState(false);
 
   // Form state for editing
   const [editForm, setEditForm] = useState({
@@ -52,6 +60,11 @@ export function Profile() {
       fetchWallets();
     }
   }, [user]);
+
+  useEffect(() => {
+    setIsEthereumAvailable(typeof window !== "undefined" && typeof (window as any).ethereum !== "undefined");
+    setIsSolanaAvailable(typeof window !== "undefined" && typeof (window as any).solana !== "undefined");
+  }, []);
 
   const fetchProfile = async () => {
     if (!user) return;
@@ -171,6 +184,117 @@ export function Profile() {
       setError(err.message || 'Failed to update profile');
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const saveWalletToDatabase = async (chain: ChainType, address: string) => {
+    if (!user) return;
+
+    // Check if wallet already exists
+    const { data: existing } = await supabase
+      .from('wallets')
+      .select('id')
+      .eq('chain', chain)
+      .eq('address', address)
+      .single();
+
+    if (existing) {
+      setLinkSuccess("Wallet already linked.");
+      return;
+    }
+
+    // Check if user has any wallets
+    const { data: userWallets } = await supabase
+      .from('wallets')
+      .select('id')
+      .eq('user_id', user.id);
+
+    const isPrimary = !userWallets || userWallets.length === 0;
+
+    const { error: insertError } = await supabase
+      .from('wallets')
+      .insert({
+        user_id: user.id,
+        chain,
+        address,
+        is_primary: isPrimary
+      });
+
+    if (insertError) {
+      throw insertError;
+    }
+
+    await fetchWallets();
+  };
+
+  const linkEthereumWallet = async (chain: ChainType = 'ethereum') => {
+    if (!user) return;
+    const ethereum = (window as any).ethereum;
+    if (!ethereum) {
+      setLinkError("Please install MetaMask or another Ethereum wallet");
+      return;
+    }
+
+    try {
+      setLinkingChain(chain);
+      setLinkError("");
+      setLinkSuccess("");
+
+      const accounts = await ethereum.request({ method: 'eth_requestAccounts' }) as string[];
+      if (!accounts || accounts.length === 0) {
+        throw new Error("No accounts found");
+      }
+
+      const walletAddress = accounts[0].toLowerCase();
+      const statement = `Link wallet to ProblemHunt profile\n\nWallet: ${walletAddress}\nTimestamp: ${new Date().toISOString()}`;
+
+      const signature = await ethereum.request({
+        method: 'personal_sign',
+        params: [statement, walletAddress],
+      }) as string;
+
+      const recoveredAddress = ethers.verifyMessage(statement, signature);
+      if (recoveredAddress.toLowerCase() !== walletAddress) {
+        throw new Error("Signature verification failed");
+      }
+
+      await saveWalletToDatabase(chain, walletAddress);
+      setLinkSuccess(`${chain.toUpperCase()} wallet linked successfully.`);
+    } catch (err: any) {
+      console.error('Error linking Ethereum wallet:', err);
+      setLinkError(err.message || 'Failed to link wallet');
+    } finally {
+      setLinkingChain(null);
+    }
+  };
+
+  const linkSolanaWallet = async () => {
+    if (!user) return;
+    const solana = (window as any).solana;
+    if (!solana) {
+      setLinkError("Please install Phantom or another Solana wallet");
+      return;
+    }
+
+    try {
+      setLinkingChain('solana');
+      setLinkError("");
+      setLinkSuccess("");
+
+      const resp = await solana.connect();
+      const walletAddress = resp.publicKey.toString();
+
+      const statement = `Link wallet to ProblemHunt profile\n\nWallet: ${walletAddress}\nTimestamp: ${new Date().toISOString()}`;
+      const encodedMessage = new TextEncoder().encode(statement);
+      await solana.signMessage(encodedMessage, 'utf8');
+
+      await saveWalletToDatabase('solana', walletAddress);
+      setLinkSuccess("SOLANA wallet linked successfully.");
+    } catch (err: any) {
+      console.error('Error linking Solana wallet:', err);
+      setLinkError(err.message || 'Failed to link wallet');
+    } finally {
+      setLinkingChain(null);
     }
   };
 
@@ -372,6 +496,56 @@ export function Profile() {
             </CardTitle>
           </CardHeader>
           <CardContent>
+            {linkError && (
+              <div className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg p-3 mb-4">
+                {linkError}
+              </div>
+            )}
+
+            {linkSuccess && (
+              <div className="text-sm text-green-400 bg-green-500/10 border border-green-500/20 rounded-lg p-3 mb-4">
+                {linkSuccess}
+              </div>
+            )}
+
+            <div className="space-y-3 mb-6">
+              <Button
+                onClick={() => linkEthereumWallet('ethereum')}
+                disabled={!isEthereumAvailable || linkingChain !== null}
+                className="w-full bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white border-0"
+              >
+                {linkingChain === 'ethereum' ? 'Linking...' : 'Link Ethereum Wallet'}
+              </Button>
+
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  onClick={() => linkEthereumWallet('polygon')}
+                  disabled={!isEthereumAvailable || linkingChain !== null}
+                  variant="outline"
+                  className="border-purple-500/30 text-purple-400 hover:bg-purple-500/10"
+                >
+                  {linkingChain === 'polygon' ? 'Linking...' : 'Link Polygon'}
+                </Button>
+
+                <Button
+                  onClick={() => linkEthereumWallet('arbitrum')}
+                  disabled={!isEthereumAvailable || linkingChain !== null}
+                  variant="outline"
+                  className="border-blue-500/30 text-blue-400 hover:bg-blue-500/10"
+                >
+                  {linkingChain === 'arbitrum' ? 'Linking...' : 'Link Arbitrum'}
+                </Button>
+              </div>
+
+              <Button
+                onClick={linkSolanaWallet}
+                disabled={!isSolanaAvailable || linkingChain !== null}
+                className="w-full bg-gradient-to-r from-cyan-500 to-teal-600 hover:from-cyan-600 hover:to-teal-700 text-white border-0"
+              >
+                {linkingChain === 'solana' ? 'Linking...' : 'Link Solana Wallet'}
+              </Button>
+            </div>
+
             {wallets.length === 0 ? (
               <p className="text-gray-500 text-center py-4">
                 No wallets linked yet

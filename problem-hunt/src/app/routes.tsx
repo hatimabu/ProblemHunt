@@ -23,12 +23,16 @@ export const router = createBrowserRouter([
   },
   {
     path: "/post",
-    Component: PostProblem,
+    element: (
+      <ProtectedRoute>
+        <PostProblem />
+      </ProtectedRoute>
+    ),
   },
   {
     path: "/dashboard",
     element: (
-      <ProtectedRoute requireBuilder={true}>
+      <ProtectedRoute>
         <BuilderDashboard />
       </ProtectedRoute>
     ),
