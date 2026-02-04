@@ -6,6 +6,7 @@ import { Badge } from "../components/ui/badge";
 import { Textarea } from "../components/ui/textarea";
 import { Avatar, AvatarFallback } from "../components/ui/avatar";
 import { Progress } from "../components/ui/progress";
+import { CryptoPayment } from "./CryptoPayment";
 
 interface Update {
   id: string;
@@ -289,10 +290,10 @@ export function ProblemDetail() {
                       </div>
 
                       <div className="mt-4 pt-4 border-t border-gray-700/50">
-                        <Button className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white border-0 w-full">
-                          <Heart className="w-4 h-4 mr-2" />
-                          Tip This Builder
-                        </Button>
+                        <CryptoPayment
+                          recipientUserId={builder.id}
+                          recipientName={builder.name}
+                        />
                       </div>
                     </div>
                   ))}
