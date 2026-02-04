@@ -1,10 +1,14 @@
 const { containers } = require('../shared/cosmos');
-const { createResponse, errorResponse, timestamp, getUserId } = require('../shared/utils');
+const { createResponse, errorResponse, timestamp, getAuthenticatedUserId } = require('../shared/utils');
 
 module.exports = async function (context, req) {
   try {
     const problemId = req.params.id;
-    const userId = await getUserId(req);
+    const userId = await getAuthenticatedUserId(req);
+    if (!userId) {
+      context.res = errorResponse(401, 'Authentication required');
+      return;
+    }
     const upvoteId = `${problemId}-${userId}`;
 
     // Check if upvote exists

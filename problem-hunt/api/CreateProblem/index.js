@@ -1,9 +1,15 @@
 const { containers } = require('../shared/cosmos');
-const { createResponse, errorResponse, generateId, validateRequired, parseBudgetValue, timestamp, getUserId } = require('../shared/utils');
+const { createResponse, errorResponse, generateId, validateRequired, parseBudgetValue, timestamp, getAuthenticatedUserId } = require('../shared/utils');
 
 module.exports = async function (context, req) {
   try {
     const data = req.body;
+    const userId = await getAuthenticatedUserId(req);
+
+    if (!userId) {
+      context.res = errorResponse(401, 'Authentication required');
+      return;
+    }
 
     // Validate required fields
     const validationError = validateRequired(data, ['title', 'description', 'category', 'budget']);
@@ -20,17 +26,26 @@ module.exports = async function (context, req) {
     }
 
     // Create problem object
+    const rawRequirements = data.requirements;
+    const requirements = Array.isArray(rawRequirements)
+      ? rawRequirements.map((req) => String(req).trim()).filter(Boolean)
+      : typeof rawRequirements === 'string'
+      ? rawRequirements.split('\n').map((req) => req.trim()).filter(Boolean)
+      : [];
+
     const problem = {
       id: generateId(),
       title: data.title.trim(),
       description: data.description.trim(),
+      requirements,
       category: data.category,
       budget: data.budget,
       budgetValue: parseBudgetValue(data.budget),
       upvotes: 0,
       proposals: 0,
       author: data.author || 'Anonymous User',
-      authorId: await getUserId(req),
+      authorId: userId,
+      deadline: data.deadline || null,
       createdAt: timestamp(),
       updatedAt: timestamp()
     };

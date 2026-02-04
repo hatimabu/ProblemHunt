@@ -42,7 +42,7 @@ export function BrowseProblems() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] =
     useState("All");
-  const [sortBy, setSortBy] = useState("bounty");
+  const [sortBy, setSortBy] = useState("budget");
   const [problems, setProblems] = useState<Problem[]>([]);
   const [loading, setLoading] = useState(true);
 

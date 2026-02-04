@@ -1,10 +1,10 @@
 const { containers } = require('../shared/cosmos');
-const { createResponse, errorResponse, getUserId } = require('../shared/utils');
+const { createResponse, errorResponse, getAuthenticatedUserId } = require('../shared/utils');
 
 module.exports = async function (context, req) {
   try {
     // Get user ID from authentication token
-    const userId = await getUserId(req);
+    const userId = await getAuthenticatedUserId(req);
     
     if (!userId) {
       context.res = errorResponse(401, 'Authentication required');

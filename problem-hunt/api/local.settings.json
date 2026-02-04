@@ -3,15 +3,15 @@
     "Values": {
       "AzureWebJobsStorage": "",
       "FUNCTIONS_WORKER_RUNTIME": "node",
-      "COSMOS_ENDPOINT": "https://problemhunt.documents.azure.com:443/",
-      "COSMOS_KEY": "9DbXWwAzg8DuIfqaQfj8ck6kVZ5Y3lUcDCALuB2DQDwFreAGEC8W9kyPXhEj1qFqh0yznwxn4Q42ACDbyrhmvA==",
+      "COSMOS_ENDPOINT": "https://your-account.documents.azure.com:443/",
+      "COSMOS_KEY": "PASTE_YOUR_COSMOS_KEY",
       "COSMOS_DATABASE": "ProblemHuntDB",
       "COSMOS_CONTAINER_PROBLEMS": "Problems",
       "COSMOS_CONTAINER_PROPOSALS": "Proposals",
       "COSMOS_CONTAINER_UPVOTES": "Upvotes",
       "COSMOS_CONTAINER_TIPS": "Tips",
-      "SUPABASE_URL": "https://placeholder.supabase.co",
-      "SUPABASE_ANON_KEY": "placeholder-key"
+      "SUPABASE_URL": "https://your-project.supabase.co",
+      "SUPABASE_ANON_KEY": "YOUR_SUPABASE_ANON_KEY"
     },
     "Host": {
       "CORS": "*",

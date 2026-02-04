@@ -1,10 +1,15 @@
 const { containers } = require('../shared/cosmos');
-const { createResponse, errorResponse, getUserId } = require('../shared/utils');
+const { createResponse, errorResponse, getAuthenticatedUserId } = require('../shared/utils');
 
 module.exports = async function (context, req) {
   try {
     const problemId = req.params.id;
-    const userId = await getUserId(req);
+    const userId = await getAuthenticatedUserId(req);
+
+    if (!userId) {
+      context.res = errorResponse(401, 'Authentication required');
+      return;
+    }
 
     // Get problem to verify ownership
     const { resource: problem } = await containers.problems.item(problemId, problemId).read();

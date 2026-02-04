@@ -80,6 +80,34 @@ async function getUserId(req) {
 }
 
 /**
+ * Get authenticated user ID (requires valid Supabase JWT)
+ */
+async function getAuthenticatedUserId(req) {
+  const authHeader = req.headers.authorization || req.headers.Authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return null;
+  }
+
+  const token = authHeader.substring(7); // Remove 'Bearer '
+
+  try {
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      return null;
+    }
+
+    const { data: { user }, error } = await supabase.auth.getUser(token);
+    if (error || !user) {
+      return null;
+    }
+
+    return user.id;
+  } catch (error) {
+    return null;
+  }
+}
+
+/**
  * Generate unique ID
  */
 function generateId() {
@@ -131,6 +159,7 @@ module.exports = {
   createResponse,
   errorResponse,
   getUserId,
+  getAuthenticatedUserId,
   generateId,
   validateRequired,
   parseBudgetValue,

@@ -1,11 +1,16 @@
 const { containers } = require('../shared/cosmos');
-const { createResponse, errorResponse, generateId, validateRequired, timestamp, getUserId } = require('../shared/utils');
+const { createResponse, errorResponse, generateId, validateRequired, timestamp, getAuthenticatedUserId } = require('../shared/utils');
 
 module.exports = async function (context, req) {
   try {
     const problemId = req.params.id;
     const data = req.body;
-    const userId = await getUserId(req);
+    const userId = await getAuthenticatedUserId(req);
+
+    if (!userId) {
+      context.res = errorResponse(401, 'Authentication required');
+      return;
+    }
 
     // Validate required fields
     const validationError = validateRequired(data, ['title', 'description']);
