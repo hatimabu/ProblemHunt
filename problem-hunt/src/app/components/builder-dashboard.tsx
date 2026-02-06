@@ -95,8 +95,15 @@ export function BuilderDashboard() {
 
     try {
       setProblemsLoading(true);
-      const { data: { session } } = await supabase.auth.getSession();
-      const token = session?.access_token;
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError || !session?.access_token) {
+        console.error('Not authenticated');
+        setUserProblems([]);
+        return;
+      }
+      
+      const token = session.access_token;
 
       const response = await fetch('/api/user/problems?sortBy=newest', {
         headers: {
@@ -123,8 +130,14 @@ export function BuilderDashboard() {
   const handleDeleteProblem = async (problemId: string) => {
     try {
       setDeletingProblemId(problemId);
-      const { data: { session } } = await supabase.auth.getSession();
-      const token = session?.access_token;
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError || !session?.access_token) {
+        alert('Not authenticated. Please log in again.');
+        return;
+      }
+      
+      const token = session.access_token;
 
       const response = await fetch(`/api/problems/${problemId}`, {
         method: 'DELETE',

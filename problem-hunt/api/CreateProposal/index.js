@@ -27,6 +27,26 @@ module.exports = async function (context, req) {
       return;
     }
 
+    // Get builder name from Supabase profiles
+    const supabase = require('../shared/utils').getSupabaseClient ? require('../shared/utils').getSupabaseClient() : null;
+    let builderName = 'Anonymous Builder';
+    
+    if (supabase) {
+      try {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('username, full_name')
+          .eq('id', userId)
+          .single();
+        
+        if (profile) {
+          builderName = profile.full_name || profile.username || 'Anonymous Builder';
+        }
+      } catch (err) {
+        context.log.warn('Could not fetch builder profile:', err);
+      }
+    }
+
     // Create proposal
     const proposal = {
       id: generateId(),
@@ -34,7 +54,7 @@ module.exports = async function (context, req) {
       title: data.title.trim(),
       description: data.description.trim(),
       timeline: data.timeline || 'Not specified',
-      builderName: data.builderName || 'Anonymous Builder',
+      builderName: builderName,
       builderId: userId,
       githubUrl: data.githubUrl || null,
       demoUrl: data.demoUrl || null,

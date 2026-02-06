@@ -33,13 +33,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     }).catch((error) => {
       console.error('Error getting session:', error);
+      setUser(null);
       setIsLoading(false);
     });
 
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    // Listen for auth changes (including token refresh)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth state changed:', event);
+      
+      if (event === 'TOKEN_REFRESHED') {
+        console.log('Token refreshed successfully');
+      }
+      
+      if (event === 'SIGNED_OUT') {
+        setUser(null);
+        setIsLoading(false);
+        return;
+      }
+      
       if (session?.user) {
-        fetchUserProfile(session.user);
+        await fetchUserProfile(session.user);
       } else {
         setUser(null);
         setIsLoading(false);
@@ -57,7 +70,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .eq('id', supabaseUser.id)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching profile:', error);
+        // Profile doesn't exist or can't be fetched
+        // Clear the session and force re-authentication
+        await supabase.auth.signOut();
+        setUser(null);
+        throw new Error('Profile not found. Please sign up again.');
+      }
 
       setUser({
         id: supabaseUser.id,
@@ -66,7 +86,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         role: profile?.user_type === 'builder' ? 'builder' : 'client',
       });
     } catch (error) {
-      console.error('Error fetching profile:', error);
+      console.error('Error in fetchUserProfile:', error);
+      // Always set user to null if profile fetch fails
+      setUser(null);
     } finally {
       setIsLoading(false);
     }
@@ -125,6 +147,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (error) throw error;
 
       if (data.user) {
+        // Create profile in database immediately
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .insert({
+            id: data.user.id,
+            username: username,
+            full_name: fullName,
+            user_type: userType,
+            bio: '',
+            reputation_score: 0
+          });
+
+        if (profileError) {
+          console.error('Profile creation error:', profileError);
+          // If profile creation fails, delete the auth user
+          await supabase.auth.signOut();
+          throw new Error('Failed to create user profile. Please try again.');
+        }
+
+        // Now fetch the profile we just created
         await fetchUserProfile(data.user);
       }
     } catch (error) {

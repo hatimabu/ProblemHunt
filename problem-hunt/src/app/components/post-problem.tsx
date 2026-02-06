@@ -37,15 +37,20 @@ export function PostProblem() {
     setError(null);
     
     try {
-      // Get the authentication token
-      const { data: { session } } = await supabase.auth.getSession();
-      const token = session?.access_token;
+      // Get the CURRENT authentication token (ensures fresh token)
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError || !session?.access_token) {
+        throw new Error('Not authenticated. Please log in again.');
+      }
+      
+      const token = session.access_token;
 
       const response = await fetch('/api/problems', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...(token && { 'Authorization': `Bearer ${token}` }),
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({
           title: formData.title,

@@ -160,6 +160,7 @@ module.exports = {
   errorResponse,
   getUserId,
   getAuthenticatedUserId,
+  getSupabaseClient,
   generateId,
   validateRequired,
   parseBudgetValue,
