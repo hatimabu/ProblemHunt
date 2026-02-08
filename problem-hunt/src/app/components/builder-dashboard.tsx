@@ -14,8 +14,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
-import { supabase } from "../../../lib/supabaseClient";
-import { Button } from "./ui/button";
+import { supabase } from "../../../lib/supabaseClient";import { getSessionWithTimeout } from '../utils/sessionUtils';import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { Textarea } from "./ui/textarea";
 import { Avatar, AvatarFallback } from "./ui/avatar";
@@ -95,7 +94,7 @@ export function BuilderDashboard() {
 
     try {
       setProblemsLoading(true);
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      const { session, error: sessionError } = await getSessionWithTimeout();
       
       if (sessionError || !session?.access_token) {
         console.error('Not authenticated');
@@ -130,7 +129,7 @@ export function BuilderDashboard() {
   const handleDeleteProblem = async (problemId: string) => {
     try {
       setDeletingProblemId(problemId);
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      const { session, error: sessionError } = await getSessionWithTimeout();
       
       if (sessionError || !session?.access_token) {
         alert('Not authenticated. Please log in again.');

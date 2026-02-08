@@ -4,6 +4,7 @@ import { Button } from "./ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Alert, AlertDescription } from "./ui/alert";
 import { supabase } from "../../../lib/supabaseClient";
+import { setSessionWithTimeout } from "../utils/sessionUtils";
 import { ethers } from "ethers";
 
 /**
@@ -124,11 +125,11 @@ export function SignInWithWallet({
 
       if (authError) throw authError;
 
-      // Set the session
-      const { data: { session }, error: sessionError } = await supabase.auth.setSession({
-        access_token: authData.access_token,
-        refresh_token: authData.refresh_token
-      });
+      // Set the session with timeout protection
+      const { session, error: sessionError } = await setSessionWithTimeout(
+        authData.access_token,
+        authData.refresh_token
+      );
 
       if (sessionError) throw sessionError;
 
@@ -200,11 +201,11 @@ export function SignInWithWallet({
 
       if (authError) throw authError;
 
-      // Set the session
-      const { data: { session }, error: sessionError } = await supabase.auth.setSession({
-        access_token: authData.access_token,
-        refresh_token: authData.refresh_token
-      });
+      // Set the session with timeout protection
+      const { session, error: sessionError } = await setSessionWithTimeout(
+        authData.access_token,
+        authData.refresh_token
+      );
 
       if (sessionError) throw sessionError;
 

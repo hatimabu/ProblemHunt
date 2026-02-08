@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/select";
 import { supabase } from "../../../lib/supabaseClient";
 import { useAuth } from "../contexts/AuthContext";
+import { getSessionWithTimeout } from "../utils/sessionUtils";
 
 const CATEGORIES = ["AI/ML", "Web3", "Finance", "Governance", "Trading", "Infrastructure"];
 
@@ -38,7 +39,7 @@ export function PostProblem() {
     
     try {
       // Get the CURRENT authentication token (ensures fresh token)
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      const { session, error: sessionError } = await getSessionWithTimeout();
       
       if (sessionError || !session?.access_token) {
         throw new Error('Not authenticated. Please log in again.');

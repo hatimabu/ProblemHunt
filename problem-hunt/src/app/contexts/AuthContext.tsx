@@ -24,18 +24,48 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check active session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        fetchUserProfile(session.user);
-      } else {
+    // Check active session with timeout handling
+    const initializeAuth = async () => {
+      try {
+        // Create a timeout promise
+        const timeoutPromise = new Promise<never>((_, reject) => {
+          setTimeout(() => reject(new Error('Session timeout')), 10000); // 10 second timeout
+        });
+
+        // Race between getSession and timeout
+        const { data: { session }, error } = await Promise.race([
+          supabase.auth.getSession(),
+          timeoutPromise
+        ]).catch((err) => {
+          // Handle AbortError and timeout errors gracefully
+          if (err.name === 'AbortError' || err.message === 'Session timeout') {
+            console.warn('Session retrieval timed out, using auth state listener');
+            return { data: { session: null }, error: null };
+          }
+          throw err;
+        });
+
+        if (error) {
+          console.error('Error getting session:', error);
+          setUser(null);
+          setIsLoading(false);
+          return;
+        }
+
+        if (session?.user) {
+          await fetchUserProfile(session.user);
+        } else {
+          setIsLoading(false);
+        }
+      } catch (error) {
+        console.error('Error initializing auth:', error);
+        // Don't block the app if session retrieval fails
+        setUser(null);
         setIsLoading(false);
       }
-    }).catch((error) => {
-      console.error('Error getting session:', error);
-      setUser(null);
-      setIsLoading(false);
-    });
+    };
+
+    initializeAuth();
 
     // Listen for auth changes (including token refresh)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
