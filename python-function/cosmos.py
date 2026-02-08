@@ -36,7 +36,7 @@ class CosmosDBClient:
                 key.startswith('PASTE_YOUR') or 
                 key == 'placeholder-key' or
                 len(key) < 20):
-                print("⚠️  Using MOCK in-memory database (local development mode)")
+                print("[WARNING] Using MOCK in-memory database (local development mode)")
                 print("   To use real Cosmos DB, set COSMOS_ENDPOINT and COSMOS_KEY in local.settings.json")
                 self.use_mock = True
                 self.containers = self._create_mock_containers()
@@ -46,10 +46,10 @@ class CosmosDBClient:
                 database_id = os.getenv("COSMOS_DATABASE", "ProblemHuntDB")
                 self.database = self.client.get_database_client(database_id)
                 self.containers = self._create_containers()
-                print("✅ Connected to Cosmos DB")
+                print("[OK] Connected to Cosmos DB")
                 
         except Exception as e:
-            print(f"⚠️  Cosmos DB connection error: {e}. Using mock mode.")
+            print(f"[WARNING] Cosmos DB connection error: {e}. Using mock mode.")
             self.use_mock = True
             self.containers = self._create_mock_containers()
         
