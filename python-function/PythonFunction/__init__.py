@@ -1,110 +1,100 @@
-import json
+"""
+Main entry point for the Problem Hunt API
+Routes all requests to appropriate handlers
+"""
+import sys
 import os
-import uuid
-import datetime
+import json
 import azure.functions as func
-import jwt
-from azure.cosmos import CosmosClient, PartitionKey, exceptions
 
+# Add parent directory to path for imports
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-def _get_env(name: str) -> str:
-    value = os.getenv(name)
-    if not value:
-        raise ValueError(f"Missing required env var: {name}")
-    return value
-
-
-def _get_supabase_user_id(req: func.HttpRequest) -> str:
-    auth = req.headers.get("Authorization", "")
-    if not auth.startswith("Bearer "):
-        raise PermissionError("Missing Bearer token")
-
-    token = auth.replace("Bearer ", "").strip()
-    secret = _get_env("SUPABASE_JWT_SECRET")
-
-    try:
-        payload = jwt.decode(token, secret, algorithms=["HS256"])
-        return payload.get("sub")
-    except jwt.PyJWTError:
-        raise PermissionError("Invalid token")
-
-
-def _get_cosmos_container():
-    endpoint = _get_env("COSMOS_ENDPOINT")
-    key = _get_env("COSMOS_KEY")
-    db_name = _get_env("COSMOS_DATABASE")
-    container_name = _get_env("COSMOS_CONTAINER")
-
-    client = CosmosClient(endpoint, credential=key)
-    database = client.create_database_if_not_exists(id=db_name)
-    container = database.create_container_if_not_exists(
-        id=container_name,
-        partition_key=PartitionKey(path="/problemId"),
-        offer_throughput=400
-    )
-    return container
-
-
-def _json_response(body, status_code=200):
-    return func.HttpResponse(
-        json.dumps(body),
-        status_code=status_code,
-        mimetype="application/json"
-    )
+from handlers import (
+    create_problem,
+    get_problems,
+    get_problem_by_id,
+    update_problem,
+    delete_problem,
+    upvote_problem,
+    remove_upvote,
+    get_proposals,
+    create_proposal,
+    search_problems,
+    get_user_problems,
+    tip_builder
+)
 
 
 def main(req: func.HttpRequest) -> func.HttpResponse:
+    """Main router for all API endpoints"""
     try:
-        user_id = _get_supabase_user_id(req)
-    except PermissionError as e:
-        return _json_response({"error": str(e)}, 401)
+        method = req.method
+        path = req.route_params.get('route', '').lower()
+        problem_id = req.route_params.get('id', '')
+        
+        # Route to appropriate handler based on path and method
+        
+        # CREATE PROBLEM: POST /problems
+        if path == 'problems' and method == 'POST':
+            return create_problem.handle(req)
+        
+        # GET PROBLEMS: GET /problems
+        elif path == 'problems' and method == 'GET':
+            return get_problems.handle(req)
+        
+        # GET PROBLEM BY ID: GET /problems/{id}
+        elif path == 'problems/{id}' and method == 'GET':
+            return get_problem_by_id.handle(req)
+        
+        # UPDATE PROBLEM: PUT /problems/{id}
+        elif path == 'problems/{id}' and method == 'PUT':
+            return update_problem.handle(req)
+        
+        # DELETE PROBLEM: DELETE /problems/{id}
+        elif path == 'problems/{id}' and method == 'DELETE':
+            return delete_problem.handle(req)
+        
+        # UPVOTE PROBLEM: POST /problems/{id}/upvote
+        elif path == 'problems/{id}/upvote' and method == 'POST':
+            return upvote_problem.handle(req)
+        
+        # REMOVE UPVOTE: DELETE /problems/{id}/upvote
+        elif path == 'problems/{id}/upvote' and method == 'DELETE':
+            return remove_upvote.handle(req)
+        
+        # GET PROPOSALS: GET /problems/{id}/proposals
+        elif path == 'problems/{id}/proposals' and method == 'GET':
+            return get_proposals.handle(req)
+        
+        # CREATE PROPOSAL: POST /problems/{id}/proposals
+        elif path == 'problems/{id}/proposals' and method == 'POST':
+            return create_proposal.handle(req)
+        
+        # SEARCH PROBLEMS: GET /problems/search
+        elif 'search' in path and method == 'GET':
+            return search_problems.handle(req)
+        
+        # GET USER PROBLEMS: GET /user/problems
+        elif 'user' in path and 'problems' in path and method == 'GET':
+            return get_user_problems.handle(req)
+        
+        # CREATE TIP: POST /proposals/{id}/tip
+        elif 'proposals' in path and 'tip' in path and method == 'POST':
+            return tip_builder.handle(req)
+        
+        # UNKNOWN ROUTE
+        else:
+            return func.HttpResponse(
+                json.dumps({'error': f'Route not found: {path}'}),
+                status_code=404,
+                mimetype="application/json"
+            )
+    
     except Exception as e:
-        return _json_response({"error": "Auth error", "details": str(e)}, 401)
-
-    container = _get_cosmos_container()
-
-    if req.method == "GET":
-        problem_id = req.params.get("problemId")
-        if not problem_id:
-            return _json_response({"error": "Missing problemId"}, 400)
-
-        query = "SELECT * FROM c WHERE c.problemId = @pid ORDER BY c.createdAt DESC"
-        items = list(container.query_items(
-            query=query,
-            parameters=[{"name": "@pid", "value": problem_id}],
-            enable_cross_partition_query=True
-        ))
-
-        return _json_response({"comments": items}, 200)
-
-    if req.method == "POST":
-        try:
-            data = req.get_json()
-        except ValueError:
-            return _json_response({"error": "Invalid JSON"}, 400)
-
-        problem_id = data.get("problemId")
-        text = data.get("text")
-
-        if not problem_id or not text:
-            return _json_response({"error": "problemId and text are required"}, 400)
-
-        word_count = len(text.split())
-
-        comment = {
-            "id": str(uuid.uuid4()),
-            "problemId": problem_id,
-            "userId": user_id,
-            "text": text,
-            "wordCount": word_count,
-            "createdAt": datetime.datetime.utcnow().isoformat() + "Z"
-        }
-
-        try:
-            container.create_item(body=comment)
-        except exceptions.CosmosHttpResponseError as e:
-            return _json_response({"error": "Cosmos write failed", "details": str(e)}, 500)
-
-        return _json_response({"comment": comment}, 201)
-
-    return _json_response({"error": "Method not allowed"}, 405)
+        print(f"Router error: {str(e)}")
+        return func.HttpResponse(
+            json.dumps({'error': 'Internal server error', 'details': str(e)}),
+            status_code=500,
+            mimetype="application/json"
+        )

@@ -6,7 +6,8 @@
       "type": "httpTrigger",
       "direction": "in",
       "name": "req",
-      "methods": [ "get", "post" ]
+      "methods": [ "get", "post", "put", "delete", "patch" ],
+      "route": "{route:regex(^(problems|user).*)?}"
     },
     {
       "type": "http",
