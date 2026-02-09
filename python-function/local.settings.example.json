@@ -1,0 +1,56 @@
+# Python Azure Functions - Local Settings Example
+
+Copy this file to `local.settings.json` and fill in your actual values.
+
+```json
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNCTIONS_WORKER_RUNTIME": "python",
+    "AzureWebJobsDashboard": "UseDevelopmentStorage=true",
+    
+    "SUPABASE_JWT_SECRET": "your-supabase-jwt-secret-here",
+    
+    "COSMOS_DB_ENDPOINT": "https://your-account.documents.azure.com:443/",
+    "COSMOS_DB_KEY": "your-cosmos-db-primary-key-here",
+    "COSMOS_DB_DATABASE": "PostsDB",
+    "COSMOS_DB_CONTAINER": "posts"
+  },
+  "Host": {
+    "CORS": {
+      "AllowCredentials": false,
+      "AllowedOrigins": [
+        "http://localhost:5173",
+        "http://localhost:3000",
+        "https://yourdomain.azurewebsites.net"
+      ],
+      "AllowedMethods": [
+        "GET",
+        "POST",
+        "PUT",
+        "DELETE",
+        "OPTIONS"
+      ],
+      "AllowedHeaders": [
+        "Content-Type",
+        "Authorization",
+        "X-Requested-With"
+      ],
+      "MaxAge": 3600
+    }
+  },
+  "functionTimeout": "00:05:00"
+}
+```
+
+## How to Use
+
+1. Rename this file to `local.settings.json` in the `python-function` directory
+2. Replace the placeholder values with your actual credentials
+3. DO NOT commit this file to version control (add to .gitignore)
+4. Run your Function App with `func start`
+
+## Required Secrets
+
+See [ENV_VARIABLES_GUIDE.md](./ENV_VARIABLES_GUIDE.md) for detailed instructions on finding these values.

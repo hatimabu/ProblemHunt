@@ -1,26 +1,91 @@
 {
-    "navigationFallback": {
+  "version": "1.0",
+  "description": "Azure Static Web App configuration for ProblemHunt app",
+  
+  "navigationFallback": {
+    "rewrite": "/index.html",
+    "excludedExtensions": [".json", ".js", ".css", ".svg", ".png", ".jpg", ".jpeg", ".gif", ".webp"]
+  },
+
+  "globalHeaders": {
+    "Content-Security-Policy": "default-src 'self' https://ajvobbpwgopinxtbpcpu.supabase.co; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'",
+    "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "DENY",
+    "X-XSS-Protection": "1; mode=block"
+  },
+
+  "routes": [
+    {
+      "route": "/",
       "rewrite": "/index.html"
     },
-    "globalHeaders": {
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS"
-    },
-    "routes": [
-      {
-        "route": "/api/*",
-        "allowedRoles": ["anonymous"]
-      }
-    ],
-    "responseOverrides": {
-      "404": {
-        "rewrite": "/index.html"
+    {
+      "route": "/*.js",
+      "headers": {
+        "Cache-Control": "max-age=31536000, immutable"
       }
     },
-    "buildCommand": "npm run build",
-    "outputLocation": "dist",
-    "environmentVariables": {
-      "VITE_SUPABASE_URL": "https://ajvobbpwgopinxtbpcpu.supabase.co",
-      "VITE_SUPABASE_ANON_KEY": "sb_publishable_D82LguYseqDD2AUMTI-chA_3OX8Jbaf"
+    {
+      "route": "/*.css",
+      "headers": {
+        "Cache-Control": "max-age=31536000, immutable"
+      }
+    },
+    {
+      "route": "/api/*",
+      "allowedRoles": ["anonymous"],
+      "headers": {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS, PATCH",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Requested-With",
+        "Access-Control-Max-Age": "3600"
+      }
+    },
+    {
+      "route": "/api/create-post",
+      "allowedRoles": ["anonymous"]
+    },
+    {
+      "route": "/api/get-posts",
+      "allowedRoles": ["anonymous"]
+    },
+    {
+      "route": "/api/delete-post/*",
+      "allowedRoles": ["anonymous"]
+    },
+    {
+      "route": "/api/update-post",
+      "allowedRoles": ["anonymous"]
+    },
+    {
+      "route": "/api/upvote-post",
+      "allowedRoles": ["anonymous"]
     }
+  ],
+
+  "responseOverrides": {
+    "404": {
+      "rewrite": "/index.html",
+      "statusCode": 200
+    },
+    "401": {
+      "statusCode": 401,
+      "rewrite": "/login.html"
+    },
+    "403": {
+      "statusCode": 403
+    }
+  },
+
+  "buildCommand": "npm run build",
+  "outputLocation": "dist",
+
+  "environmentVariables": {
+    "VITE_SUPABASE_URL": "https://ajvobbpwgopinxtbpcpu.supabase.co",
+    "VITE_SUPABASE_ANON_KEY": "sb_publishable_D82LguYseqDD2AUMTI-chA_3OX8Jbaf"
+  },
+
+  "appSettings": {
+    "apiLocation": "api"
   }
+}

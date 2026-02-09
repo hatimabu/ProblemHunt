@@ -1,37 +1,35 @@
-"""GetPosts Azure Function
+"""
+CreatePost Azure Function
 
-HTTP Trigger: GET /api/get-posts
+HTTP Trigger: POST /api/create-post
 
-Authenticated endpoint to retrieve all posts for the current user.
+Authenticated endpoint to create a new post in Cosmos DB.
 Requires a valid Supabase JWT token in the Authorization header.
 
-Query Parameters:
-  - limit: Number of posts to return (default: 10, max: 100)
-  - offset: Number of posts to skip for pagination (default: 0)
+Request Body:
+{
+  "title": "Post Title",
+  "content": "Post content here",
+  "tags": ["tag1", "tag2"]
+}
 
-Response (200 OK):
-[
-  {
-    "id": "post-uuid",
-    "user_id": "user-uuid",
-    "title": "Post Title",
-    "content": "Post content here",
-    "tags": ["tag1"],
-    "upvotes": 5,
-    "created_at": "2024-01-15T10:30:00.000000",
-    "updated_at": "2024-01-15T10:35:00.000000"
-  },
-  ...
-]
+Response (201 Created):
+{
+  "id": "post-uuid",
+  "user_id": "user-uuid",
+  "title": "Post Title",
+  "content": "Post content here",
+  "tags": ["tag1", "tag2"],
+  "upvotes": 0,
+  "created_at": "2024-01-15T10:30:00.000000",
+  "updated_at": "2024-01-15T10:30:00.000000"
+}
 
 Error Response (4xx/5xx):
 {
   "error": "Error message"
-}"""
-
-import sys
-import os
-sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+}
+"""
 
 import json
 import logging
@@ -44,7 +42,7 @@ logger = logging.getLogger(__name__)
 
 
 def main(req: func.HttpRequest) -> func.HttpResponse:
-    """Handle GET request to retrieve user's posts."""
+    """Handle POST request to create a new post."""
     
     try:
         # Step 1: Authenticate the request using Supabase JWT
@@ -58,44 +56,52 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                 mimetype="application/json"
             )
         
-        # Step 2: Get pagination parameters
+        # Step 2: Parse request body
         try:
-            limit = int(req.params.get("limit", 10))
-            offset = int(req.params.get("offset", 0))
-            
-            # Validate limits
-            limit = min(limit, 100)  # Max 100 posts per request
-            limit = max(limit, 1)    # At least 1 post
-            offset = max(offset, 0)  # Offset can't be negative
-        
+            req_body = req.get_json()
         except ValueError:
             return func.HttpResponse(
-                json.dumps({"error": "Invalid limit or offset parameters"}),
+                json.dumps({"error": "Invalid JSON in request body"}),
                 status_code=400,
                 mimetype="application/json"
             )
         
-        # Step 3: Retrieve posts from Cosmos DB
+        # Step 3: Validate required fields
+        title = req_body.get("title", "").strip()
+        content = req_body.get("content", "").strip()
+        
+        if not title or not content:
+            return func.HttpResponse(
+                json.dumps({"error": "Title and content are required"}),
+                status_code=400,
+                mimetype="application/json"
+            )
+        
+        # Step 4: Save post to Cosmos DB
         try:
             db_client = get_db_client()
-            posts = db_client.get_posts(
+            post = db_client.save_post(
                 user_id=user_id,
-                limit=limit,
-                offset=offset
+                post_data={
+                    "title": title,
+                    "content": content,
+                    "tags": req_body.get("tags", []),
+                    "upvotes": 0,
+                }
             )
             
-            logger.info(f"Retrieved {len(posts)} posts for user {user_id}")
+            logger.info(f"Post created with id: {post.get('id')}")
             
             return func.HttpResponse(
-                json.dumps(posts),
-                status_code=200,
+                json.dumps(post),
+                status_code=201,
                 mimetype="application/json"
             )
         
         except CosmosDBError as e:
             logger.error(f"Database error: {str(e)}")
             return func.HttpResponse(
-                json.dumps({"error": "Failed to retrieve posts"}),
+                json.dumps({"error": "Failed to create post"}),
                 status_code=500,
                 mimetype="application/json"
             )
