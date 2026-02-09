@@ -40,26 +40,6 @@
         "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Requested-With",
         "Access-Control-Max-Age": "3600"
       }
-    },
-    {
-      "route": "/api/create-post",
-      "allowedRoles": ["anonymous"]
-    },
-    {
-      "route": "/api/get-posts",
-      "allowedRoles": ["anonymous"]
-    },
-    {
-      "route": "/api/delete-post/*",
-      "allowedRoles": ["anonymous"]
-    },
-    {
-      "route": "/api/update-post",
-      "allowedRoles": ["anonymous"]
-    },
-    {
-      "route": "/api/upvote-post",
-      "allowedRoles": ["anonymous"]
     }
   ],
 
