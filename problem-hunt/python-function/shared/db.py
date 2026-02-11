@@ -49,15 +49,15 @@ class CosmosDBClient:
     def _connect(self):
         """Establish connection to Azure Cosmos DB."""
         try:
-            endpoint = os.getenv("COSMOS_DB_ENDPOINT")
-            key = os.getenv("COSMOS_DB_KEY")
-            database_name = os.getenv("COSMOS_DB_DATABASE", "PostsDB")
-            container_name = os.getenv("COSMOS_DB_CONTAINER", "posts")
+            endpoint = os.getenv("COSMOS_ENDPOINT")
+            key = os.getenv("COSMOS_KEY")
+            database_name = os.getenv("COSMOS_DATABASE", "ProblemHuntDB")
+            container_name = os.getenv("COSMOS_CONTAINER_PROBLEMS", "Problems")
             
             if not endpoint or not key:
                 raise CosmosDBError(
                     "Missing Cosmos DB credentials. "
-                    "Set COSMOS_DB_ENDPOINT and COSMOS_DB_KEY environment variables."
+                    "Set COSMOS_ENDPOINT and COSMOS_KEY environment variables."
                 )
             
             # Create client
