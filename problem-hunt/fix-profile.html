@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fix Profile - Problem Hunt</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 100%);
+      color: #fff;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    
+    .container {
+      max-width: 600px;
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      padding: 40px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    }
+    
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 10px;
+      background: linear-gradient(135deg, #06b6d4, #3b82f6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    
+    .subtitle {
+      color: #94a3b8;
+      margin-bottom: 30px;
+    }
+    
+    .status {
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      border: 1px solid;
+    }
+    
+    .status.info {
+      background: rgba(59, 130, 246, 0.1);
+      border-color: rgba(59, 130, 246, 0.3);
+      color: #60a5fa;
+    }
+    
+    .status.success {
+      background: rgba(34, 197, 94, 0.1);
+      border-color: rgba(34, 197, 94, 0.3);
+      color: #4ade80;
+    }
+    
+    .status.error {
+      background: rgba(239, 68, 68, 0.1);
+      border-color: rgba(239, 68, 68, 0.3);
+      color: #f87171;
+    }
+    
+    .form-group {
+      margin-bottom: 20px;
+    }
+    
+    label {
+      display: block;
+      margin-bottom: 8px;
+      color: #e2e8f0;
+      font-weight: 500;
+    }
+    
+    input, select {
+      width: 100%;
+      padding: 12px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      color: #fff;
+      font-size: 1rem;
+    }
+    
+    input:focus, select:focus {
+      outline: none;
+      border-color: #3b82f6;
+    }
+    
+    button {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, #06b6d4, #3b82f6);
+      border: none;
+      border-radius: 8px;
+      color: #fff;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+    }
+    
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+    
+    .code-block {
+      background: rgba(0, 0, 0, 0.3);
+      padding: 15px;
+      border-radius: 8px;
+      font-family: 'Courier New', monospace;
+      font-size: 0.875rem;
+      overflow-x: auto;
+      margin: 15px 0;
+    }
+    
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔧 Profile Fix Tool</h1>
+    <p class="subtitle">Create your missing profile to fix sign-in issues</p>
+    
+    <div id="status" class="status info">
+      ℹ️ Checking authentication status...
+    </div>
+    
+    <div id="form-container" class="hidden">
+      <form id="profile-form">
+        <div class="form-group">
+          <label for="username">Username *</label>
+          <input type="text" id="username" required minlength="3" maxlength="30" 
+                 placeholder="crypto_builder">
+          <small style="color: #94a3b8; font-size: 0.875rem;">3-30 characters, publicly visible</small>
+        </div>
+        
+        <div class="form-group">
+          <label for="fullName">Full Name</label>
+          <input type="text" id="fullName" placeholder="John Doe">
+        </div>
+        
+        <div class="form-group">
+          <label for="userType">Account Type *</label>
+          <select id="userType" required>
+            <option value="builder">Builder (solve problems)</option>
+            <option value="problem_poster">Problem Poster (find solutions)</option>
+          </select>
+        </div>
+        
+        <button type="submit" id="submit-btn">Create Profile</button>
+      </form>
+    </div>
+    
+    <div id="result" class="hidden"></div>
+  </div>
+
+  <script type="module">
+    import { supabase } from '../lib/supabaseClient.js';
+    
+    const statusDiv = document.getElementById('status');
+    const formContainer = document.getElementById('form-container');
+    const resultDiv = document.getElementById('result');
+    const form = document.getElementById('profile-form');
+    const submitBtn = document.getElementById('submit-btn');
+    
+    let currentUser = null;
+    
+    async function init() {
+      try {
+        // Check auth status
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error || !session) {
+          statusDiv.className = 'status error';
+          statusDiv.innerHTML = '❌ Not authenticated. Please <a href="/auth" style="color: #60a5fa;">sign in</a> first.';
+          return;
+        }
+        
+        currentUser = session.user;
+        
+        // Check if profile exists
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', currentUser.id)
+          .single();
+        
+        if (profile) {
+          statusDiv.className = 'status success';
+          statusDiv.innerHTML = `
+            ✅ Profile already exists!<br>
+            <div class="code-block">
+              Username: ${profile.username}<br>
+              Type: ${profile.user_type}<br>
+              Reputation: ${profile.reputation_score}
+            </div>
+            <a href="/" style="color: #60a5fa;">Go to Home Page</a>
+          `;
+          return;
+        }
+        
+        // Show form
+        statusDiv.className = 'status info';
+        statusDiv.innerHTML = `
+          ℹ️ No profile found for ${currentUser.email}<br>
+          Please create your profile below:
+        `;
+        formContainer.classList.remove('hidden');
+        
+        // Pre-fill username
+        const suggestedUsername = currentUser.email?.split('@')[0] || 
+                                  'user_' + currentUser.id.substring(0, 8);
+        document.getElementById('username').value = suggestedUsername;
+        document.getElementById('fullName').value = currentUser.email?.split('@')[0] || '';
+        
+      } catch (error) {
+        console.error('Init error:', error);
+        statusDiv.className = 'status error';
+        statusDiv.innerHTML = `❌ Error: ${error.message}`;
+      }
+    }
+    
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Creating...';
+      
+      try {
+        const username = document.getElementById('username').value.trim();
+        const fullName = document.getElementById('fullName').value.trim();
+        const userType = document.getElementById('userType').value;
+        
+        const { data, error } = await supabase
+          .from('profiles')
+          .insert({
+            id: currentUser.id,
+            username,
+            full_name: fullName || currentUser.email,
+            user_type: userType,
+            bio: '',
+            reputation_score: 0
+          })
+          .select()
+          .single();
+        
+        if (error) {
+          throw error;
+        }
+        
+        // Success!
+        formContainer.classList.add('hidden');
+        resultDiv.classList.remove('hidden');
+        resultDiv.className = 'status success';
+        resultDiv.innerHTML = `
+          ✅ Profile created successfully!<br>
+          <div class="code-block">
+            Username: ${data.username}<br>
+            Type: ${data.user_type}
+          </div>
+          <p style="margin-top: 15px;">
+            🎉 You can now sign in! 
+            <a href="/auth" style="color: #60a5fa;">Go to Sign In</a>
+          </p>
+        `;
+        
+      } catch (error) {
+        console.error('Create error:', error);
+        resultDiv.classList.remove('hidden');
+        resultDiv.className = 'status error';
+        
+        if (error.code === '23505') {
+          resultDiv.innerHTML = '❌ Username already taken. Please try a different one.';
+        } else {
+          resultDiv.innerHTML = `❌ Error: ${error.message}`;
+        }
+        
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Create Profile';
+      }
+    });
+    
+    // Auto-run on load
+    init();
+  </script>
+</body>
+</html>

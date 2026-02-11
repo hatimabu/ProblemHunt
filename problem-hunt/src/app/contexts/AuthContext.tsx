@@ -102,11 +102,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (error) {
         console.error('Error fetching profile:', error);
+        console.error('User ID:', supabaseUser.id);
+        console.error('This usually means the profile record is missing from the profiles table');
         // Profile doesn't exist or can't be fetched
         // Clear the session and force re-authentication
         await supabase.auth.signOut();
         setUser(null);
-        throw new Error('Profile not found. Please sign up again.');
+        throw new Error('Profile not found in database. Your account exists but the profile is missing. Please contact support or try signing up with a different email.');
       }
 
       setUser({

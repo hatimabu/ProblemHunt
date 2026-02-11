@@ -63,9 +63,15 @@ export function AuthPage() {
     try {
       await login(loginData.email, loginData.password);
       // After login, redirect to dashboard
+      console.log('Login successful, navigating to dashboard');
       navigate('/dashboard');
     } catch (error: any) {
       console.error("Login failed:", error);
+      console.error("Error details:", {
+        message: error.message,
+        name: error.name,
+        stack: error.stack
+      });
       setLoginError(error.message || "Login failed. Please check your credentials.");
     } finally {
       setIsSubmitting(false);
