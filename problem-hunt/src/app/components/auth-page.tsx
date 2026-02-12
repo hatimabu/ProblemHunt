@@ -256,15 +256,17 @@ export function AuthPage() {
                         value={signupData.password}
                         onChange={(e) => setSignupData({ ...signupData, password: e.target.value })}
                         className="bg-gray-800/50 border-gray-700 focus:border-cyan-500/50 text-white placeholder:text-gray-500"
+                        minLength={6}
                         required
                       />
+                      <p className="text-xs text-gray-500 mt-1">Minimum 6 characters</p>
                     </div>
 
                     <div>
-                      <Label htmlFor="signup-role" className="text-white mb-2 block">
+                      <p className="text-white mb-2 block font-medium">
                         <Briefcase className="w-4 h-4 inline mr-2" />
                         I want to...
-                      </Label>
+                      </p>
                       <div className="grid grid-cols-2 gap-3">
                         <button
                           type="button"

@@ -152,18 +152,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     userType: 'problem_poster' | 'builder'
   ) => {
     try {
+      // Validate password length (Supabase requires minimum 6)
+      if (password.length < 6) {
+        throw new Error('Password must be at least 6 characters long');
+      }
+
       // First check if username is available
-      const { data: existingProfile } = await supabase
+      const { data: existingProfile, error: checkError } = await supabase
         .from('profiles')
         .select('username')
         .eq('username', username)
-        .single();
+        .maybeSingle();
+
+      if (checkError && checkError.code !== 'PGRST116') {
+        // PGRST116 is "no rows found" which is expected
+        console.error('Username check error:', checkError);
+      }
 
       if (existingProfile) {
         throw new Error('Username already taken');
       }
 
       // Sign up with Supabase Auth and pass metadata
+      // The trigger will auto-create the profile from this metadata
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -179,26 +190,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (error) throw error;
 
       if (data.user) {
-        // Create profile in database immediately
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .insert({
-            id: data.user.id,
-            username: username,
-            full_name: fullName,
-            user_type: userType,
-            bio: '',
-            reputation_score: 0
-          });
+        // Wait a moment for the trigger to create the profile
+        await new Promise(resolve => setTimeout(resolve, 1000));
 
-        if (profileError) {
-          console.error('Profile creation error:', profileError);
-          // If profile creation fails, delete the auth user
-          await supabase.auth.signOut();
-          throw new Error('Failed to create user profile. Please try again.');
-        }
-
-        // Now fetch the profile we just created
+        // Fetch the profile that was created by the trigger
         await fetchUserProfile(data.user);
       }
     } catch (error) {

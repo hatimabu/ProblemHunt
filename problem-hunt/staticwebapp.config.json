@@ -8,10 +8,13 @@
   },
 
   "globalHeaders": {
-    "Content-Security-Policy": "default-src 'self' https://ajvobbpwgopinxtbpcpu.supabase.co; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'",
+    "Content-Security-Policy": "default-src 'self' https://ajvobbpwgopinxtbpcpu.supabase.co; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; font-src 'self' https://r2cdn.perplexity.ai; connect-src 'self' https://ajvobbpwgopinxtbpcpu.supabase.co https://*.supabase.co",
     "X-Content-Type-Options": "nosniff",
     "X-Frame-Options": "DENY",
-    "X-XSS-Protection": "1; mode=block"
+    "X-XSS-Protection": "1; mode=block",
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS, PATCH",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Requested-With"
   },
 
   "routes": [
