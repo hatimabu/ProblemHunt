@@ -22,6 +22,10 @@ export default defineConfig({
     },
   },
   server: {
+    middlewareMode: false,
+    headers: {
+      'Content-Security-Policy': "default-src 'self' https://ajvobbpwgopinxtbpcpu.supabase.co; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; font-src 'self' https://r2cdn.perplexity.ai; connect-src 'self' https://ajvobbpwgopinxtbpcpu.supabase.co https://*.supabase.co"
+    },
     proxy: {
       '/api': {
         target: 'http://localhost:7071',
