@@ -92,7 +92,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  const fetchUserProfile = async (supabaseUser: SupabaseUser) => {
+  const fetchUserProfile = async (supabaseUser: SupabaseUser, isSignup: boolean = false) => {
     try {
       const { data: profile, error } = await supabase
         .from('profiles')
@@ -103,12 +103,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (error) {
         console.error('Error fetching profile:', error);
         console.error('User ID:', supabaseUser.id);
-        console.error('This usually means the profile record is missing from the profiles table');
-        // Profile doesn't exist or can't be fetched
-        // Clear the session and force re-authentication
-        await supabase.auth.signOut();
-        setUser(null);
-        throw new Error('Profile not found in database. Your account exists but the profile is missing. Please contact support or try signing up with a different email.');
+        
+        if (isSignup) {
+          // During signup, profile might still be creating via trigger
+          throw error;
+        } else {
+          // During normal login, profile should exist
+          console.error('This usually means the profile record is missing from the profiles table');
+          await supabase.auth.signOut();
+          setUser(null);
+          throw new Error('Profile not found in database. Your account exists but the profile is missing. Please contact support or try signing up with a different email.');
+        }
       }
 
       setUser({
@@ -119,8 +124,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
     } catch (error) {
       console.error('Error in fetchUserProfile:', error);
-      // Always set user to null if profile fetch fails
-      setUser(null);
+      if (!isSignup) {
+        setUser(null);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -157,24 +163,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error('Password must be at least 6 characters long');
       }
 
-      // First check if username is available
-      const { data: existingProfile, error: checkError } = await supabase
-        .from('profiles')
-        .select('username')
-        .eq('username', username)
-        .maybeSingle();
-
-      if (checkError && checkError.code !== 'PGRST116') {
-        // PGRST116 is "no rows found" which is expected
-        console.error('Username check error:', checkError);
-      }
-
-      if (existingProfile) {
-        throw new Error('Username already taken');
+      // Validate username format
+      if (username.length < 3 || username.length > 30) {
+        throw new Error('Username must be 3-30 characters long');
       }
 
       // Sign up with Supabase Auth and pass metadata
-      // The trigger will auto-create the profile from this metadata
+      // The trigger on auth.users will auto-create the profile from this metadata
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -191,10 +186,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (data.user) {
         // Wait a moment for the trigger to create the profile
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise(resolve => setTimeout(resolve, 1500));
 
         // Fetch the profile that was created by the trigger
-        await fetchUserProfile(data.user);
+        const fetchAttempts = 3;
+        let lastError;
+
+        for (let i = 0; i < fetchAttempts; i++) {
+          try {
+            await fetchUserProfile(data.user, true); // isSignup = true
+            return; // Success!
+          } catch (fetchError) {
+            lastError = fetchError;
+            console.error(`Profile fetch attempt ${i + 1}/${fetchAttempts} failed:`, fetchError);
+            if (i < fetchAttempts - 1) {
+              // Wait before retrying
+              await new Promise(resolve => setTimeout(resolve, 500));
+            }
+          }
+        }
+
+        if (lastError) {
+          throw lastError;
+        }
       }
     } catch (error) {
       console.error('Signup error:', error);
