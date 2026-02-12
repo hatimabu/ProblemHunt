@@ -1,5 +1,6 @@
 # Dependencies
 node_modules/
+.parcel-cache/
 dist/
 build/
 
@@ -21,7 +22,7 @@ problem-hunt/lib/config.js
 problem-hunt/mock-db-data.json
 
 # IDEs
-
+.venv/
 .idea/
 *.swp
 *.swo

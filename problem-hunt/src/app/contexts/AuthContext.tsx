@@ -13,31 +13,60 @@ interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  signup: (username: string, fullName: string, email: string, password: string, userType: 'problem_poster' | 'builder') => Promise<void>;
+  signup: (
+    username: string,
+    fullName: string,
+    email: string,
+    password: string,
+    userType: 'problem_poster' | 'builder'
+  ) => Promise<void>;
   logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+function isFetchFailure(error: unknown): boolean {
+  return error instanceof TypeError && /failed to fetch/i.test(error.message);
+}
+
+async function withTimeout<T>(
+  promise: Promise<T>,
+  timeoutMs: number,
+  operation: string
+): Promise<T> {
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    setTimeout(
+      () =>
+        reject(
+          new Error(
+            `${operation} timed out after ${Math.floor(timeoutMs / 1000)}s`
+          )
+        ),
+      timeoutMs
+    );
+  });
+  return Promise.race([promise, timeoutPromise]);
+}
+
+function networkHintMessage(): string {
+  return 'Cannot reach Supabase. Check VITE_SUPABASE_URL, your network/firewall, or a temporary Supabase outage.';
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check active session with timeout handling
     const initializeAuth = async () => {
       try {
-        // Create a timeout promise
         const timeoutPromise = new Promise<never>((_, reject) => {
-          setTimeout(() => reject(new Error('Session timeout')), 10000); // 10 second timeout
+          setTimeout(() => reject(new Error('Session timeout')), 10000);
         });
 
-        // Race between getSession and timeout
         const { data: { session }, error } = await Promise.race([
           supabase.auth.getSession(),
           timeoutPromise
         ]).catch((err) => {
-          // Handle AbortError and timeout errors gracefully
           if (err.name === 'AbortError' || err.message === 'Session timeout') {
             console.warn('Session retrieval timed out, using auth state listener');
             return { data: { session: null }, error: null };
@@ -59,7 +88,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       } catch (error) {
         console.error('Error initializing auth:', error);
-        // Don't block the app if session retrieval fails
         setUser(null);
         setIsLoading(false);
       }
@@ -67,32 +95,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     initializeAuth();
 
-    // Listen for auth changes (including token refresh)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('Auth state changed:', event);
-      
-      if (event === 'TOKEN_REFRESHED') {
-        console.log('Token refreshed successfully');
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        console.log('Auth state changed:', event);
+
+        if (event === 'TOKEN_REFRESHED') {
+          console.log('Token refreshed successfully');
+        }
+
+        if (event === 'SIGNED_OUT') {
+          setUser(null);
+          setIsLoading(false);
+          return;
+        }
+
+        if (session?.user) {
+          await fetchUserProfile(session.user);
+        } else {
+          setUser(null);
+          setIsLoading(false);
+        }
       }
-      
-      if (event === 'SIGNED_OUT') {
-        setUser(null);
-        setIsLoading(false);
-        return;
-      }
-      
-      if (session?.user) {
-        await fetchUserProfile(session.user);
-      } else {
-        setUser(null);
-        setIsLoading(false);
-      }
-    });
+    );
 
     return () => subscription.unsubscribe();
   }, []);
 
-  const fetchUserProfile = async (supabaseUser: SupabaseUser, isSignup: boolean = false) => {
+  const fetchUserProfile = async (
+    supabaseUser: SupabaseUser,
+    isSignup: boolean = false
+  ) => {
     try {
       const { data: profile, error } = await supabase
         .from('profiles')
@@ -103,16 +135,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (error) {
         console.error('Error fetching profile:', error);
         console.error('User ID:', supabaseUser.id);
-        
+
         if (isSignup) {
-          // During signup, profile might still be creating via trigger
           throw error;
         } else {
-          // During normal login, profile should exist
           console.error('This usually means the profile record is missing from the profiles table');
           await supabase.auth.signOut();
           setUser(null);
-          throw new Error('Profile not found in database. Your account exists but the profile is missing. Please contact support or try signing up with a different email.');
+          throw new Error(
+            'Profile not found in database. Your account exists but the profile is missing. Please contact support or try signing up with a different email.'
+          );
         }
       }
 
@@ -124,9 +156,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
     } catch (error) {
       console.error('Error in fetchUserProfile:', error);
-      if (!isSignup) {
-        setUser(null);
+      if (isSignup) {
+        throw error;
       }
+      setUser(null);
     } finally {
       setIsLoading(false);
     }
@@ -134,18 +167,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, password: string) => {
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      const { data, error } = await withTimeout(
+        supabase.auth.signInWithPassword({ email, password }),
+        15000,
+        'Login request'
+      );
 
       if (error) throw error;
 
       if (data.user) {
-        await fetchUserProfile(data.user);
+        await withTimeout(fetchUserProfile(data.user), 10000, 'Profile load');
       }
     } catch (error) {
       console.error('Login error:', error);
+      if (isFetchFailure(error)) {
+        throw new Error(networkHintMessage());
+      }
       throw error;
     }
   };
@@ -158,50 +195,54 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     userType: 'problem_poster' | 'builder'
   ) => {
     try {
-      // Validate password length (Supabase requires minimum 6)
       if (password.length < 6) {
         throw new Error('Password must be at least 6 characters long');
       }
 
-      // Validate username format
       if (username.length < 3 || username.length > 30) {
         throw new Error('Username must be 3-30 characters long');
       }
 
-      // Sign up with Supabase Auth and pass metadata
-      // The trigger on auth.users will auto-create the profile from this metadata
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            username,
-            full_name: fullName,
-            user_type: userType,
+      const { data, error } = await withTimeout(
+        supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: {
+              username,
+              full_name: fullName,
+              user_type: userType,
+            },
           },
-        },
-      });
+        }),
+        20000,
+        'Signup request'
+      );
 
       if (error) throw error;
 
       if (data.user) {
-        // Wait a moment for the trigger to create the profile
-        await new Promise(resolve => setTimeout(resolve, 1500));
+        await new Promise((resolve) => setTimeout(resolve, 1500));
 
-        // Fetch the profile that was created by the trigger
         const fetchAttempts = 3;
-        let lastError;
+        let lastError: unknown;
 
         for (let i = 0; i < fetchAttempts; i++) {
           try {
-            await fetchUserProfile(data.user, true); // isSignup = true
-            return; // Success!
+            await withTimeout(
+              fetchUserProfile(data.user, true),
+              10000,
+              `Profile fetch attempt ${i + 1}`
+            );
+            return;
           } catch (fetchError) {
             lastError = fetchError;
-            console.error(`Profile fetch attempt ${i + 1}/${fetchAttempts} failed:`, fetchError);
+            console.error(
+              `Profile fetch attempt ${i + 1}/${fetchAttempts} failed:`,
+              fetchError
+            );
             if (i < fetchAttempts - 1) {
-              // Wait before retrying
-              await new Promise(resolve => setTimeout(resolve, 500));
+              await new Promise((resolve) => setTimeout(resolve, 500));
             }
           }
         }
@@ -212,6 +253,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     } catch (error) {
       console.error('Signup error:', error);
+      if (isFetchFailure(error)) {
+        throw new Error(networkHintMessage());
+      }
       throw error;
     }
   };

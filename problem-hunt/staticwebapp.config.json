@@ -53,22 +53,10 @@
     },
     "401": {
       "statusCode": 401,
-      "rewrite": "/login.html"
+      "rewrite": "/index.html"
     },
     "403": {
       "statusCode": 403
     }
-  },
-
-  "buildCommand": "npm run build",
-  "outputLocation": "dist",
-
-  "environmentVariables": {
-    "VITE_SUPABASE_URL": "https://ajvobbpwgopinxtbpcpu.supabase.co",
-    "VITE_SUPABASE_ANON_KEY": "sb_publishable_D82LguYseqDD2AUMTI-chA_3OX8Jbaf"
-  },
-
-  "appSettings": {
-    "apiLocation": "api"
   }
 }
