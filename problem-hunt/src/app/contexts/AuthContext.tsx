@@ -1,6 +1,12 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { supabase } from '../../../lib/supabaseClient';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
+import {
+  createRequestId,
+  handleTerminalAuthFailure,
+  persistAuthSession,
+  refreshAccessToken
+} from '../../lib/auth-session';
 
 interface User {
   id: string;
@@ -52,6 +58,13 @@ function networkHintMessage(): string {
   return 'Cannot reach Supabase. Check VITE_SUPABASE_URL, your network/firewall, or a temporary Supabase outage.';
 }
 
+function isAuthProfileError(error: { code?: string; status?: number; message?: string } | null): boolean {
+  if (!error) return false;
+  if (error.status === 401 || error.status === 403) return true;
+  const message = (error.message || '').toLowerCase();
+  return message.includes('jwt') || message.includes('token') || message.includes('auth');
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -101,6 +114,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         if (event === 'TOKEN_REFRESHED') {
           console.log('Token refreshed successfully');
+          setIsLoading(false);
+          return;
         }
 
         if (event === 'SIGNED_OUT') {
@@ -123,8 +138,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const fetchUserProfile = async (
     supabaseUser: SupabaseUser,
-    isSignup: boolean = false
+    isSignup: boolean = false,
+    hasRetried: boolean = false
   ) => {
+    const requestId = createRequestId('profile');
+    const startedAt = new Date().toISOString();
+
+    console.info('[auth-trace]', {
+      event: 'profile_fetch_start',
+      requestId,
+      timestamp: startedAt,
+      userId: supabaseUser.id
+    });
+
     try {
       const { data: profile, error } = await supabase
         .from('profiles')
@@ -133,6 +159,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .single();
 
       if (error) {
+        if (isAuthProfileError(error) && !hasRetried) {
+          try {
+            await refreshAccessToken('profile_fetch_retry');
+            return await fetchUserProfile(supabaseUser, isSignup, true);
+          } catch (refreshError) {
+            await handleTerminalAuthFailure('profile_refresh_failed', refreshError);
+          }
+        }
+
         console.error('Error fetching profile:', error);
         console.error('User ID:', supabaseUser.id);
 
@@ -154,6 +189,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         username: profile?.username || '',
         role: profile?.user_type === 'builder' ? 'builder' : 'client',
       });
+
+      console.info('[auth-trace]', {
+        event: 'profile_fetch_success',
+        requestId,
+        timestamp: new Date().toISOString(),
+        startedAt,
+        userId: supabaseUser.id
+      });
     } catch (error) {
       console.error('Error in fetchUserProfile:', error);
       if (isSignup) {
@@ -174,6 +217,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       );
 
       if (error) throw error;
+
+      if (data.session?.access_token && data.session?.refresh_token) {
+        await persistAuthSession(data.session, 'login');
+      }
 
       if (data.user) {
         await withTimeout(fetchUserProfile(data.user), 10000, 'Profile load');

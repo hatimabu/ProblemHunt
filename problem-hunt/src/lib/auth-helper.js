@@ -15,18 +15,19 @@
  *   });
  */
 
-import { createClient } from '@supabase/supabase-js';
-import { buildApiUrl, API_BASE_URL } from './api-config';
+import { supabase } from '../../lib/supabaseClient';
+import { buildApiUrl } from './api-config';
+import {
+  createRequestId,
+  getValidAccessToken,
+  handleTerminalAuthFailure,
+  isAuthStatus,
+  refreshAccessToken
+} from './auth-session';
 
-// Initialize Supabase client
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
-
-if (!supabaseUrl || !supabaseKey) {
+if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY) {
   console.error('Supabase environment variables are not configured');
 }
-
-const supabase = createClient(supabaseUrl, supabaseKey);
 
 /**
  * Get the current user's access token from Supabase session
@@ -42,22 +43,7 @@ const supabase = createClient(supabaseUrl, supabaseKey);
  */
 export async function getAccessToken() {
   try {
-    const {
-      data: { session },
-      error
-    } = await supabase.auth.getSession();
-
-    if (error) {
-      console.error('Error getting session:', error.message);
-      return null;
-    }
-
-    if (!session) {
-      console.info('No active session - user may not be authenticated');
-      return null;
-    }
-
-    return session.access_token;
+    return await getValidAccessToken({ reason: 'get_access_token' });
   } catch (error) {
     console.error('Unexpected error getting access token:', error);
     return null;
@@ -142,9 +128,15 @@ export async function getCurrentUser() {
  * });
  */
 export async function authenticatedFetch(endpoint, options = {}) {
+  const requestId = createRequestId('api');
+  const startedAt = new Date().toISOString();
+  const fullUrl = buildApiUrl(endpoint);
+
   try {
-    // Get the access token
-    const token = await getAccessToken();
+    const token = await getValidAccessToken({
+      requestId,
+      reason: `request:${endpoint}`
+    });
 
     if (!token) {
       throw new Error(
@@ -152,14 +144,12 @@ export async function authenticatedFetch(endpoint, options = {}) {
       );
     }
 
-    // Build the full URL (supports local and cloud endpoints)
-    const fullUrl = buildApiUrl(endpoint);
-
     // Prepare fetch options
     const fetchOptions = {
       ...options,
       headers: {
         'Content-Type': 'application/json',
+        'x-request-id': requestId,
         Authorization: `Bearer ${token}`,
         ...options.headers
       }
@@ -170,8 +160,30 @@ export async function authenticatedFetch(endpoint, options = {}) {
       fetchOptions.body = JSON.stringify(fetchOptions.body);
     }
 
-    // Make the request
-    const response = await fetch(fullUrl, fetchOptions);
+    let response = await fetch(fullUrl, fetchOptions);
+
+    if (isAuthStatus(response.status)) {
+      console.warn('[auth-trace]', {
+        event: 'api_auth_retry',
+        requestId,
+        endpoint: fullUrl,
+        timestamp: new Date().toISOString(),
+        status: response.status
+      });
+
+      try {
+        const refreshedToken = await refreshAccessToken(`retry:${endpoint}`);
+        response = await fetch(fullUrl, {
+          ...fetchOptions,
+          headers: {
+            ...fetchOptions.headers,
+            Authorization: `Bearer ${refreshedToken}`
+          }
+        });
+      } catch (refreshError) {
+        await handleTerminalAuthFailure('api_retry_refresh_failed', refreshError);
+      }
+    }
 
     // Log response details for debugging
     if (!response.ok) {
@@ -181,9 +193,22 @@ export async function authenticatedFetch(endpoint, options = {}) {
       );
     }
 
+    console.info('[auth-trace]', {
+      event: 'api_request_complete',
+      requestId,
+      endpoint: fullUrl,
+      timestamp: new Date().toISOString(),
+      startedAt,
+      status: response.status
+    });
+
     return response;
   } catch (error) {
-    console.error('Error in authenticatedFetch:', error.message);
+    console.error('Error in authenticatedFetch:', error.message, {
+      requestId,
+      endpoint: fullUrl,
+      startedAt
+    });
     throw error;
   }
 }

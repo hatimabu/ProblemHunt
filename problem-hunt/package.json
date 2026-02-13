@@ -12,6 +12,7 @@
     "build:config": "node scripts/build.js",
     "build:azure": "node scripts/build.js",
     "build:figma": "vite build",
+    "test:refresh-lock": "node scripts/test-refresh-lock.mjs",
     "server": "node server.js",
     "start": "npm run build && npm run server"
   },
