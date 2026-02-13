@@ -7,6 +7,7 @@ import { Textarea } from "../components/ui/textarea";
 import { Avatar, AvatarFallback } from "../components/ui/avatar";
 import { Progress } from "../components/ui/progress";
 import { CryptoPayment } from "./CryptoPayment";
+import { buildApiUrl } from "../../lib/api-config";
 
 interface Update {
   id: string;
@@ -54,11 +55,14 @@ export function ProblemDetail() {
     const fetchProblem = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`/api/problems/${id}`);
+        const url = buildApiUrl(`/api/problems/${id}`);
+        const response = await fetch(url);
+        
         if (response.ok) {
           const data = await response.json();
           setProblem(data);
         } else {
+          console.error('Failed to fetch problem:', response.status);
           setProblem(null);
         }
       } catch (error) {

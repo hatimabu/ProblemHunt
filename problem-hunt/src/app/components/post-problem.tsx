@@ -1,20 +1,20 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { Code, DollarSign, Calendar, FileText, Tag } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
+import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
+import { Textarea } from "../components/ui/textarea";
+import { Label } from "../components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "../components/ui/select";
 import { supabase } from "../../../lib/supabaseClient";
 import { useAuth } from "../contexts/AuthContext";
-import { getSessionWithTimeout } from "../utils/sessionUtils";
+import { authenticatedFetch, handleResponse } from "../../lib/auth-helper";
 
 const CATEGORIES = ["AI/ML", "Web3", "Finance", "Governance", "Trading", "Infrastructure"];
 
@@ -38,22 +38,10 @@ export function PostProblem() {
     setError(null);
     
     try {
-      // Get the CURRENT authentication token (ensures fresh token)
-      const { session, error: sessionError } = await getSessionWithTimeout();
-      
-      if (sessionError || !session?.access_token) {
-        throw new Error('Not authenticated. Please log in again.');
-      }
-      
-      const token = session.access_token;
-
-      const response = await fetch('/api/problems', {
+      const response = await authenticatedFetch('/api/problems', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({
+        headers: {},
+        body: {
           title: formData.title,
           description: formData.description,
           category: formData.category,
@@ -61,15 +49,10 @@ export function PostProblem() {
           requirements: formData.requirements,
           deadline: formData.deadline,
           author: user?.username || user?.email || 'Anonymous User',
-        }),
+        },
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to create problem');
-      }
-
-      const problem = await response.json();
+      const problem = await handleResponse(response);
       // Navigate to the newly created problem
       navigate(`/problem/${problem.id}`);
     } catch (err) {

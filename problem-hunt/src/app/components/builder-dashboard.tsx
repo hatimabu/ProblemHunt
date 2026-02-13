@@ -14,7 +14,9 @@ import {
   Trash2,
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
-import { supabase } from "../../../lib/supabaseClient";import { getSessionWithTimeout } from '../utils/sessionUtils';import { Button } from "./ui/button";
+import { supabase } from "../../../lib/supabaseClient";
+import { authenticatedFetch, handleResponse } from "../../lib/auth-helper";
+import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { Textarea } from "./ui/textarea";
 import { Avatar, AvatarFallback } from "./ui/avatar";
@@ -94,30 +96,14 @@ export function BuilderDashboard() {
 
     try {
       setProblemsLoading(true);
-      const { session, error: sessionError } = await getSessionWithTimeout();
-      
-      if (sessionError || !session?.access_token) {
-        console.error('Not authenticated');
-        setUserProblems([]);
-        return;
-      }
-      
-      const token = session.access_token;
-
-      const response = await fetch('/api/user/problems?sortBy=newest', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
+      const response = await authenticatedFetch('/api/user/problems?sortBy=newest', {
+        method: 'GET',
+        headers: {},
+        body: null,
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        setUserProblems(Array.isArray(data.problems) ? data.problems : []);
-      } else {
-        console.error('Failed to fetch user problems');
-        setUserProblems([]);
-      }
+      const data = await handleResponse(response);
+      setUserProblems(Array.isArray(data.problems) ? data.problems : []);
     } catch (error) {
       console.error('Error fetching user problems:', error);
       setUserProblems([]);
@@ -129,30 +115,15 @@ export function BuilderDashboard() {
   const handleDeleteProblem = async (problemId: string) => {
     try {
       setDeletingProblemId(problemId);
-      const { session, error: sessionError } = await getSessionWithTimeout();
-      
-      if (sessionError || !session?.access_token) {
-        alert('Not authenticated. Please log in again.');
-        return;
-      }
-      
-      const token = session.access_token;
-
-      const response = await fetch(`/api/problems/${problemId}`, {
+      const response = await authenticatedFetch(`/api/problems/${problemId}`, {
         method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
+        headers: {},
+        body: null,
       });
 
-      if (response.ok) {
-        // Remove the problem from the local state
-        setUserProblems(prev => prev.filter(p => p.id !== problemId));
-      } else {
-        console.error('Failed to delete problem');
-        alert('Failed to delete problem. Please try again.');
-      }
+      await handleResponse(response);
+      // Remove the problem from the local state
+      setUserProblems(prev => prev.filter(p => p.id !== problemId));
     } catch (error) {
       console.error('Error deleting problem:', error);
       alert('Error deleting problem. Please try again.');

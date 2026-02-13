@@ -1,20 +1,22 @@
 /**
- * Supabase Authentication Helper for Azure Functions
+ * Supabase Authentication Helper for Python Functions
  *
  * Provides utilities to:
  * - Retrieve the Supabase access token from the current session
- * - Make authenticated HTTP requests to Azure Functions API
+ * - Make authenticated HTTP requests to Python/Azure Functions API
  * - Handle token refresh and error cases
+ * - Support both local and cloud-deployed endpoints
  *
  * Usage:
  *   import { authenticatedFetch } from './auth-helper';
- *   const response = await authenticatedFetch('/api/create-post', {
+ *   const response = await authenticatedFetch('/api/problems', {
  *     method: 'POST',
- *     body: JSON.stringify({ title: 'My Post', content: 'Content' })
+ *     body: { title: 'My Problem', description: 'Description' }
  *   });
  */
 
 import { createClient } from '@supabase/supabase-js';
+import { buildApiUrl, API_BASE_URL } from './api-config';
 
 // Initialize Supabase client
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
@@ -91,13 +93,14 @@ export async function getCurrentUser() {
 }
 
 /**
- * Make an authenticated HTTP request to an Azure Functions endpoint.
+ * Make an authenticated HTTP request to Python/Azure Functions endpoint.
  *
  * This function automatically retrieves the Supabase access token and
  * includes it in the Authorization header for every request.
+ * Works with both local development (localhost:7071) and Azure deployment.
  *
  * @param {string} endpoint - The API endpoint (relative or absolute URL)
- *                           Examples: '/api/create-post', 'https://myapi.azurewebsites.net/api/get-posts'
+ *                           Examples: '/api/problems', 'https://myapi.azurewebsites.net/api/problems'
  * @param {Object} options - Fetch options (method, headers, body, etc.)
  * @param {string} options.method - HTTP method (GET, POST, PUT, DELETE, etc.)
  * @param {Object} options.headers - Additional headers to include
@@ -108,43 +111,34 @@ export async function getCurrentUser() {
  * @throws {Error} If token retrieval fails before making the request
  *
  * @example
- * // Create a new post
- * const response = await authenticatedFetch('/api/create-post', {
+ * // Create a new problem
+ * const response = await authenticatedFetch('/api/problems', {
  *   method: 'POST',
- *   body: JSON.stringify({
+ *   body: {
  *     title: 'My Problem',
- *     content: 'This is a problem description',
- *     tags: ['urgent', 'bug']
- *   })
+ *     description: 'This is a problem description',
+ *     category: 'AI/ML',
+ *     budget: '5000'
+ *   }
  * });
  *
  * if (response.ok) {
- *   const post = await response.json();
- *   console.log('Post created:', post);
+ *   const problem = await response.json();
+ *   console.log('Problem created:', problem);
  * } else {
  *   console.error('Error:', response.status, await response.text());
  * }
  *
  * @example
- * // Get all user's posts with pagination
- * const response = await authenticatedFetch('/api/get-posts?limit=20&offset=0', {
+ * // Get user's problems
+ * const response = await authenticatedFetch('/api/user/problems', {
  *   method: 'GET'
  * });
  *
  * @example
- * // Delete a post
- * const response = await authenticatedFetch('/api/delete-post/post-123', {
+ * // Delete a problem
+ * const response = await authenticatedFetch('/api/problems/problem-123', {
  *   method: 'DELETE'
- * });
- *
- * @example
- * // Update a post (custom endpoint)
- * const response = await authenticatedFetch('/api/update-post', {
- *   method: 'PUT',
- *   body: JSON.stringify({
- *     post_id: 'post-123',
- *     title: 'Updated Title'
- *   })
  * });
  */
 export async function authenticatedFetch(endpoint, options = {}) {
@@ -157,6 +151,9 @@ export async function authenticatedFetch(endpoint, options = {}) {
         'Could not retrieve authentication token. Please ensure you are logged in.'
       );
     }
+
+    // Build the full URL (supports local and cloud endpoints)
+    const fullUrl = buildApiUrl(endpoint);
 
     // Prepare fetch options
     const fetchOptions = {
@@ -174,13 +171,13 @@ export async function authenticatedFetch(endpoint, options = {}) {
     }
 
     // Make the request
-    const response = await fetch(endpoint, fetchOptions);
+    const response = await fetch(fullUrl, fetchOptions);
 
     // Log response details for debugging
     if (!response.ok) {
       console.error(
         `API request failed (${response.status} ${response.statusText}):`,
-        endpoint
+        fullUrl
       );
     }
 
