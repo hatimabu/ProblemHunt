@@ -1,4 +1,4 @@
-{
+﻿{
   "version": "2.0.0",
   "tasks": [
     {
@@ -15,10 +15,11 @@
     {
       "type": "shell",
       "label": "pip install (functions)",
-      "command": "python -m pip install -r requirements.txt",
+      "command": "py -3.11 -m pip install -r requirements.txt",
       "options": {
         "cwd": "${workspaceFolder}/problem-hunt\\python-function"
       }
     }
   ]
 }
+
