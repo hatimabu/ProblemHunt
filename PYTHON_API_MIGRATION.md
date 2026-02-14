@@ -191,7 +191,7 @@ az login
 2. Create function app (if not existing):
 ```bash
 az functionapp create \
-  --resource-group your-resource-group \
+  --resource-group problemhunt-rg \
   --consumption-plan-location eastus \
   --runtime python \
   --functions-version 4 \

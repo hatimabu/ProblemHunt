@@ -315,7 +315,7 @@ function CreatePost() {
 1. **Update Azure Function App Settings**:
    ```bash
    az functionapp config appsettings set \
-     --resource-group <RG> \
+     --resource-group problemhunt-rg \
      --name <FunctionAppName> \
      --settings SUPABASE_JWT_SECRET=<secret> \
                 COSMOS_DB_ENDPOINT=<endpoint> \
