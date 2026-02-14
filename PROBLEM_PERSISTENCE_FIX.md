@@ -23,12 +23,12 @@
 ## Changes Made
 
 ### New Files
-1. **`problem-hunt/api/GetUserProblems/index.js`** - API function to fetch problems by user
-2. **`problem-hunt/api/GetUserProblems/function.json`** - Azure Function configuration
+1. **`problem-hunt/python-function/GetUserProblems/__init__.py`** - API function to fetch problems by user
+2. **`problem-hunt/python-function/GetUserProblems/function.json`** - Azure Function configuration
 3. **`problem-hunt/mock-db-data.json`** - Persisted mock database (auto-generated, git-ignored)
 
 ### Modified Files
-1. **`problem-hunt/api/shared/cosmos-mock.js`**
+1. **`problem-hunt/python-function/shared/db.py`**
    - Added file-based persistence
    - Added support for `@authorId` filter parameter
    - Auto-saves on create, update, and delete operations
@@ -117,3 +117,4 @@ The GitHub Actions workflow already includes these in the env section.
 - File-based persistence is not recommended for production
 - For production, use real Cosmos DB
 - The mock database supports basic queries but not all Cosmos DB features
+

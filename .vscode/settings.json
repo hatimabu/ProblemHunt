@@ -1,9 +1,8 @@
 {
-    "azureFunctions.deploySubpath": "problem-hunt\\api",
-    "azureFunctions.postDeployTask": "npm install (functions)",
-    "azureFunctions.projectLanguage": "JavaScript",
-    "azureFunctions.projectRuntime": "~4",
-    "debug.internalConsoleOptions": "neverOpen",
-    "azureFunctions.preDeployTask": "npm prune (functions)",
-    "azureFunctions.projectSubpath": "problem-hunt\\python-function"
+  "azureFunctions.deploySubpath": "problem-hunt\\python-function",
+  "azureFunctions.preDeployTask": "pip install (functions)",
+  "azureFunctions.projectLanguage": "Python",
+  "azureFunctions.projectRuntime": "~4",
+  "debug.internalConsoleOptions": "neverOpen",
+  "azureFunctions.projectSubpath": "problem-hunt\\python-function"
 }

@@ -2,7 +2,7 @@
 
 ## Changes Made
 ✅ Updated GitHub Actions workflow to deploy Azure Functions API  
-✅ Configured API location: `./problem-hunt/api`  
+✅ Configured API location: `./problem-hunt/python-function`  
 ✅ Added Cosmos DB environment variables to workflow
 
 ## Before Pushing to GitHub
@@ -84,3 +84,4 @@ Your local setup is configured correctly:
 - [ ] Configure SSL/HTTPS (automatic with Static Web Apps)
 - [ ] Set up monitoring and alerts in Azure Portal
 - [ ] Configure staging environments for testing
+
