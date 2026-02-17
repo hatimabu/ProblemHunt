@@ -1,420 +1,472 @@
-import { useState } from 'react';
-import { Plus, Loader2, ExternalLink, Trash2, Star } from 'lucide-react';
-import { Button } from './ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { Badge } from './ui/badge';
-import { Alert, AlertDescription } from './ui/alert';
-import { supabase } from '../../../lib/supabaseClient';
-import { useAuth } from '../contexts/AuthContext';
-import { ethers } from 'ethers';
-import { useEffect } from 'react';
+import { useState, useEffect } from "react";
+import {
+  Wallet,
+  Plus,
+  Trash2,
+  CheckCircle2,
+  AlertCircle,
+  Loader2,
+  ShieldCheck,
+  ChevronDown,
+} from "lucide-react";
+import { Button } from "./ui/button";
+import { Input } from "./ui/input";
+import { Label } from "./ui/label";
+import { Badge } from "./ui/badge";
+import { supabase } from "../../../lib/supabaseClient";
+import { useAuth } from "../contexts/AuthContext";
 
-type ChainType = 'ethereum' | 'polygon' | 'arbitrum' | 'solana';
+// ─── Types ────────────────────────────────────────────────────────────────────
 
-interface WalletData {
+type ChainType = "ethereum" | "polygon" | "arbitrum" | "solana";
+
+interface WalletRow {
   id: string;
-  chain: string;
+  user_id: string;
+  chain: ChainType;
   address: string;
   is_primary: boolean;
   created_at: string;
 }
 
-interface LinkWalletProps {
-  onWalletLinked?: () => void;
-  compact?: boolean;
+// ─── Chain metadata ───────────────────────────────────────────────────────────
+
+const CHAINS: {
+  id: ChainType;
+  label: string;
+  placeholder: string;
+  hint: string;
+  color: string;
+  icon: string;
+}[] = [
+  {
+    id: "ethereum",
+    label: "Ethereum",
+    placeholder: "0x...",
+    hint: "EVM address (42 chars, starts with 0x)",
+    color: "from-indigo-500 to-blue-600",
+    icon: "Ξ",
+  },
+  {
+    id: "polygon",
+    label: "Polygon",
+    placeholder: "0x...",
+    hint: "EVM address (42 chars, starts with 0x)",
+    color: "from-purple-500 to-indigo-600",
+    icon: "⬡",
+  },
+  {
+    id: "arbitrum",
+    label: "Arbitrum",
+    placeholder: "0x...",
+    hint: "EVM address (42 chars, starts with 0x)",
+    color: "from-blue-400 to-cyan-600",
+    icon: "◈",
+  },
+  {
+    id: "solana",
+    label: "Solana",
+    placeholder: "Base58 address...",
+    hint: "Solana address (32–44 chars)",
+    color: "from-green-400 to-teal-500",
+    icon: "◎",
+  },
+];
+
+// ─── Validation ───────────────────────────────────────────────────────────────
+
+function validateAddress(chain: ChainType, address: string): string | null {
+  const trimmed = address.trim();
+  if (!trimmed) return "Address is required.";
+
+  if (chain === "ethereum" || chain === "polygon" || chain === "arbitrum") {
+    if (!/^0x[a-fA-F0-9]{40}$/.test(trimmed))
+      return "Must be a valid EVM address (0x followed by 40 hex chars).";
+  }
+
+  if (chain === "solana") {
+    if (trimmed.length < 32 || trimmed.length > 44)
+      return "Must be a valid Solana address (32–44 characters).";
+  }
+
+  return null;
 }
 
-export function LinkWallet({ onWalletLinked, compact = false }: LinkWalletProps) {
+// ─── Component ────────────────────────────────────────────────────────────────
+
+export function LinkWallet() {
   const { user } = useAuth();
-  const [wallets, setWallets] = useState<WalletData[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [linkingChain, setLinkingChain] = useState<ChainType | null>(null);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
-  const [isEthereumAvailable, setIsEthereumAvailable] = useState(false);
-  const [isSolanaAvailable, setIsSolanaAvailable] = useState(false);
+
+  const [wallets, setWallets] = useState<WalletRow[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Which chain card is expanded for adding
+  const [expandedChain, setExpandedChain] = useState<ChainType | null>(null);
+
+  // Per-chain input + state
+  const [inputAddress, setInputAddress] = useState("");
+  const [validationError, setValidationError] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [flashSuccess, setFlashSuccess] = useState<ChainType | null>(null);
+  const [globalError, setGlobalError] = useState("");
 
   useEffect(() => {
-    if (user) {
-      fetchWallets();
-    }
-    setIsEthereumAvailable(typeof window !== 'undefined' && typeof (window as any).ethereum !== 'undefined');
-    setIsSolanaAvailable(typeof window !== 'undefined' && typeof (window as any).solana !== 'undefined');
+    if (user) fetchWallets();
   }, [user]);
+
+  // Clear input when chain changes
+  useEffect(() => {
+    setInputAddress("");
+    setValidationError("");
+    setGlobalError("");
+  }, [expandedChain]);
+
+  // ── Data helpers ──────────────────────────────────────────────────────────
 
   const fetchWallets = async () => {
     if (!user) return;
+    setIsLoading(true);
     try {
-      const { data, error: fetchError } = await supabase
-        .from('wallets')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
+      const { data, error } = await supabase
+        .from("wallets")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: true });
 
-      if (fetchError) throw fetchError;
-      setWallets(data || []);
+      if (error) throw error;
+      setWallets(data ?? []);
     } catch (err: any) {
-      console.error('Error fetching wallets:', err);
+      setGlobalError(err.message ?? "Failed to load wallets.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const linkEthereumWallet = async (chain: ChainType) => {
-    if (!user) {
-      setError('Please sign in first');
+  const walletForChain = (chain: ChainType) =>
+    wallets.find((w) => w.chain === chain) ?? null;
+
+  // ── Add / Replace ─────────────────────────────────────────────────────────
+
+  const handleSave = async (chain: ChainType) => {
+    setValidationError("");
+    setGlobalError("");
+
+    const error = validateAddress(chain, inputAddress);
+    if (error) {
+      setValidationError(error);
       return;
     }
 
-    const ethereum = (window as any).ethereum;
-    if (!ethereum) {
-      setError('Please install MetaMask or another Ethereum wallet');
-      return;
-    }
+    const trimmed = inputAddress.trim();
+    const existing = walletForChain(chain);
 
     try {
-      setLinkingChain(chain);
-      setError('');
-      setSuccess('');
+      setIsSaving(true);
 
-      const accounts = await ethereum.request({ method: 'eth_requestAccounts' }) as string[];
-      if (!accounts || accounts.length === 0) {
-        throw new Error('No accounts found');
+      if (existing) {
+        // Replace: delete old, insert new
+        const { error: delErr } = await supabase
+          .from("wallets")
+          .delete()
+          .eq("id", existing.id);
+        if (delErr) throw delErr;
       }
 
-      const walletAddress = accounts[0].toLowerCase();
-      const statement = `Link wallet to ProblemHunt profile\n\nWallet: ${walletAddress}\nChain: ${chain}\nTimestamp: ${new Date().toISOString()}`;
+      const { error: insertErr } = await supabase.from("wallets").insert({
+        user_id: user!.id,
+        chain,
+        address: trimmed,
+        is_primary: true,
+      });
+      if (insertErr) throw insertErr;
 
-      const signature = await ethereum.request({
-        method: 'personal_sign',
-        params: [statement, walletAddress],
-      }) as string;
+      await fetchWallets();
+      setExpandedChain(null);
+      setInputAddress("");
 
-      const recoveredAddress = ethers.verifyMessage(statement, signature);
-      if (recoveredAddress.toLowerCase() !== walletAddress) {
-        throw new Error('Signature verification failed');
+      // Flash success on the card
+      setFlashSuccess(chain);
+      setTimeout(() => setFlashSuccess(null), 2500);
+    } catch (err: any) {
+      // Supabase constraint violations come back as 23505 (unique violation)
+      if (err.code === "23505") {
+        setValidationError(
+          "This address is already linked to another account."
+        );
+      } else {
+        setGlobalError(err.message ?? "Failed to save wallet.");
       }
-
-      await saveWalletToDatabase(chain, walletAddress);
-      setSuccess(`${chain.toUpperCase()} wallet linked successfully!`);
-      setLinkingChain(null);
-      fetchWallets();
-      onWalletLinked?.();
-    } catch (err: any) {
-      console.error('Error linking wallet:', err);
-      setError(err.message || 'Failed to link wallet');
-      setLinkingChain(null);
+    } finally {
+      setIsSaving(false);
     }
   };
 
-  const linkSolanaWallet = async () => {
-    if (!user) {
-      setError('Please sign in first');
-      return;
-    }
+  // ── Delete ────────────────────────────────────────────────────────────────
 
-    const solana = (window as any).solana;
-    if (!solana) {
-      setError('Please install Phantom or another Solana wallet');
-      return;
-    }
-
+  const handleDelete = async (wallet: WalletRow) => {
+    setGlobalError("");
     try {
-      setLinkingChain('solana');
-      setError('');
-      setSuccess('');
-
-      const resp = await solana.connect();
-      const walletAddress = resp.publicKey.toString();
-
-      const statement = `Link wallet to ProblemHunt profile\n\nWallet: ${walletAddress}\nChain: solana\nTimestamp: ${new Date().toISOString()}`;
-      const encodedMessage = new TextEncoder().encode(statement);
-
-      const signedMessage = await solana.signMessage(encodedMessage, 'utf8');
-      const signature = Buffer.from(signedMessage.signature).toString('base64');
-
-      await saveWalletToDatabase('solana', walletAddress);
-      setSuccess('Solana wallet linked successfully!');
-      setLinkingChain(null);
-      fetchWallets();
-      onWalletLinked?.();
-    } catch (err: any) {
-      console.error('Error linking Solana wallet:', err);
-      setError(err.message || 'Failed to link Solana wallet');
-      setLinkingChain(null);
-    }
-  };
-
-  const saveWalletToDatabase = async (chain: ChainType, address: string) => {
-    if (!user) throw new Error('User not authenticated');
-
-    const { error: insertError } = await supabase.from('wallets').insert({
-      user_id: user.id,
-      chain,
-      address,
-      is_primary: wallets.length === 0, // First wallet is primary
-    });
-
-    if (insertError) throw insertError;
-  };
-
-  const setAsPrimary = async (walletId: string, chain: string) => {
-    try {
-      // Unset all primary wallets for this chain
-      await supabase
-        .from('wallets')
-        .update({ is_primary: false })
-        .eq('user_id', user?.id)
-        .eq('chain', chain);
-
-      // Set this one as primary
-      await supabase
-        .from('wallets')
-        .update({ is_primary: true })
-        .eq('id', walletId);
-
-      setSuccess('Primary wallet updated!');
-      fetchWallets();
-    } catch (err: any) {
-      setError(err.message || 'Failed to update primary wallet');
-    }
-  };
-
-  const deleteWallet = async (walletId: string) => {
-    try {
-      const { error: deleteError } = await supabase
-        .from('wallets')
+      setDeletingId(wallet.id);
+      const { error } = await supabase
+        .from("wallets")
         .delete()
-        .eq('id', walletId);
-
-      if (deleteError) throw deleteError;
-
-      setSuccess('Wallet removed!');
-      fetchWallets();
+        .eq("id", wallet.id);
+      if (error) throw error;
+      setWallets((prev) => prev.filter((w) => w.id !== wallet.id));
     } catch (err: any) {
-      setError(err.message || 'Failed to delete wallet');
+      setGlobalError(err.message ?? "Failed to remove wallet.");
+    } finally {
+      setDeletingId(null);
     }
   };
 
-  const getExplorerUrl = (chain: string, address: string): string => {
-    const explorers: Record<string, string> = {
-      ethereum: `https://etherscan.io/address/${address}`,
-      polygon: `https://polygonscan.com/address/${address}`,
-      arbitrum: `https://arbiscan.io/address/${address}`,
-      solana: `https://explorer.solana.com/address/${address}`,
-    };
-    return explorers[chain] || '#';
-  };
+  // ── Render ────────────────────────────────────────────────────────────────
 
-  if (compact) {
+  if (isLoading) {
     return (
-      <div className="space-y-3">
-        {error && (
-          <Alert className="bg-red-500/10 border-red-500/30">
-            <AlertDescription className="text-red-400">{error}</AlertDescription>
-          </Alert>
-        )}
-        {success && (
-          <Alert className="bg-green-500/10 border-green-500/30">
-            <AlertDescription className="text-green-400">{success}</AlertDescription>
-          </Alert>
-        )}
-
-        <div className="space-y-2">
-          <Button
-            onClick={() => linkEthereumWallet('ethereum')}
-            disabled={!isEthereumAvailable || linkingChain !== null}
-            className="w-full bg-purple-600 hover:bg-purple-700"
-          >
-            {linkingChain === 'ethereum' ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Plus className="w-4 h-4 mr-2" />}
-            {linkingChain === 'ethereum' ? 'Linking...' : 'Link Ethereum'}
-          </Button>
-
-          <div className="grid grid-cols-2 gap-2">
-            <Button
-              onClick={() => linkEthereumWallet('polygon')}
-              disabled={!isEthereumAvailable || linkingChain !== null}
-              variant="outline"
-              className="border-purple-500/30 text-purple-400 hover:bg-purple-500/10"
-            >
-              {linkingChain === 'polygon' ? 'Linking...' : 'Link Polygon'}
-            </Button>
-            <Button
-              onClick={() => linkEthereumWallet('arbitrum')}
-              disabled={!isEthereumAvailable || linkingChain !== null}
-              variant="outline"
-              className="border-blue-500/30 text-blue-400 hover:bg-blue-500/10"
-            >
-              {linkingChain === 'arbitrum' ? 'Linking...' : 'Link Arbitrum'}
-            </Button>
-          </div>
-
-          <Button
-            onClick={linkSolanaWallet}
-            disabled={!isSolanaAvailable || linkingChain !== null}
-            className="w-full bg-cyan-600 hover:bg-cyan-700"
-          >
-            {linkingChain === 'solana' ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Plus className="w-4 h-4 mr-2" />}
-            {linkingChain === 'solana' ? 'Linking...' : 'Link Solana'}
-          </Button>
-        </div>
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="w-8 h-8 animate-spin text-cyan-400" />
       </div>
     );
   }
 
   return (
-    <Card className="bg-gray-900/50 border-gray-800 backdrop-blur-sm">
-      <CardHeader>
-        <CardTitle className="text-white flex items-center gap-2">
-          <Plus className="w-5 h-5 text-cyan-400" />
-          Add Crypto Wallet
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {error && (
-          <Alert className="bg-red-500/10 border-red-500/30">
-            <AlertDescription className="text-red-400">{error}</AlertDescription>
-          </Alert>
-        )}
-        {success && (
-          <Alert className="bg-green-500/10 border-green-500/30">
-            <AlertDescription className="text-green-400">{success}</AlertDescription>
-          </Alert>
-        )}
-
-        {/* Link Wallet Buttons */}
-        <div className="space-y-3 mb-6">
-          <Button
-            onClick={() => linkEthereumWallet('ethereum')}
-            disabled={!isEthereumAvailable || linkingChain !== null}
-            className="w-full bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white border-0 h-10"
-          >
-            {linkingChain === 'ethereum' ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Linking...
-              </>
-            ) : (
-              <>
-                <Plus className="w-4 h-4 mr-2" />
-                Link Ethereum Wallet
-              </>
-            )}
-          </Button>
-
-          <div className="grid grid-cols-2 gap-2">
-            <Button
-              onClick={() => linkEthereumWallet('polygon')}
-              disabled={!isEthereumAvailable || linkingChain !== null}
-              variant="outline"
-              className="border-purple-500/30 text-purple-400 hover:bg-purple-500/10"
-            >
-              {linkingChain === 'polygon' ? 'Linking...' : 'Link Polygon'}
-            </Button>
-            <Button
-              onClick={() => linkEthereumWallet('arbitrum')}
-              disabled={!isEthereumAvailable || linkingChain !== null}
-              variant="outline"
-              className="border-blue-500/30 text-blue-400 hover:bg-blue-500/10"
-            >
-              {linkingChain === 'arbitrum' ? 'Linking...' : 'Link Arbitrum'}
-            </Button>
+    <div className="space-y-6">
+      {/* Section header */}
+      <div className="relative">
+        <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/5 to-blue-500/5 rounded-2xl blur-xl" />
+        <div className="relative bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-2xl p-6">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-cyan-500/20 to-blue-600/20 border border-cyan-500/30 flex items-center justify-center">
+              <Wallet className="w-5 h-5 text-cyan-400" />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-white">Linked Wallets</h2>
+              <p className="text-sm text-gray-400">
+                Add one wallet per chain so others can tip you with crypto.
+              </p>
+            </div>
           </div>
 
-          <Button
-            onClick={linkSolanaWallet}
-            disabled={!isSolanaAvailable || linkingChain !== null}
-            className="w-full bg-gradient-to-r from-cyan-500 to-teal-600 hover:from-cyan-600 hover:to-teal-700 text-white border-0 h-10"
-          >
-            {linkingChain === 'solana' ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Linking...
-              </>
-            ) : (
-              <>
-                <Plus className="w-4 h-4 mr-2" />
-                Link Solana Wallet
-              </>
-            )}
-          </Button>
+          <div className="flex items-center gap-2 mt-4 text-xs text-gray-500 bg-gray-800/40 border border-gray-700/50 rounded-lg px-3 py-2">
+            <ShieldCheck className="w-3.5 h-3.5 text-cyan-500/70 shrink-0" />
+            Addresses are validated against chain format rules before saving.
+            Only one wallet per chain is allowed.
+          </div>
         </div>
+      </div>
 
-        {/* Linked Wallets List */}
-        <div className="border-t border-gray-700 pt-4">
-          <h3 className="text-white font-medium mb-3 flex items-center gap-2">
-            {wallets.length > 0 ? `${wallets.length} Connected Wallet${wallets.length !== 1 ? 's' : ''}` : 'No Wallets Connected'}
-          </h3>
+      {/* Global error */}
+      {globalError && (
+        <div className="flex items-center gap-2 text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-4 py-3">
+          <AlertCircle className="w-4 h-4 shrink-0" />
+          {globalError}
+        </div>
+      )}
 
-          {wallets.length === 0 ? (
-            <p className="text-gray-500 text-sm text-center py-4">
-              Connect your first wallet to get started
-            </p>
-          ) : (
-            <div className="space-y-3">
-              {wallets.map((wallet) => (
-                <div
-                  key={wallet.id}
-                  className="bg-gray-800/30 border border-gray-700 rounded-lg p-3 hover:border-cyan-500/30 transition-colors"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-2 flex-wrap">
-                        <Badge className="bg-cyan-500/20 text-cyan-300 border-cyan-500/30">
-                          {wallet.chain.charAt(0).toUpperCase() + wallet.chain.slice(1)}
-                        </Badge>
-                        {wallet.is_primary && (
-                          <Badge className="bg-green-500/20 text-green-300 border-green-500/30 flex items-center gap-1">
-                            <Star className="w-3 h-3" />
-                            Primary
+      {/* Chain cards */}
+      <div className="grid gap-4">
+        {CHAINS.map((chain) => {
+          const linked = walletForChain(chain.id);
+          const isExpanded = expandedChain === chain.id;
+          const isFlashing = flashSuccess === chain.id;
+
+          return (
+            <div key={chain.id} className="relative">
+              <div
+                className={`absolute inset-0 rounded-2xl blur-xl transition-opacity duration-500 ${
+                  isFlashing
+                    ? "opacity-100 bg-green-500/10"
+                    : linked
+                    ? "opacity-60 bg-gradient-to-r from-cyan-500/5 to-blue-500/5"
+                    : "opacity-0"
+                }`}
+              />
+              <div
+                className={`relative bg-gray-900/50 backdrop-blur-sm border rounded-2xl overflow-hidden transition-colors duration-300 ${
+                  isFlashing
+                    ? "border-green-500/40"
+                    : isExpanded
+                    ? "border-cyan-500/40"
+                    : linked
+                    ? "border-gray-700/80"
+                    : "border-gray-800"
+                }`}
+              >
+                {/* Card header row */}
+                <div className="flex items-center justify-between p-5">
+                  <div className="flex items-center gap-4">
+                    {/* Chain icon */}
+                    <div
+                      className={`w-10 h-10 rounded-xl bg-gradient-to-br ${chain.color} flex items-center justify-center text-white font-bold text-lg shrink-0`}
+                    >
+                      {chain.icon}
+                    </div>
+
+                    <div>
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <span className="text-white font-semibold">
+                          {chain.label}
+                        </span>
+                        {linked && (
+                          <Badge className="bg-cyan-500/15 text-cyan-400 border-cyan-500/30 text-[10px] px-1.5 py-0">
+                            Linked
                           </Badge>
                         )}
                       </div>
-                      <div className="flex items-center gap-2 mb-1">
-                        <code className="text-xs text-gray-300 font-mono bg-gray-900/50 px-2 py-1 rounded truncate">
-                          {wallet.address.slice(0, 8)}...{wallet.address.slice(-6)}
-                        </code>
-                        <a
-                          href={getExplorerUrl(wallet.chain, wallet.address)}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-cyan-400 hover:text-cyan-300 transition-colors"
-                          title="View on blockchain explorer"
-                        >
-                          <ExternalLink className="w-3 h-3" />
-                        </a>
-                      </div>
-                      <p className="text-xs text-gray-500">
-                        Added {new Date(wallet.created_at).toLocaleDateString()}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-1 flex-shrink-0">
-                      {!wallet.is_primary && (
-                        <Button
-                          onClick={() => setAsPrimary(wallet.id, wallet.chain)}
-                          size="sm"
-                          variant="ghost"
-                          className="text-gray-400 hover:text-yellow-400 h-8 w-8 p-0"
-                          title="Set as primary"
-                        >
-                          <Star className="w-4 h-4" />
-                        </Button>
+
+                      {linked ? (
+                        <p className="text-xs font-mono text-gray-400 max-w-[260px] sm:max-w-sm truncate">
+                          {linked.address}
+                        </p>
+                      ) : (
+                        <p className="text-xs text-gray-500">No wallet linked</p>
                       )}
-                      <Button
-                        onClick={() => deleteWallet(wallet.id)}
-                        size="sm"
-                        variant="ghost"
-                        className="text-gray-400 hover:text-red-400 h-8 w-8 p-0"
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex items-center gap-2 shrink-0">
+                    {linked && !isExpanded && (
+                      <button
+                        onClick={() => handleDelete(linked)}
+                        disabled={deletingId === linked.id}
+                        className="p-2 rounded-lg text-gray-500 hover:text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition-all disabled:opacity-40"
                         title="Remove wallet"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        {deletingId === linked.id ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Trash2 className="w-4 h-4" />
+                        )}
+                      </button>
+                    )}
+
+                    <button
+                      onClick={() => {
+                        if (isExpanded) {
+                          setExpandedChain(null);
+                        } else {
+                          setExpandedChain(chain.id);
+                          // Pre-fill if replacing
+                          setInputAddress(linked?.address ?? "");
+                        }
+                      }}
+                      className={`flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg border transition-all ${
+                        isExpanded
+                          ? "text-gray-400 border-gray-700 hover:bg-gray-800"
+                          : linked
+                          ? "text-yellow-400 border-yellow-500/30 bg-yellow-500/10 hover:bg-yellow-500/20"
+                          : "text-cyan-400 border-cyan-500/30 bg-cyan-500/10 hover:bg-cyan-500/20"
+                      }`}
+                    >
+                      {isExpanded ? (
+                        <>
+                          <ChevronDown className="w-3.5 h-3.5 rotate-180 transition-transform" />
+                          Cancel
+                        </>
+                      ) : linked ? (
+                        <>
+                          <Plus className="w-3.5 h-3.5" />
+                          Replace
+                        </>
+                      ) : (
+                        <>
+                          <Plus className="w-3.5 h-3.5" />
+                          Add
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Expandable form */}
+                {isExpanded && (
+                  <div className="border-t border-gray-800/80 bg-gray-900/30 px-5 py-4 space-y-4">
+                    {linked && (
+                      <div className="flex items-center gap-2 text-xs text-yellow-400/80 bg-yellow-500/10 border border-yellow-500/20 rounded-lg px-3 py-2">
+                        <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                        Saving a new address will replace your current {chain.label} wallet.
+                      </div>
+                    )}
+
+                    <div>
+                      <Label className="text-white text-sm mb-1.5 block">
+                        Wallet Address
+                      </Label>
+                      <Input
+                        type="text"
+                        value={inputAddress}
+                        onChange={(e) => {
+                          setInputAddress(e.target.value);
+                          setValidationError("");
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") handleSave(chain.id);
+                        }}
+                        placeholder={chain.placeholder}
+                        className={`bg-gray-800/60 border text-white font-mono text-sm placeholder:text-gray-600 focus:border-cyan-500/60 ${
+                          validationError
+                            ? "border-red-500/50"
+                            : "border-gray-700"
+                        }`}
+                        autoFocus
+                      />
+                      {validationError ? (
+                        <p className="mt-1.5 text-xs text-red-400 flex items-center gap-1">
+                          <AlertCircle className="w-3 h-3" />
+                          {validationError}
+                        </p>
+                      ) : (
+                        <p className="mt-1.5 text-xs text-gray-500">
+                          {chain.hint}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="flex gap-3 pt-1">
+                      <Button
+                        onClick={() => handleSave(chain.id)}
+                        disabled={isSaving || !inputAddress.trim()}
+                        className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white border-0 text-sm"
+                      >
+                        {isSaving ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            Saving...
+                          </>
+                        ) : (
+                          <>
+                            <CheckCircle2 className="w-4 h-4 mr-2" />
+                            {linked ? "Replace Wallet" : "Save Wallet"}
+                          </>
+                        )}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => setExpandedChain(null)}
+                        disabled={isSaving}
+                        className="border-gray-700 text-gray-400 hover:bg-gray-800 text-sm"
+                      >
+                        Cancel
                       </Button>
                     </div>
                   </div>
-                </div>
-              ))}
+                )}
+
+                {/* Flash success overlay message */}
+                {isFlashing && (
+                  <div className="border-t border-green-500/20 bg-green-500/10 px-5 py-2.5 flex items-center gap-2 text-sm text-green-400">
+                    <CheckCircle2 className="w-4 h-4" />
+                    Wallet saved successfully!
+                  </div>
+                )}
+              </div>
             </div>
-          )}
-        </div>
-      </CardContent>
-    </Card>
+          );
+        })}
+      </div>
+    </div>
   );
 }
