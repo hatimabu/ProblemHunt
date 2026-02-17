@@ -25,12 +25,12 @@ CREATE TABLE IF NOT EXISTS public.wallets (
 );
 
 -- Index for fast user lookup
-CREATE INDEX idx_wallets_user_id ON public.wallets(user_id);
-CREATE INDEX idx_wallets_address ON public.wallets(address);
+CREATE INDEX IF NOT EXISTS idx_wallets_user_id ON public.wallets(user_id);
+CREATE INDEX IF NOT EXISTS idx_wallets_address ON public.wallets(address);
 -- Note: idx_wallets_chain_address not needed - unique_chain_address constraint already creates index
 
 -- Ensure only one primary wallet per user per chain
-CREATE UNIQUE INDEX idx_wallets_one_primary_per_user_chain 
+CREATE UNIQUE INDEX IF NOT EXISTS idx_wallets_one_primary_per_user_chain 
     ON public.wallets(user_id, chain) 
     WHERE is_primary = true;
 
@@ -43,6 +43,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS update_wallets_updated_at ON public.wallets;
 CREATE TRIGGER update_wallets_updated_at
     BEFORE UPDATE ON public.wallets
     FOR EACH ROW
@@ -85,16 +86,17 @@ CREATE TABLE IF NOT EXISTS public.orders (
 );
 
 -- Indexes for performance
-CREATE INDEX idx_orders_user_id ON public.orders(user_id);
-CREATE INDEX idx_orders_status ON public.orders(status);
-CREATE INDEX idx_orders_wallet_address ON public.orders(wallet_address);
-CREATE INDEX idx_orders_created_at ON public.orders(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_orders_user_id ON public.orders(user_id);
+CREATE INDEX IF NOT EXISTS idx_orders_status ON public.orders(status);
+CREATE INDEX IF NOT EXISTS idx_orders_wallet_address ON public.orders(wallet_address);
+CREATE INDEX IF NOT EXISTS idx_orders_created_at ON public.orders(created_at DESC);
 
 -- Ensure unique transaction hash (partial unique index - only non-NULL values)
-CREATE UNIQUE INDEX idx_orders_unique_tx_hash 
+CREATE UNIQUE INDEX IF NOT EXISTS idx_orders_unique_tx_hash 
     ON public.orders(tx_hash) 
     WHERE tx_hash IS NOT NULL;
 
+DROP TRIGGER IF EXISTS update_orders_updated_at ON public.orders;
 CREATE TRIGGER update_orders_updated_at
     BEFORE UPDATE ON public.orders
     FOR EACH ROW
@@ -109,6 +111,12 @@ ALTER TABLE public.wallets ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.orders ENABLE ROW LEVEL SECURITY;
 
 -- Wallets Policies
+-- Drop existing policies to avoid conflicts
+DROP POLICY IF EXISTS "Users can view own wallets" ON public.wallets;
+DROP POLICY IF EXISTS "Users can insert own wallets" ON public.wallets;
+DROP POLICY IF EXISTS "Users can update own wallets" ON public.wallets;
+DROP POLICY IF EXISTS "Users can delete own wallets" ON public.wallets;
+
 -- Users can view their own wallets
 CREATE POLICY "Users can view own wallets"
     ON public.wallets FOR SELECT
@@ -131,6 +139,11 @@ CREATE POLICY "Users can delete own wallets"
     USING (auth.uid() = user_id);
 
 -- Orders Policies
+-- Drop existing policies to avoid conflicts
+DROP POLICY IF EXISTS "Users can view own orders" ON public.orders;
+DROP POLICY IF EXISTS "Users can insert own orders" ON public.orders;
+DROP POLICY IF EXISTS "Users can update own pending orders" ON public.orders;
+
 -- Users can view their own orders
 CREATE POLICY "Users can view own orders"
     ON public.orders FOR SELECT
