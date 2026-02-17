@@ -17,6 +17,8 @@ import {
   Edit2,
   Save,
   X,
+  AlertTriangle,
+  CheckCircle,
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { supabase } from "../../../lib/supabaseClient";
@@ -75,7 +77,9 @@ export function BuilderDashboard() {
   const [userProblems, setUserProblems] = useState<Problem[]>([]);
   const [problemsLoading, setProblemsLoading] = useState(true);
   const [deletingProblemId, setDeletingProblemId] = useState<string | null>(null);
-  
+  const [walletCount, setWalletCount] = useState(0);
+  const [activeTab, setActiveTab] = useState("profile");
+
   // Profile editing state
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [isSavingProfile, setIsSavingProfile] = useState(false);
@@ -90,6 +94,7 @@ export function BuilderDashboard() {
     if (user) {
       fetchProfile();
       fetchUserProblems();
+      fetchWalletCount();
     }
   }, [user]);
 
@@ -134,6 +139,22 @@ export function BuilderDashboard() {
       setUserProblems([]);
     } finally {
       setProblemsLoading(false);
+    }
+  };
+
+  const fetchWalletCount = async () => {
+    if (!user) return;
+
+    try {
+      const { count, error } = await supabase
+        .from("wallets")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", user.id);
+
+      if (error) throw error;
+      setWalletCount(count ?? 0);
+    } catch (error) {
+      console.error('Error fetching wallet count:', error);
     }
   };
 
@@ -284,6 +305,20 @@ export function BuilderDashboard() {
                       <Award className="w-4 h-4" />
                       <span>⭐ {reputationScore} reputation</span>
                     </div>
+                    <div>•</div>
+                    <div className="flex items-center gap-1">
+                      {walletCount > 0 ? (
+                        <>
+                          <CheckCircle className="w-4 h-4 text-green-400" />
+                          <span className="text-green-400">{walletCount} wallet{walletCount !== 1 ? 's' : ''} linked</span>
+                        </>
+                      ) : (
+                        <>
+                          <AlertTriangle className="w-4 h-4 text-yellow-400" />
+                          <span className="text-yellow-400">No payment wallet</span>
+                        </>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -292,7 +327,7 @@ export function BuilderDashboard() {
         </div>
 
         {/* Main Dashboard Tabs */}
-        <Tabs defaultValue="profile" className="space-y-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-bold text-white">User Dashboard</h2>
             <Link to="/post">
@@ -315,7 +350,12 @@ export function BuilderDashboard() {
               className="data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-400 text-gray-400"
             >
               <Wallet className="w-4 h-4 mr-2" />
-              Crypto Wallets
+              Payment Wallets
+              {walletCount === 0 && (
+                <Badge className="ml-2 bg-yellow-500/20 text-yellow-400 border-yellow-500/30 text-[10px] px-1.5 py-0">
+                  Setup Required
+                </Badge>
+              )}
             </TabsTrigger>
             <TabsTrigger
               value="problems"
@@ -333,6 +373,32 @@ export function BuilderDashboard() {
 
           {/* Profile Tab */}
           <TabsContent value="profile" className="space-y-6">
+            {walletCount === 0 && (
+              <div className="relative">
+                <div className="absolute inset-0 bg-gradient-to-r from-yellow-500/5 to-orange-500/5 rounded-2xl blur-xl" />
+                <div className="relative bg-gray-900/50 backdrop-blur-sm border border-yellow-500/30 rounded-2xl p-6">
+                  <div className="flex items-start gap-4">
+                    <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-yellow-500/20 to-orange-600/20 border border-yellow-500/30 flex items-center justify-center shrink-0">
+                      <Wallet className="w-5 h-5 text-yellow-400" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-lg font-bold text-white mb-1">Setup Payment Wallet</h3>
+                      <p className="text-sm text-gray-400 mb-4">
+                        Link your crypto wallets to start receiving tips and payments from other users. You can add wallets for Ethereum, Polygon, Arbitrum, and Solana.
+                      </p>
+                      <Button
+                        onClick={() => setActiveTab("wallets")}
+                        className="bg-gradient-to-r from-yellow-500 to-orange-600 hover:from-yellow-600 hover:to-orange-700 text-white border-0"
+                      >
+                        <Wallet className="w-4 h-4 mr-2" />
+                        Add Payment Wallet
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div className="relative">
               <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-indigo-500/5 rounded-2xl blur-xl" />
               <div className="relative bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-2xl p-6">
@@ -452,7 +518,7 @@ export function BuilderDashboard() {
 
           {/* Crypto Wallets Tab */}
           <TabsContent value="wallets">
-            <LinkWallet />
+            <LinkWallet onWalletsChange={(count) => setWalletCount(count)} />
           </TabsContent>
 
           {/* Posted Problems Tab */}

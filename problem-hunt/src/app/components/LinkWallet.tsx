@@ -94,7 +94,11 @@ function validateAddress(chain: ChainType, address: string): string | null {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function LinkWallet() {
+interface LinkWalletProps {
+  onWalletsChange?: (count: number) => void;
+}
+
+export function LinkWallet({ onWalletsChange }: LinkWalletProps) {
   const { user } = useAuth();
 
   const [wallets, setWallets] = useState<WalletRow[]>([]);
@@ -136,6 +140,7 @@ export function LinkWallet() {
 
       if (error) throw error;
       setWallets(data ?? []);
+      onWalletsChange?.(data?.length ?? 0);
     } catch (err: any) {
       setGlobalError(err.message ?? "Failed to load wallets.");
     } finally {
