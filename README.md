@@ -205,11 +205,18 @@ ghcs "build docker image and push to registry"
 
 **Solution:**
 ```bash
-# Verify npm global bin directory is in PATH
-npm config get prefix
+# Verify GitHub CLI is installed
+gh --version
 
-# Add to PATH if needed (replace /path/to/npm with actual path)
-export PATH="$PATH:/path/to/npm/bin"
+# Verify the extension is installed
+gh extension list
+
+# If extension is not listed, install it
+gh extension install github/gh-copilot
+
+# Check if gh is in your PATH
+which gh  # On macOS/Linux
+where gh  # On Windows
 ```
 
 #### Issue: Authentication failed
