@@ -1,6 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import * as Sentry from "@sentry/react";
+import { Replay } from "@sentry/replay";
 
 // Initialize Sentry with error handling for CSP violations
 try {
@@ -10,7 +11,7 @@ try {
     // Configure transport to handle CSP and network errors gracefully
     transport: Sentry.makeFetchTransport,
     integrations: [
-      new Sentry.Replay({
+      new Replay({
         maskAllText: true,
         blockAllMedia: true,
       }),
