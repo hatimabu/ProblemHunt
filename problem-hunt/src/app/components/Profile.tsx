@@ -1,28 +1,6 @@
-import { useState, useEffect } from "react";
-import { User, Edit2, Save, X, Award } from "lucide-react";
-import { Button } from "./ui/button";
-import { Input } from "./ui/input";
-import { Label } from "./ui/label";
-import { Textarea } from "./ui/textarea";
-import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
-import { Badge } from "./ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
-import { LinkWallet } from "./LinkWallet";
-import { supabase } from "../../../lib/supabaseClient";
-import { useAuth } from "../contexts/AuthContext";
-
-interface ProfileData {
-  id: string;
-  username: string;
-  full_name: string;
-  bio: string;
-  avatar_url: string;
-  user_type: 'problem_poster' | 'builder';
-  reputation_score: number;
-  created_at: string;
-}
-
-export function Profile() {
+// Backward compatibility re-export
+// Use ProfileDashboard component instead for the new dashboard UI
+export { ProfileDashboard as Profile } from "./ProfileDashboard";
   const { user } = useAuth();
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [isLoading, setIsLoading] = useState(true);

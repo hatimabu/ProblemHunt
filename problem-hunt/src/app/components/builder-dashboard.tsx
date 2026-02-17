@@ -12,13 +12,21 @@ import {
   ChevronRight,
   Tag,
   Trash2,
+  Wallet,
+  User,
+  Edit2,
+  Save,
+  X,
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { supabase } from "../../../lib/supabaseClient";
 import { authenticatedFetch, handleResponse } from "../../lib/auth-helper";
+import { LinkWallet } from "./LinkWallet";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { Textarea } from "./ui/textarea";
+import { Input } from "./ui/input";
+import { Label } from "./ui/label";
 import { Avatar, AvatarFallback } from "./ui/avatar";
 import { Progress } from "./ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
@@ -37,8 +45,11 @@ import {
 interface ProfileData {
   username: string;
   full_name: string | null;
+  bio: string | null;
+  avatar_url: string | null;
   reputation_score: number;
   user_type: string;
+  created_at: string;
 }
 
 interface Problem {
@@ -64,6 +75,16 @@ export function BuilderDashboard() {
   const [userProblems, setUserProblems] = useState<Problem[]>([]);
   const [problemsLoading, setProblemsLoading] = useState(true);
   const [deletingProblemId, setDeletingProblemId] = useState<string | null>(null);
+  
+  // Profile editing state
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [profileError, setProfileError] = useState("");
+  const [profileSuccess, setProfileSuccess] = useState("");
+  const [editForm, setEditForm] = useState({
+    full_name: "",
+    bio: "",
+  });
 
   useEffect(() => {
     if (user) {
@@ -78,12 +99,16 @@ export function BuilderDashboard() {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('username, full_name, reputation_score, user_type')
+        .select('username, full_name, bio, avatar_url, reputation_score, user_type, created_at')
         .eq('id', user.id)
         .single();
 
       if (error) throw error;
       setProfile(data);
+      setEditForm({
+        full_name: data.full_name || "",
+        bio: data.bio || "",
+      });
     } catch (error) {
       console.error('Error fetching profile:', error);
     } finally {
@@ -129,6 +154,57 @@ export function BuilderDashboard() {
       alert('Error deleting problem. Please try again.');
     } finally {
       setDeletingProblemId(null);
+    }
+  };
+
+  const handleEditProfile = () => {
+    setIsEditingProfile(true);
+    setProfileError("");
+    setProfileSuccess("");
+  };
+
+  const handleCancelProfileEdit = () => {
+    setIsEditingProfile(false);
+    if (profile) {
+      setEditForm({
+        full_name: profile.full_name || "",
+        bio: profile.bio || "",
+      });
+    }
+    setProfileError("");
+    setProfileSuccess("");
+  };
+
+  const handleSaveProfile = async () => {
+    if (!user || !profile) return;
+
+    try {
+      setIsSavingProfile(true);
+      setProfileError("");
+      setProfileSuccess("");
+
+      const { data, error: updateError } = await supabase
+        .from('profiles')
+        .update({
+          full_name: editForm.full_name,
+          bio: editForm.bio,
+        })
+        .eq('id', user.id)
+        .select()
+        .single();
+
+      if (updateError) throw updateError;
+
+      setProfile(data);
+      setIsEditingProfile(false);
+      setProfileSuccess("Profile updated successfully!");
+
+      setTimeout(() => setProfileSuccess(""), 3000);
+    } catch (err: any) {
+      console.error('Error updating profile:', err);
+      setProfileError(err.message || 'Failed to update profile');
+    } finally {
+      setIsSavingProfile(false);
     }
   };
 
@@ -215,10 +291,10 @@ export function BuilderDashboard() {
           </div>
         </div>
 
-        {/* Projects Section */}
-        <Tabs defaultValue="problems" className="space-y-6">
+        {/* Main Dashboard Tabs */}
+        <Tabs defaultValue="profile" className="space-y-6">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-white">My Activity</h2>
+            <h2 className="text-2xl font-bold text-white">User Dashboard</h2>
             <Link to="/post">
               <Button className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white border-0">
                 Post New Problem
@@ -227,6 +303,20 @@ export function BuilderDashboard() {
           </div>
 
           <TabsList className="bg-gray-900/50 border border-gray-800 p-1">
+            <TabsTrigger
+              value="profile"
+              className="data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-400 text-gray-400"
+            >
+              <User className="w-4 h-4 mr-2" />
+              Profile Info
+            </TabsTrigger>
+            <TabsTrigger
+              value="wallets"
+              className="data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-400 text-gray-400"
+            >
+              <Wallet className="w-4 h-4 mr-2" />
+              Crypto Wallets
+            </TabsTrigger>
             <TabsTrigger
               value="problems"
               className="data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-400 text-gray-400"
@@ -241,6 +331,131 @@ export function BuilderDashboard() {
             </TabsTrigger>
           </TabsList>
 
+          {/* Profile Tab */}
+          <TabsContent value="profile" className="space-y-6">
+            <div className="relative">
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-indigo-500/5 rounded-2xl blur-xl" />
+              <div className="relative bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-2xl p-6">
+                {profileError && (
+                  <div className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg p-3 mb-4">
+                    {profileError}
+                  </div>
+                )}
+
+                {profileSuccess && (
+                  <div className="text-sm text-green-400 bg-green-500/10 border border-green-500/20 rounded-lg p-3 mb-4">
+                    {profileSuccess}
+                  </div>
+                )}
+
+                {isEditingProfile ? (
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="full_name" className="text-white mb-2 block">
+                        Full Name
+                      </Label>
+                      <Input
+                        id="full_name"
+                        type="text"
+                        value={editForm.full_name}
+                        onChange={(e) => setEditForm({ ...editForm, full_name: e.target.value })}
+                        className="bg-gray-800/50 border-gray-700 focus:border-cyan-500/50 text-white"
+                        placeholder="Your full name"
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="bio" className="text-white mb-2 block">
+                        Bio
+                      </Label>
+                      <Textarea
+                        id="bio"
+                        value={editForm.bio}
+                        onChange={(e) => setEditForm({ ...editForm, bio: e.target.value })}
+                        className="bg-gray-800/50 border-gray-700 focus:border-cyan-500/50 text-white min-h-[120px] resize-none"
+                        placeholder="Tell us about yourself..."
+                        maxLength={500}
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        {editForm.bio.length}/500 characters
+                      </p>
+                    </div>
+
+                    <div className="pt-4 flex gap-3">
+                      <Button
+                        onClick={handleSaveProfile}
+                        disabled={isSavingProfile}
+                        className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white border-0"
+                      >
+                        <Save className="w-4 h-4 mr-2" />
+                        {isSavingProfile ? "Saving..." : "Save Changes"}
+                      </Button>
+                      <Button
+                        onClick={handleCancelProfileEdit}
+                        disabled={isSavingProfile}
+                        variant="outline"
+                        className="border-gray-700 text-gray-400 hover:bg-gray-800"
+                      >
+                        <X className="w-4 h-4 mr-2" />
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <div className="space-y-6 mb-6">
+                      <div>
+                        <h3 className="text-sm font-medium text-gray-400 mb-2">Full Name</h3>
+                        <p className="text-white text-lg">
+                          {profile?.full_name || <span className="text-gray-500 text-sm">Not provided</span>}
+                        </p>
+                      </div>
+
+                      <div>
+                        <h3 className="text-sm font-medium text-gray-400 mb-2">Bio</h3>
+                        <p className="text-white whitespace-pre-wrap">
+                          {profile?.bio || <span className="text-gray-500 text-sm">No bio yet</span>}
+                        </p>
+                      </div>
+
+                      <div>
+                        <h3 className="text-sm font-medium text-gray-400 mb-2">Email</h3>
+                        <p className="text-white font-mono text-sm bg-gray-800/50 px-3 py-2 rounded w-fit">
+                          {user?.email}
+                        </p>
+                      </div>
+
+                      <div>
+                        <h3 className="text-sm font-medium text-gray-400 mb-2">Member Since</h3>
+                        <p className="text-white text-sm">
+                          {profile?.created_at && new Date(profile.created_at).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric',
+                          })}
+                        </p>
+                      </div>
+                    </div>
+
+                    <Button
+                      onClick={handleEditProfile}
+                      className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white border-0"
+                    >
+                      <Edit2 className="w-4 h-4 mr-2" />
+                      Edit Profile
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </TabsContent>
+
+          {/* Crypto Wallets Tab */}
+          <TabsContent value="wallets">
+            <LinkWallet />
+          </TabsContent>
+
+          {/* Posted Problems Tab */}
           <TabsContent value="problems" className="space-y-6">
             {problemsLoading ? (
               <div className="flex items-center justify-center py-12">
