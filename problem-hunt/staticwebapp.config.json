@@ -8,7 +8,7 @@
   },
 
   "globalHeaders": {
-    "Content-Security-Policy": "default-src 'self' https://ajvobbpwgopinxtbpcpu.supabase.co; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; font-src 'self' https://r2cdn.perplexity.ai; connect-src 'self' https://ajvobbpwgopinxtbpcpu.supabase.co https://*.supabase.co",
+    "Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://*.sentry.io; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://r2cdn.perplexity.ai; font-src 'self' https://fonts.gstatic.com https://r2cdn.perplexity.ai; img-src 'self' data: https:; connect-src 'self' https://ajvobbpwgopinxtbpcpu.supabase.co https://*.supabase.co https://o4510805016313856.ingest.us.sentry.io https://sentry.io wss: https:",
     "X-Content-Type-Options": "nosniff",
     "X-Frame-Options": "DENY",
     "X-XSS-Protection": "1; mode=block",
