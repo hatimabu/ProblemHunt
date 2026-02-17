@@ -19,15 +19,38 @@ GitHub Copilot CLI is a command-line interface that brings the power of GitHub C
 
 ### Installation
 
-#### Using npm (Recommended)
+GitHub Copilot CLI is available as a GitHub CLI extension. You'll need to have GitHub CLI (`gh`) installed first.
 
+#### Step 1: Install GitHub CLI
+
+If you don't have GitHub CLI installed:
+
+**macOS:**
 ```bash
-npm install -g @githubnext/github-copilot-cli
+brew install gh
 ```
 
-#### Using GitHub CLI (Alternative Method)
+**Windows (using winget):**
+```bash
+winget install --id GitHub.cli
+```
 
-If you have GitHub CLI (`gh`) installed:
+**Linux:**
+```bash
+# Debian/Ubuntu
+sudo apt install gh
+
+# Fedora/RHEL
+sudo dnf install gh
+
+# Or use the official script
+curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
+sudo apt update
+sudo apt install gh
+```
+
+#### Step 2: Install GitHub Copilot Extension
 
 ```bash
 gh extension install github/gh-copilot
@@ -35,27 +58,18 @@ gh extension install github/gh-copilot
 
 ### Authentication & Setup
 
-#### Method 1: Using npm Installation
-
-1. **Authenticate with GitHub:**
-   ```bash
-   github-copilot-cli auth
-   ```
-   This will open a browser window for you to authenticate with GitHub.
-
-2. **Verify the installation:**
-   ```bash
-   github-copilot-cli --version
-   ```
-
-#### Method 2: Using GitHub CLI Extension
-
-1. **Authenticate GitHub CLI (if not already done):**
+1. **Authenticate GitHub CLI:**
    ```bash
    gh auth login
    ```
+   Follow the prompts to authenticate with your GitHub account.
 
-2. **Use Copilot:**
+2. **Verify the installation:**
+   ```bash
+   gh copilot --version
+   ```
+
+3. **Start using Copilot:**
    ```bash
    gh copilot suggest "your command description"
    gh copilot explain "command to explain"
@@ -204,9 +218,9 @@ export PATH="$PATH:/path/to/npm/bin"
 1. Make sure you have an active GitHub Copilot subscription
 2. Re-authenticate:
    ```bash
-   gh auth login --web
-   # or for npm installation
-   github-copilot-cli auth
+   gh auth login
+   # Or refresh your authentication
+   gh auth refresh
    ```
 
 #### Issue: Rate limiting
@@ -223,8 +237,8 @@ export PATH="$PATH:/path/to/npm/bin"
 # Update gh CLI extension
 gh extension upgrade gh-copilot
 
-# Or update npm package
-npm update -g @githubnext/github-copilot-cli
+# Or update all extensions
+gh extension upgrade --all
 ```
 
 ### Tips for Best Results
@@ -292,10 +306,7 @@ gh copilot explain --help
 If you need to remove GitHub Copilot CLI:
 
 ```bash
-# For npm installation
-npm uninstall -g @githubnext/github-copilot-cli
-
-# For gh extension
+# Remove gh copilot extension
 gh extension remove gh-copilot
 ```
 
