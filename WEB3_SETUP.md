@@ -30,7 +30,8 @@ supabase db push
 
 ```powershell
 # Install Supabase CLI if not already installed
-npm install -g supabase
+npm install --save-dev supabase
+
 
 # Login to Supabase
 supabase login
