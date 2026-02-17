@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { User, Edit2, Save, X, Award, Wallet as WalletIcon, ExternalLink } from "lucide-react";
+import { User, Edit2, Save, X, Award } from "lucide-react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
@@ -7,11 +7,9 @@ import { Textarea } from "./ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Badge } from "./ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
+import { LinkWallet } from "./LinkWallet";
 import { supabase } from "../../../lib/supabaseClient";
 import { useAuth } from "../contexts/AuthContext";
-import { ethers } from "ethers";
-
-type ChainType = 'ethereum' | 'polygon' | 'arbitrum' | 'solana';
 
 interface ProfileData {
   id: string;
@@ -24,28 +22,14 @@ interface ProfileData {
   created_at: string;
 }
 
-interface WalletData {
-  id: string;
-  chain: string;
-  address: string;
-  is_primary: boolean;
-  created_at: string;
-}
-
 export function Profile() {
   const { user } = useAuth();
   const [profile, setProfile] = useState<ProfileData | null>(null);
-  const [wallets, setWallets] = useState<WalletData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
-  const [linkingChain, setLinkingChain] = useState<ChainType | null>(null);
-  const [linkError, setLinkError] = useState("");
-  const [linkSuccess, setLinkSuccess] = useState("");
-  const [isEthereumAvailable, setIsEthereumAvailable] = useState(false);
-  const [isSolanaAvailable, setIsSolanaAvailable] = useState(false);
 
   // Form state for editing
   const [editForm, setEditForm] = useState({
@@ -57,14 +41,8 @@ export function Profile() {
   useEffect(() => {
     if (user) {
       fetchProfile();
-      fetchWallets();
     }
   }, [user]);
-
-  useEffect(() => {
-    setIsEthereumAvailable(typeof window !== "undefined" && typeof (window as any).ethereum !== "undefined");
-    setIsSolanaAvailable(typeof window !== "undefined" && typeof (window as any).solana !== "undefined");
-  }, []);
 
   const fetchProfile = async () => {
     if (!user) return;
@@ -487,129 +465,9 @@ export function Profile() {
           </CardContent>
         </Card>
 
-        {/* Linked Wallets Card */}
-        <Card className="bg-gray-900/50 border-gray-800 backdrop-blur-sm">
-          <CardHeader>
-            <CardTitle className="text-white flex items-center gap-2">
-              <WalletIcon className="w-5 h-5 text-cyan-400" />
-              Linked Wallets
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {linkError && (
-              <div className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg p-3 mb-4">
-                {linkError}
-              </div>
-            )}
-
-            {linkSuccess && (
-              <div className="text-sm text-green-400 bg-green-500/10 border border-green-500/20 rounded-lg p-3 mb-4">
-                {linkSuccess}
-              </div>
-            )}
-
-            <div className="space-y-3 mb-6">
-              <Button
-                onClick={() => linkEthereumWallet('ethereum')}
-                disabled={!isEthereumAvailable || linkingChain !== null}
-                className="w-full bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white border-0"
-              >
-                {linkingChain === 'ethereum' ? 'Linking...' : 'Link Ethereum Wallet'}
-              </Button>
-
-              <div className="grid grid-cols-2 gap-2">
-                <Button
-                  onClick={() => linkEthereumWallet('polygon')}
-                  disabled={!isEthereumAvailable || linkingChain !== null}
-                  variant="outline"
-                  className="border-purple-500/30 text-purple-400 hover:bg-purple-500/10"
-                >
-                  {linkingChain === 'polygon' ? 'Linking...' : 'Link Polygon'}
-                </Button>
-
-                <Button
-                  onClick={() => linkEthereumWallet('arbitrum')}
-                  disabled={!isEthereumAvailable || linkingChain !== null}
-                  variant="outline"
-                  className="border-blue-500/30 text-blue-400 hover:bg-blue-500/10"
-                >
-                  {linkingChain === 'arbitrum' ? 'Linking...' : 'Link Arbitrum'}
-                </Button>
-              </div>
-
-              <Button
-                onClick={linkSolanaWallet}
-                disabled={!isSolanaAvailable || linkingChain !== null}
-                className="w-full bg-gradient-to-r from-cyan-500 to-teal-600 hover:from-cyan-600 hover:to-teal-700 text-white border-0"
-              >
-                {linkingChain === 'solana' ? 'Linking...' : 'Link Solana Wallet'}
-              </Button>
-            </div>
-
-            {wallets.length === 0 ? (
-              <p className="text-gray-500 text-center py-4">
-                No wallets linked yet
-              </p>
-            ) : (
-              <div className="space-y-3">
-                {wallets.map((wallet) => (
-                  <div
-                    key={wallet.id}
-                    className="bg-gray-800/30 border border-gray-700 rounded-lg p-4"
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Badge
-                            variant="outline"
-                            className="bg-cyan-500/10 border-cyan-500/30 text-cyan-400"
-                          >
-                            {wallet.chain.charAt(0).toUpperCase() + wallet.chain.slice(1)}
-                          </Badge>
-                          {wallet.is_primary && (
-                            <Badge
-                              variant="outline"
-                              className="bg-green-500/10 border-green-500/30 text-green-400"
-                            >
-                              Primary
-                            </Badge>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <code className="text-sm text-gray-300 font-mono bg-gray-900/50 px-2 py-1 rounded">
-                            {wallet.address.slice(0, 6)}...{wallet.address.slice(-4)}
-                          </code>
-                          <a
-                            href={getExplorerUrl(wallet.chain, wallet.address)}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-cyan-400 hover:text-cyan-300"
-                          >
-                            <ExternalLink className="w-4 h-4" />
-                          </a>
-                        </div>
-                      </div>
-                      <p className="text-xs text-gray-500">
-                        {new Date(wallet.created_at).toLocaleDateString()}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        {/* Link Wallet Card */}
+        <LinkWallet />
       </div>
     </div>
   );
-}
-
-function getExplorerUrl(chain: string, address: string): string {
-  const explorers: Record<string, string> = {
-    ethereum: `https://etherscan.io/address/${address}`,
-    polygon: `https://polygonscan.com/address/${address}`,
-    arbitrum: `https://arbiscan.io/address/${address}`,
-    solana: `https://explorer.solana.com/address/${address}`,
-  };
-  return explorers[chain] || '#';
 }
