@@ -26,18 +26,12 @@ def get_jwt_secret() -> str:
     """
     Retrieve the Supabase JWT secret from environment variables.
     
-    Required environment variable: SUPABASE_JWT_SECRET
-    
-    Returns:
-        str: The JWT secret key
-        
-    Raises:
-        AuthError: If SUPABASE_JWT_SECRET is not set
+    Reads JWT_SECRET (Azure-safe name) with fallback to SUPABASE_JWT_SECRET.
     """
-    secret = os.getenv("SUPABASE_JWT_SECRET")
+    secret = os.getenv("JWT_SECRET") or os.getenv("SUPABASE_JWT_SECRET")
     if not secret:
         raise AuthError(
-            "SUPABASE_JWT_SECRET environment variable is not set. "
+            "JWT_SECRET environment variable is not set. "
             "Please configure it in local.settings.json or Azure Function App settings."
         )
     return secret

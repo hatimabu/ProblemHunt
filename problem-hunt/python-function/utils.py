@@ -40,7 +40,7 @@ def get_authenticated_user_id(req) -> Optional[str]:
     token = auth_header.replace('Bearer ', '').strip()
     
     try:
-        secret = os.getenv('SUPABASE_JWT_SECRET')
+        secret = os.getenv('JWT_SECRET') or os.getenv('SUPABASE_JWT_SECRET')
         if not secret:
             return None
         
@@ -63,7 +63,7 @@ def get_user_id(req) -> str:
     
     try:
         token = auth_header.replace('Bearer ', '').strip()
-        secret = os.getenv('SUPABASE_JWT_SECRET')
+        secret = os.getenv('JWT_SECRET') or os.getenv('SUPABASE_JWT_SECRET')
         if secret:
             payload = jwt.decode(token, secret, algorithms=['HS256'])
             user_id = payload.get('sub')
