@@ -43,6 +43,12 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "./ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "./ui/dialog";
 
 interface ProfileData {
   username: string;
@@ -79,6 +85,7 @@ export function BuilderDashboard() {
   const [deletingProblemId, setDeletingProblemId] = useState<string | null>(null);
   const [walletCount, setWalletCount] = useState(0);
   const [activeTab, setActiveTab] = useState("profile");
+  const [walletModalOpen, setWalletModalOpen] = useState(false);
 
   // Profile editing state
   const [isEditingProfile, setIsEditingProfile] = useState(false);
@@ -320,6 +327,21 @@ export function BuilderDashboard() {
                       )}
                     </div>
                   </div>
+                </div>
+
+                {/* Add Wallet button – right side of profile card */}
+                <div className="shrink-0">
+                  <Button
+                    onClick={() => setWalletModalOpen(true)}
+                    className={
+                      walletCount === 0
+                        ? "bg-gradient-to-r from-yellow-500 to-orange-600 hover:from-yellow-600 hover:to-orange-700 text-white border-0"
+                        : "bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white border-0"
+                    }
+                  >
+                    <Wallet className="w-4 h-4 mr-2" />
+                    {walletCount === 0 ? "Add Wallet" : "Manage Wallets"}
+                  </Button>
                 </div>
               </div>
             )}
@@ -785,6 +807,23 @@ export function BuilderDashboard() {
         </Tabs>
         )}
       </div>
+
+      {/* Wallet modal */}
+      <Dialog open={walletModalOpen} onOpenChange={setWalletModalOpen}>
+        <DialogContent className="bg-gray-900 border border-gray-800 text-white max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-white flex items-center gap-2">
+              <Wallet className="w-5 h-5 text-cyan-400" />
+              {walletCount === 0 ? "Add Payment Wallet" : "Manage Wallets"}
+            </DialogTitle>
+          </DialogHeader>
+          <LinkWallet
+            onWalletsChange={(count) => {
+              setWalletCount(count);
+            }}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
