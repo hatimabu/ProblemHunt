@@ -186,6 +186,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const initializeAuth = async () => {
       beginLoading();
       try {
+        let timedOut = false;
         const { data: { session }, error } = await withTimeout(
           supabase.auth.getSession(),
           10000,
@@ -193,10 +194,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         ).catch((err) => {
           if (err.name === 'AbortError' || /timed out/i.test(err.message || '')) {
             console.warn('Session retrieval timed out, using auth state listener');
+            timedOut = true;
             return { data: { session: null }, error: null };
           }
           throw err;
         });
+
+        if (timedOut) {
+          // Don't reset state — the onAuthStateChange listener owns the session from here.
+          // If the listener hasn't set a user yet (genuinely no session), leave user as null
+          // (initial state). Do not call setUser(null) to avoid clobbering a concurrent
+          // profile fetch already started by the listener.
+          return;
+        }
 
         if (error) {
           console.error('Error getting session:', error);
