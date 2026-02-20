@@ -23,8 +23,10 @@ function isMissingRowError(error: any): boolean {
 }
 
 // Fetches the profile for the given auth uid using user_id column.
-// Returns null if the profile does not exist yet (DB trigger may not have run yet).
+// If no profile exists (trigger may not have run yet), inserts a minimal row.
+// Never throws — returns null on any unrecoverable error.
 export async function getOrCreateProfile(userId: string): Promise<ProfileRow | null> {
+  // 1. Try to fetch existing profile
   try {
     const { data, error } = await withTimeout(
       supabase
@@ -37,13 +39,41 @@ export async function getOrCreateProfile(userId: string): Promise<ProfileRow | n
     );
 
     if (error) {
-      if (isMissingRowError(error)) return null;
-      throw error;
+      if (!isMissingRowError(error)) {
+        console.error('Profile fetch error:', error);
+        return null;
+      }
     }
 
-    return data || null;
+    if (data) return data;
   } catch (error) {
     console.error('Profile fetch error:', error);
+    return null;
+  }
+
+  // 2. No profile found — insert a minimal row (fallback for when trigger hasn't run yet)
+  try {
+    const { data, error } = await withTimeout(
+      supabase
+        .from('profiles')
+        .insert({
+          user_id: userId,
+          username: `user_${userId.slice(0, 8)}`,
+        })
+        .select('user_id, username, user_type, full_name')
+        .single(),
+      PROFILE_QUERY_TIMEOUT_MS,
+      'Profile insert'
+    );
+
+    if (error) {
+      console.error('Profile insert error:', error);
+      return null;
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Profile insert error:', error);
     return null;
   }
 }
