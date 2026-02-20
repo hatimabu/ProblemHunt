@@ -112,7 +112,7 @@ export function BuilderDashboard() {
       const { data, error } = await supabase
         .from('profiles')
         .select('username, full_name, bio, avatar_url, reputation_score, user_type, created_at')
-        .eq('id', user.id)
+        .eq('user_id', user.id)
         .single();
 
       if (error) throw error;
@@ -217,7 +217,7 @@ export function BuilderDashboard() {
           full_name: editForm.full_name,
           bio: editForm.bio,
         })
-        .eq('id', user.id)
+        .eq('user_id', user.id)
         .select()
         .single();
 
