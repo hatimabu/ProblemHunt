@@ -12,7 +12,7 @@ import {
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Badge } from "../components/ui/badge";
-import { buildApiUrl } from "../../lib/api-config";
+import { authenticatedFetch, handleResponse } from "../../lib/auth-helper";
 
 const CATEGORIES = [
   "All",
@@ -52,17 +52,9 @@ export function BrowseProblems() {
       try {
         setLoading(true);
         const category = selectedCategory === "All" ? "all" : selectedCategory;
-        const url = buildApiUrl(`/api/problems?category=${category}&sortBy=${sortBy}`);
-        const response = await fetch(url);
-        
-        if (response.ok) {
-          const data = await response.json();
-          // API returns { problems: [...], total, limit, offset }
-          setProblems(Array.isArray(data.problems) ? data.problems : Array.isArray(data) ? data : []);
-        } else {
-          console.error('Failed to fetch problems:', response.status);
-          setProblems([]);
-        }
+        const response = await authenticatedFetch(`/api/problems?category=${category}&sortBy=${sortBy}`, { method: 'GET' });
+        const data = await handleResponse(response);
+        setProblems(Array.isArray(data.problems) ? data.problems : Array.isArray(data) ? data : []);
       } catch (error) {
         console.error('Error fetching problems:', error);
         setProblems([]);

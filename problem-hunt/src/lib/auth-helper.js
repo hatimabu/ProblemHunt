@@ -19,7 +19,6 @@ import { supabase } from '../../lib/supabaseClient';
 import { buildApiUrl } from './api-config';
 import {
   createRequestId,
-  getValidAccessToken,
   handleTerminalAuthFailure,
   isAuthStatus,
   refreshAccessToken
@@ -43,7 +42,12 @@ if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KE
  */
 export async function getAccessToken() {
   try {
-    return await getValidAccessToken({ reason: 'get_access_token' });
+    const { data: { session }, error } = await supabase.auth.getSession();
+    if (error) {
+      console.error('Error getting access token session:', error);
+      return null;
+    }
+    return session?.access_token ?? null;
   } catch (error) {
     console.error('Unexpected error getting access token:', error);
     return null;
@@ -133,15 +137,18 @@ export async function authenticatedFetch(endpoint, options = {}) {
   const fullUrl = buildApiUrl(endpoint);
 
   try {
-    const token = await getValidAccessToken({
-      requestId,
-      reason: `request:${endpoint}`
-    });
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError) {
+      throw sessionError;
+    }
+    let token = session?.access_token ?? null;
 
     if (!token) {
-      throw new Error(
-        'Could not retrieve authentication token. Please ensure you are logged in.'
-      );
+      try {
+        token = await refreshAccessToken(`request:${endpoint}`);
+      } catch (refreshError) {
+        await handleTerminalAuthFailure('missing_session_token', refreshError);
+      }
     }
 
     // Prepare fetch options
@@ -172,7 +179,11 @@ export async function authenticatedFetch(endpoint, options = {}) {
       });
 
       try {
-        const refreshedToken = await refreshAccessToken(`retry:${endpoint}`);
+        const { data: { session: refreshedSession }, error: refreshedSessionError } = await supabase.auth.getSession();
+        if (refreshedSessionError) {
+          throw refreshedSessionError;
+        }
+        const refreshedToken = refreshedSession?.access_token ?? await refreshAccessToken(`retry:${endpoint}`);
         response = await fetch(fullUrl, {
           ...fetchOptions,
           headers: {
