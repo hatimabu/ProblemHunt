@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router";
-import { Code, Mail, Lock, User, Briefcase } from "lucide-react";
+import { Mail, Lock, User, Briefcase } from "lucide-react";
+import { Navbar } from "./navbar";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
@@ -80,26 +81,7 @@ export function AuthPage() {
 
   return (
     <div className="min-h-screen bg-[#0a0a0f] text-gray-100">
-      {/* Header */}
-      <header className="border-b border-gray-800/50 backdrop-blur-sm">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-gradient-to-br from-cyan-400 to-blue-600 rounded-lg flex items-center justify-center">
-              <Code className="w-5 h-5 text-white" />
-            </div>
-            <span className="text-xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
-              problemhunt.cc
-            </span>
-          </Link>
-          <nav className="flex items-center gap-4">
-            <Link to="/browse">
-              <Button variant="ghost" className="text-gray-300 hover:text-white hover:bg-gray-800">
-                Browse
-              </Button>
-            </Link>
-          </nav>
-        </div>
-      </header>
+      <Navbar />
 
       {/* Auth Content */}
       <div className="container mx-auto px-4 py-12">

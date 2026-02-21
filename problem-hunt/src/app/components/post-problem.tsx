@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router";
-import { Code, DollarSign, Calendar, FileText, Tag } from "lucide-react";
+import { DollarSign, Calendar, FileText, Tag } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Textarea } from "../components/ui/textarea";
@@ -15,6 +15,7 @@ import {
 import { supabase } from "../../../lib/supabaseClient";
 import { useAuth } from "../contexts/AuthContext";
 import { authenticatedFetch, handleResponse } from "../../lib/auth-helper";
+import { Navbar } from "./navbar";
 
 const CATEGORIES = ["AI/ML", "Web3", "Finance", "Governance", "Trading", "Infrastructure"];
 
@@ -65,31 +66,7 @@ export function PostProblem() {
 
   return (
     <div className="min-h-screen bg-[#0a0a0f] text-gray-100">
-      {/* Header */}
-      <header className="border-b border-gray-800/50 backdrop-blur-sm sticky top-0 z-50 bg-[#0a0a0f]/80">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-gradient-to-br from-cyan-400 to-blue-600 rounded-lg flex items-center justify-center">
-              <Code className="w-5 h-5 text-white" />
-            </div>
-            <span className="text-xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
-              problemhunt.cc
-            </span>
-          </Link>
-          <nav className="flex items-center gap-4">
-            <Link to="/browse">
-              <Button variant="ghost" className="text-gray-300 hover:text-white hover:bg-gray-800">
-                Browse
-              </Button>
-            </Link>
-            <Link to="/dashboard">
-              <Button variant="ghost" className="text-gray-300 hover:text-white hover:bg-gray-800">
-                Dashboard
-              </Button>
-            </Link>
-          </nav>
-        </div>
-      </header>
+      <Navbar />
 
       <div className="container mx-auto px-4 py-12">
         <div className="max-w-3xl mx-auto">

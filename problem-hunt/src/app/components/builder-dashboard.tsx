@@ -1,13 +1,10 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router";
 import {
-  Code,
   TrendingUp,
-  DollarSign,
   Target,
   Clock,
   Send,
-  Heart,
   Award,
   ChevronRight,
   Tag,
@@ -19,11 +16,15 @@ import {
   X,
   AlertTriangle,
   CheckCircle,
+  DollarSign,
+  Trophy,
+  Loader2,
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { supabase } from "../../../lib/supabaseClient";
 import { authenticatedFetch, handleResponse } from "../../lib/auth-helper";
 import { LinkWallet } from "./LinkWallet";
+import { Navbar } from "./navbar";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { Textarea } from "./ui/textarea";
@@ -75,9 +76,48 @@ interface Problem {
   updatedAt: string;
 }
 
+interface UserProposal {
+  id: string;
+  problemId: string;
+  problemTitle: string;
+  briefSolution: string;
+  timeline?: string;
+  cost?: string;
+  expertise?: string[];
+  status?: string;
+  tipTotal: number;
+  upvotes?: number;
+  createdAt: string;
+}
+
+const TIER_CONFIG = [
+  { name: "Newcomer", min: 0, max: 100, color: "text-gray-400", bg: "bg-gray-500" },
+  { name: "Builder", min: 100, max: 500, color: "text-blue-400", bg: "bg-blue-500" },
+  { name: "Senior", min: 500, max: 1500, color: "text-purple-400", bg: "bg-purple-500" },
+  { name: "Expert", min: 1500, max: 5000, color: "text-yellow-400", bg: "bg-yellow-500" },
+  { name: "Legend", min: 5000, max: 10000, color: "text-cyan-400", bg: "bg-cyan-400" },
+];
+
+function getTier(score: number) {
+  return TIER_CONFIG.find((t, i) => score >= t.min && (score < t.max || i === TIER_CONFIG.length - 1))
+    || TIER_CONFIG[0];
+}
+
+function getNextTier(score: number) {
+  const idx = TIER_CONFIG.findIndex((t, i) => score >= t.min && (score < t.max || i === TIER_CONFIG.length - 1));
+  return idx < TIER_CONFIG.length - 1 ? TIER_CONFIG[idx + 1] : null;
+}
+
+function tierProgress(score: number) {
+  const tier = getTier(score);
+  const next = getNextTier(score);
+  if (!next) return 100;
+  return Math.round(((score - tier.min) / (tier.max - tier.min)) * 100);
+}
+
 export function BuilderDashboard() {
   const [updateText, setUpdateText] = useState("");
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [userProblems, setUserProblems] = useState<Problem[]>([]);
@@ -86,6 +126,10 @@ export function BuilderDashboard() {
   const [walletCount, setWalletCount] = useState(0);
   const [activeTab, setActiveTab] = useState("profile");
   const [walletModalOpen, setWalletModalOpen] = useState(false);
+
+  // Proposals tab state
+  const [userProposals, setUserProposals] = useState<UserProposal[]>([]);
+  const [proposalsLoading, setProposalsLoading] = useState(false);
 
   // Profile editing state
   const [isEditingProfile, setIsEditingProfile] = useState(false);
@@ -104,6 +148,21 @@ export function BuilderDashboard() {
       fetchWalletCount();
     }
   }, [user]);
+
+  const fetchUserProposals = async () => {
+    if (!user) return;
+    try {
+      setProposalsLoading(true);
+      const response = await authenticatedFetch('/api/user/proposals', { method: 'GET' });
+      const data = await handleResponse(response);
+      setUserProposals(Array.isArray(data.proposals) ? data.proposals : []);
+    } catch (err) {
+      console.error('Error fetching user proposals:', err);
+      setUserProposals([]);
+    } finally {
+      setProposalsLoading(false);
+    }
+  };
 
   const fetchProfile = async () => {
     if (!user) return;
@@ -242,46 +301,7 @@ export function BuilderDashboard() {
 
   return (
     <div className="min-h-screen bg-[#0a0a0f] text-gray-100">
-      {/* Header */}
-      <header className="border-b border-gray-800/50 backdrop-blur-sm sticky top-0 z-50 bg-[#0a0a0f]/80">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-gradient-to-br from-cyan-400 to-blue-600 rounded-lg flex items-center justify-center">
-              <Code className="w-5 h-5 text-white" />
-            </div>
-            <span className="text-xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
-              problemhunt.cc
-            </span>
-          </Link>
-          <nav className="flex items-center gap-4">
-            <Link to="/browse">
-              <Button variant="ghost" className="text-gray-300 hover:text-white hover:bg-gray-800">
-                Browse
-              </Button>
-            </Link>
-            <Link to="/dashboard">
-              <Button variant="ghost" className="text-white hover:text-cyan-400 hover:bg-gray-800">
-                Dashboard
-              </Button>
-            </Link>
-            {user ? (
-              <Button 
-                onClick={logout}
-                variant="outline" 
-                className="border-gray-700 hover:bg-gray-800 text-gray-300 hover:text-white"
-              >
-                Sign Out
-              </Button>
-            ) : (
-              <Link to="/auth">
-                <Button className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white border-0">
-                  Sign In
-                </Button>
-              </Link>
-            )}
-          </nav>
-        </div>
-      </header>
+      <Navbar />
 
       <div className="container mx-auto px-4 py-12">
         {/* Profile Header */}
@@ -387,9 +407,10 @@ export function BuilderDashboard() {
             </TabsTrigger>
             <TabsTrigger
               value="proposals"
+              onClick={() => { if (userProposals.length === 0 && !proposalsLoading) fetchUserProposals(); }}
               className="data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-400 text-gray-400"
             >
-              Posted Proposals
+              My Proposals
             </TabsTrigger>
           </TabsList>
 
@@ -662,13 +683,140 @@ export function BuilderDashboard() {
           </TabsContent>
 
           <TabsContent value="proposals" className="space-y-6">
-            <div className="text-center py-12">
-              <div className="text-gray-400 mb-4">
-                <Target className="w-16 h-16 mx-auto mb-4 opacity-50" />
-                <h3 className="text-xl font-semibold text-white mb-2">No Proposals Posted Yet</h3>
-                <p className="text-sm">Your proposals will show here once you submit them</p>
+            {/* Stats row */}
+            {!proposalsLoading && userProposals.length > 0 && (() => {
+              const accepted = userProposals.filter(p => p.status === 'accepted').length;
+              const totalTips = userProposals.reduce((s, p) => s + (p.tipTotal || 0), 0);
+              const acceptanceRate = userProposals.length > 0 ? Math.round((accepted / userProposals.length) * 100) : 0;
+              const tier = getTier(reputationScore);
+              const nextTier = getNextTier(reputationScore);
+              const progress = tierProgress(reputationScore);
+              return (
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                  {[
+                    { label: "Proposals Submitted", val: userProposals.length, icon: <Send className="w-5 h-5 text-cyan-400" /> },
+                    { label: "Acceptance Rate", val: `${acceptanceRate}%`, icon: <CheckCircle className="w-5 h-5 text-green-400" /> },
+                    { label: "Tips Received", val: `$${totalTips.toFixed(0)}`, icon: <DollarSign className="w-5 h-5 text-yellow-400" /> },
+                    { label: "Reputation", val: reputationScore, icon: <Trophy className="w-5 h-5 text-purple-400" /> },
+                  ].map(({ label, val, icon }) => (
+                    <div key={label} className="bg-gray-900/50 border border-gray-800 rounded-2xl p-4 text-center">
+                      <div className="flex justify-center mb-2">{icon}</div>
+                      <div className="text-2xl font-bold text-white">{val}</div>
+                      <div className="text-xs text-gray-400 mt-0.5">{label}</div>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
+
+            {/* Reputation tier */}
+            {!proposalsLoading && (() => {
+              const tier = getTier(reputationScore);
+              const nextTier = getNextTier(reputationScore);
+              const progress = tierProgress(reputationScore);
+              return (
+                <div className="relative bg-gray-900/50 border border-gray-800 rounded-2xl p-5">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <Trophy className={`w-5 h-5 ${tier.color}`} />
+                      <span className={`font-bold text-lg ${tier.color}`}>{tier.name}</span>
+                      <span className="text-gray-400 text-sm">tier</span>
+                    </div>
+                    {nextTier && (
+                      <span className="text-xs text-gray-400">
+                        {nextTier.min - reputationScore} pts to {nextTier.name}
+                      </span>
+                    )}
+                  </div>
+                  <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
+                    <div
+                      className={`h-full ${tier.bg} rounded-full transition-all`}
+                      style={{ width: `${progress}%` }}
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1.5">
+                    {reputationScore} / {nextTier?.max || tier.max} points
+                  </p>
+                </div>
+              );
+            })()}
+
+            {/* Proposals list */}
+            {proposalsLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="w-8 h-8 animate-spin text-cyan-400" />
               </div>
-            </div>
+            ) : userProposals.length === 0 ? (
+              <div className="text-center py-12">
+                <Target className="w-16 h-16 mx-auto mb-4 opacity-30 text-gray-400" />
+                <h3 className="text-xl font-semibold text-white mb-2">No Proposals Yet</h3>
+                <p className="text-sm text-gray-400 mb-4">Browse problems and submit your first proposal</p>
+                <Link to="/browse">
+                  <Button className="bg-gradient-to-r from-cyan-500 to-blue-600 text-white border-0">
+                    Browse Problems
+                  </Button>
+                </Link>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {userProposals.map((proposal) => (
+                  <div key={proposal.id} className="relative bg-gray-900/50 border border-gray-800 hover:border-cyan-500/30 rounded-2xl p-5 transition-colors">
+                    <div className="flex flex-col lg:flex-row gap-4">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex-1 min-w-0">
+                            <Link to={`/problem/${proposal.problemId}`}>
+                              <h3 className="font-bold text-white hover:text-cyan-400 transition-colors truncate mb-1">
+                                {proposal.problemTitle}
+                              </h3>
+                            </Link>
+                            <p className="text-gray-400 text-sm line-clamp-2">{proposal.briefSolution}</p>
+                          </div>
+                        </div>
+                        <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500 mt-2">
+                          {proposal.timeline && <span>⏱ {proposal.timeline}</span>}
+                          {proposal.cost && <span>💵 {proposal.cost}</span>}
+                          <span>
+                            <Clock className="w-3 h-3 inline mr-0.5" />
+                            {new Date(proposal.createdAt).toLocaleDateString()}
+                          </span>
+                          {proposal.tipTotal > 0 && (
+                            <span className="text-cyan-400 font-medium">💰 ${proposal.tipTotal.toFixed(0)} tips</span>
+                          )}
+                        </div>
+                        {proposal.expertise && proposal.expertise.length > 0 && (
+                          <div className="flex gap-1.5 flex-wrap mt-2">
+                            {proposal.expertise.slice(0, 5).map(tag => (
+                              <span key={tag} className="px-1.5 py-0.5 bg-gray-800/60 border border-gray-700/50 rounded text-gray-300 text-[10px]">
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      <div className="shrink-0 flex flex-row lg:flex-col items-center lg:items-end gap-3">
+                        <Badge
+                          className={`${
+                            proposal.status === 'accepted'
+                              ? 'bg-green-500/20 text-green-300 border-green-500/30'
+                              : proposal.status === 'rejected'
+                              ? 'bg-red-500/20 text-red-300 border-red-500/30'
+                              : 'bg-gray-500/20 text-gray-400 border-gray-600/30'
+                          }`}
+                        >
+                          {proposal.status || 'Pending'}
+                        </Badge>
+                        <Link to={`/problem/${proposal.problemId}`}>
+                          <Button size="sm" className="bg-gradient-to-r from-cyan-500 to-blue-600 text-white border-0 text-xs">
+                            View <ChevronRight className="w-3.5 h-3.5 ml-1" />
+                          </Button>
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </TabsContent>
         </Tabs>
 

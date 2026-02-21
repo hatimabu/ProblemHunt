@@ -1,3 +1,280 @@
 @import './fonts.css';
 @import './tailwind.css';
 @import './theme.css';
+
+/* ============================================================
+   PROBLEMHUNT GLOBAL ANIMATIONS & MICRO-INTERACTIONS
+   ============================================================ */
+
+/* Animated gradient text shift */
+@keyframes gradientShift {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.text-gradient-animated {
+  background: linear-gradient(
+    270deg,
+    #06b6d4,
+    #3b82f6,
+    #6366f1,
+    #8b5cf6,
+    #06b6d4
+  );
+  background-size: 300% 300%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: gradientShift 6s ease infinite;
+}
+
+/* Shimmer sweep on buttons */
+@keyframes shimmerSweep {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(200%); }
+}
+
+.btn-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-shimmer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.15) 50%,
+    transparent 100%
+  );
+  transform: translateX(-100%);
+  pointer-events: none;
+}
+
+.btn-shimmer:hover::after {
+  animation: shimmerSweep 0.7s ease forwards;
+}
+
+/* Pulse glow for CTA buttons */
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 12px rgba(6, 182, 212, 0.4); }
+  50%       { box-shadow: 0 0 28px rgba(6, 182, 212, 0.75), 0 0 50px rgba(59, 130, 246, 0.3); }
+}
+
+.btn-glow {
+  animation: pulseGlow 2.5s ease-in-out infinite;
+}
+
+.btn-glow:hover {
+  animation: none;
+  box-shadow: 0 0 40px rgba(6, 182, 212, 0.8), 0 0 80px rgba(59, 130, 246, 0.4);
+}
+
+/* Animated border glow */
+@keyframes borderGlow {
+  0%, 100% { border-color: rgba(6, 182, 212, 0.3); }
+  50%       { border-color: rgba(6, 182, 212, 0.7); }
+}
+
+.border-glow {
+  animation: borderGlow 3s ease-in-out infinite;
+}
+
+/* Floating orb animation for background */
+@keyframes floatOrb {
+  0%, 100% { transform: translateY(0px) scale(1); }
+  33%       { transform: translateY(-20px) scale(1.05); }
+  66%       { transform: translateY(10px) scale(0.97); }
+}
+
+.orb-float {
+  animation: floatOrb 8s ease-in-out infinite;
+}
+
+.orb-float-slow {
+  animation: floatOrb 12s ease-in-out infinite reverse;
+}
+
+/* Card hover lift */
+.card-hover {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 40px rgba(6, 182, 212, 0.15);
+}
+
+.card-hover:active {
+  transform: scale(0.98);
+}
+
+/* Upvote bounce animation */
+@keyframes upvoteBounce {
+  0%   { transform: scale(1); }
+  30%  { transform: scale(1.4); }
+  60%  { transform: scale(0.9); }
+  80%  { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+.upvote-animate {
+  animation: upvoteBounce 0.5s ease forwards;
+}
+
+/* Number flip animation */
+@keyframes numberFlip {
+  0%   { transform: translateY(0); opacity: 1; }
+  50%  { transform: translateY(-10px); opacity: 0; }
+  51%  { transform: translateY(10px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+
+.number-flip {
+  animation: numberFlip 0.4s ease forwards;
+}
+
+/* Skeleton shimmer for loading states */
+@keyframes skeletonShimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.03) 25%,
+    rgba(255, 255, 255, 0.08) 50%,
+    rgba(255, 255, 255, 0.03) 75%
+  );
+  background-size: 200% 100%;
+  animation: skeletonShimmer 1.5s infinite;
+  border-radius: 0.5rem;
+}
+
+/* Typewriter cursor blink */
+@keyframes cursorBlink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
+
+.typewriter-cursor::after {
+  content: '|';
+  margin-left: 2px;
+  animation: cursorBlink 0.8s step-end infinite;
+  color: #06b6d4;
+}
+
+/* Fade slide-up for page content */
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.fade-in {
+  animation: fadeSlideUp 0.4s ease forwards;
+}
+
+/* Confetti pop (for future use) */
+@keyframes confettiPop {
+  0%   { transform: scale(0) rotate(0deg); opacity: 1; }
+  100% { transform: scale(2) rotate(360deg); opacity: 0; }
+}
+
+/* Stagger animation helpers */
+.stagger-1 { animation-delay: 0.05s; }
+.stagger-2 { animation-delay: 0.10s; }
+.stagger-3 { animation-delay: 0.15s; }
+.stagger-4 { animation-delay: 0.20s; }
+.stagger-5 { animation-delay: 0.25s; }
+
+/* Animated counter number */
+@keyframes countUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.count-animate {
+  animation: countUp 0.6s ease forwards;
+}
+
+/* Logo pulse */
+@keyframes logoPulse {
+  0%, 100% { filter: drop-shadow(0 0 4px rgba(6, 182, 212, 0.4)); }
+  50%       { filter: drop-shadow(0 0 12px rgba(6, 182, 212, 0.8)); }
+}
+
+.logo-glow {
+  animation: logoPulse 3s ease-in-out infinite;
+}
+
+/* Nav underline slide */
+.nav-link {
+  position: relative;
+}
+
+.nav-link::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #06b6d4, #3b82f6);
+  transition: width 0.25s ease;
+  border-radius: 1px;
+}
+
+.nav-link:hover::after {
+  width: 100%;
+}
+
+/* Hot badge pulse */
+@keyframes hotPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+  50%       { box-shadow: 0 0 0 4px rgba(239, 68, 68, 0); }
+}
+
+.hot-badge {
+  animation: hotPulse 1.5s ease-in-out infinite;
+}
+
+/* Mesh gradient background animation */
+@keyframes meshMove {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  25%       { transform: translate(5%, -3%) scale(1.05); }
+  50%       { transform: translate(-3%, 5%) scale(0.98); }
+  75%       { transform: translate(-5%, -2%) scale(1.03); }
+}
+
+.mesh-bg {
+  animation: meshMove 20s ease-in-out infinite;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0a0a0f;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(6, 182, 212, 0.3);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(6, 182, 212, 0.6);
+}
+
+/* Selection color */
+::selection {
+  background: rgba(6, 182, 212, 0.3);
+  color: white;
+}
