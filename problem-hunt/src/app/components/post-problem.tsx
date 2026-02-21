@@ -41,7 +41,6 @@ export function PostProblem() {
     try {
       const response = await authenticatedFetch('/api/problems', {
         method: 'POST',
-        headers: {},
         body: {
           title: formData.title,
           description: formData.description,
