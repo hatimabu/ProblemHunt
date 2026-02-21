@@ -5,13 +5,14 @@
 In your Azure Cosmos DB account (`ProblemHuntDB` database), ensure these containers exist:
 
 | Container | Partition Key | Description |
-|-----------|--------------|-------------|
+| ----------- | -------------- | ------------- |
 | `Problems` | `/user_id` | All posted problems |
 | `Proposals` | `/problemId` | Builder proposals |
 | `Upvotes` | `/userId` | Problem upvote tracking |
 | `Tips` | `/proposalId` | Tip transactions |
 
-### Create Tips container (if not yet created):
+### Create Tips container (if not yet created)
+
 ```bash
 az cosmosdb sql container create \
   --account-name <your-cosmos-account> \
@@ -26,7 +27,7 @@ az cosmosdb sql container create \
 
 In Azure Portal > Function App > Configuration > Application Settings:
 
-```
+```hcl
 COSMOS_ENDPOINT=https://your-account.documents.azure.com:443/
 COSMOS_KEY=your_primary_key_here
 COSMOS_DATABASE=ProblemHuntDB
@@ -40,6 +41,7 @@ SUPABASE_SERVICE_KEY=your_service_role_key
 ```
 
 To set via CLI:
+
 ```bash
 az functionapp config appsettings set \
   --name <your-function-app> \
@@ -64,6 +66,7 @@ func azure functionapp publish <your-function-app>
 ```
 
 New routes added to `router.py`:
+
 - `GET /api/user/proposals` → `get_user_proposals.handle`
 - `GET /api/leaderboard` → `get_leaderboard.handle`
 - `POST /api/proposals/{id}/tip` → `tip_builder.handle` (updated)
@@ -71,7 +74,8 @@ New routes added to `router.py`:
 ## 4. CORS Configuration
 
 In Azure Portal > Function App > CORS, add:
-```
+
+```hcl
 https://problemhunt.cc
 https://www.problemhunt.cc
 http://localhost:5173
@@ -79,6 +83,7 @@ http://localhost:5174
 ```
 
 Or via CLI:
+
 ```bash
 az functionapp cors add \
   --name <your-function-app> \
@@ -88,9 +93,10 @@ az functionapp cors add \
 
 ## 5. Monitoring Setup
 
-### Application Insights queries to set up:
+### Application Insights queries to set up
 
 **API Error Rate:**
+
 ```kusto
 requests
 | where success == false
@@ -99,6 +105,7 @@ requests
 ```
 
 **Slow endpoints (>2s):**
+
 ```kusto
 requests
 | where duration > 2000
@@ -107,6 +114,7 @@ requests
 ```
 
 **Top routes by usage:**
+
 ```kusto
 requests
 | summarize count() by name
@@ -115,6 +123,7 @@ requests
 ```
 
 **Tips recorded per day:**
+
 ```kusto
 customEvents
 | where name == "TipRecorded"

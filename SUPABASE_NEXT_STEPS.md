@@ -3,6 +3,7 @@
 ## 1. Run These SQL Migrations
 
 ### Tips tracking table (optional — Cosmos DB is primary)
+
 ```sql
 -- Track tip references in Supabase for cross-referencing
 CREATE TABLE IF NOT EXISTS public.tip_records (
@@ -29,6 +30,7 @@ CREATE POLICY "Authenticated users can insert tips"
 ```
 
 ### Orders table (for CryptoPayment component)
+
 ```sql
 CREATE TABLE IF NOT EXISTS public.orders (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -54,6 +56,7 @@ CREATE POLICY "Users can manage their own orders"
 ```
 
 ### Profiles table additions
+
 ```sql
 -- Ensure reputation_score column exists
 ALTER TABLE public.profiles
@@ -65,6 +68,7 @@ ALTER TABLE public.profiles
 ## 2. Enable Row Level Security
 
 Verify RLS is enabled on all tables:
+
 ```sql
 -- Check RLS status
 SELECT tablename, rowsecurity FROM pg_tables
@@ -72,6 +76,7 @@ WHERE schemaname = 'public';
 ```
 
 Key RLS policies needed:
+
 - `profiles`: Users can read all profiles, only update their own
 - `wallets`: Users can only read/write their own wallets
 - `orders`: Users can only access their own orders
@@ -79,6 +84,7 @@ Key RLS policies needed:
 ## 3. Set Up Realtime
 
 Enable realtime on the problems view (for live upvote counts):
+
 ```sql
 -- In Supabase dashboard: Database > Replication
 -- Enable realtime for: profiles table
@@ -87,6 +93,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.profiles;
 ```
 
 In frontend (where needed):
+
 ```typescript
 const channel = supabase
   .channel('problem-upvotes')
@@ -103,12 +110,14 @@ const channel = supabase
 ## 4. Configure Auth
 
 In Supabase Dashboard > Authentication > URL Configuration:
+
 - **Site URL**: `https://problemhunt.cc`
 - **Redirect URLs**:
   - `https://problemhunt.cc/auth/callback`
   - `http://localhost:5173/auth/callback` (dev)
 
 Email templates to customize:
+
 - Confirm signup email
 - Reset password email
 - Magic link email
@@ -116,18 +125,21 @@ Email templates to customize:
 ## 5. Edge Functions to Deploy
 
 ### `verify-payment` (used by CryptoPayment component)
+
 ```bash
 supabase functions deploy verify-payment
 ```
 
 This function should:
+
 1. Receive `{ order_id, tx_hash }`
 2. Look up the order in the `orders` table
 3. Verify the tx hash on the appropriate blockchain RPC
 4. Mark order as `paid` or `failed`
 5. Return `{ success: boolean, message: string }`
 
-### Environment variables needed in Supabase:
+### Environment variables needed in Supabase
+
 ```bash
 supabase secrets set ETHERSCAN_API_KEY=your_key
 supabase secrets set SOLANA_RPC_URL=https://api.mainnet-beta.solana.com
@@ -137,6 +149,7 @@ supabase secrets set POLYGONSCAN_API_KEY=your_key
 ## 6. Storage Buckets (Optional)
 
 For user avatar uploads:
+
 ```sql
 INSERT INTO storage.buckets (id, name, public)
 VALUES ('avatars', 'avatars', true);
