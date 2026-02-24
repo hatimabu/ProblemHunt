@@ -17,10 +17,10 @@
 
 import { supabase } from '../../lib/supabaseClient';
 import { buildApiUrl } from './api-config';
+import { waitForAuthReady } from './auth-state';
 import {
   createRequestId,
   handleTerminalAuthFailure,
-  isAuthStatus,
   refreshAccessToken
 } from './auth-session';
 
@@ -135,8 +135,11 @@ export async function authenticatedFetch(endpoint, options = {}) {
   const requestId = createRequestId('api');
   const startedAt = new Date().toISOString();
   const fullUrl = buildApiUrl(endpoint);
+  const isRelativeEndpoint = endpoint.startsWith('/');
 
   try {
+    await waitForAuthReady();
+
     const { data: { session }, error: sessionError } = await supabase.auth.getSession();
     if (sessionError) {
       throw sessionError;
@@ -151,25 +154,34 @@ export async function authenticatedFetch(endpoint, options = {}) {
       }
     }
 
+    if (!token) {
+      throw new Error('Missing Supabase access token');
+    }
+
     // Prepare fetch options
+    const headers = new Headers(options.headers || {});
+    headers.set('x-request-id', requestId);
+    headers.set('Authorization', `Bearer ${token}`);
+    if (!headers.has('Content-Type') && !(options.body instanceof FormData)) {
+      headers.set('Content-Type', 'application/json');
+    }
+
     const fetchOptions = {
       ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        'x-request-id': requestId,
-        Authorization: `Bearer ${token}`,
-        ...options.headers
-      }
+      credentials: options.credentials ?? (isRelativeEndpoint ? 'same-origin' : undefined),
+      headers
     };
 
     // Convert body to JSON if it's an object
     if (fetchOptions.body && typeof fetchOptions.body === 'object') {
-      fetchOptions.body = JSON.stringify(fetchOptions.body);
+      if (!(fetchOptions.body instanceof FormData)) {
+        fetchOptions.body = JSON.stringify(fetchOptions.body);
+      }
     }
 
     let response = await fetch(fullUrl, fetchOptions);
 
-    if (isAuthStatus(response.status)) {
+    if (response.status === 401) {
       console.warn('[auth-trace]', {
         event: 'api_auth_retry',
         requestId,
@@ -184,13 +196,15 @@ export async function authenticatedFetch(endpoint, options = {}) {
           throw refreshedSessionError;
         }
         const refreshedToken = refreshedSession?.access_token ?? await refreshAccessToken(`retry:${endpoint}`);
-        response = await fetch(fullUrl, {
-          ...fetchOptions,
-          headers: {
-            ...fetchOptions.headers,
-            Authorization: `Bearer ${refreshedToken}`
-          }
-        });
+
+        if (refreshedToken) {
+          const retryHeaders = new Headers(fetchOptions.headers);
+          retryHeaders.set('Authorization', `Bearer ${refreshedToken}`);
+          response = await fetch(fullUrl, {
+            ...fetchOptions,
+            headers: retryHeaders
+          });
+        }
       } catch (refreshError) {
         await handleTerminalAuthFailure('api_retry_refresh_failed', refreshError);
       }

@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useRef, useState, type ReactNode,
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 import { supabase } from '../../../lib/supabaseClient';
 import { getOrCreateProfile } from '../../lib/profile';
+import { setAuthState } from '../../lib/auth-state';
 
 interface User {
   id: string;
@@ -309,6 +310,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     }
   };
+
+  useEffect(() => {
+    setAuthState({ isLoading, user });
+  }, [isLoading, user]);
 
   return (
     <AuthContext.Provider value={{ user, isLoading, isInitialLoad, login, signup, logout }}>

@@ -52,7 +52,8 @@ def extract_token(req: HttpRequest) -> str:
     Raises:
         AuthError: If Authorization header is missing or malformed
     """
-    auth_header = req.headers.get("Authorization")
+    token = req.headers.get("Authorization")
+    auth_header = token or req.headers.get("authorization")
     
     if not auth_header:
         raise AuthError("Missing Authorization header")

@@ -12,7 +12,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../components/ui/select";
-import { supabase } from "../../../lib/supabaseClient";
 import { useAuth } from "../contexts/AuthContext";
 import { authenticatedFetch, handleResponse } from "../../lib/auth-helper";
 import { Navbar } from "./navbar";
@@ -21,7 +20,7 @@ const CATEGORIES = ["AI/ML", "Web3", "Finance", "Governance", "Trading", "Infras
 
 export function PostProblem() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -35,6 +34,12 @@ export function PostProblem() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (isLoading || !user) {
+      setError('Please wait for authentication to complete before posting.');
+      return;
+    }
+
     setIsSubmitting(true);
     setError(null);
     
@@ -232,7 +237,7 @@ export function PostProblem() {
                   </Link>
                   <Button
                     type="submit"
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || isLoading || !user}
                     className="flex-1 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white border-0 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isSubmitting ? 'Posting...' : 'Post Problem'}
