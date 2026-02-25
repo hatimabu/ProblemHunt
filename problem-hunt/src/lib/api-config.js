@@ -9,20 +9,20 @@
  *   const endpoint = `${API_BASE_URL}/api/problems`;
  */
 
+const DEFAULT_AZURE_FUNCTIONS_BASE_URL = 'https://problemhunt-api.azurewebsites.net';
+
 // Determine the API base URL based on environment
 export const getApiBaseUrl = () => {
-  // Development: Use local Azure Functions emulator
-  if (process.env.NODE_ENV === 'development') {
-    return process.env.VITE_API_BASE || 'http://localhost:7071';
+  const configuredBaseUrl =
+    import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_BASE;
+
+  // Always prefer explicit environment configuration when provided.
+  if (configuredBaseUrl) {
+    return configuredBaseUrl.replace(/\/+$/, '');
   }
 
-  // Production: Use Azure Functions endpoint (if configured in environment)
-  if (process.env.VITE_API_BASE) {
-    return process.env.VITE_API_BASE;
-  }
-
-  // Default: relative path (works for Static Web App scenario)
-  return '';
+  // Safe default for deployed frontend to avoid falling back to static site origin.
+  return DEFAULT_AZURE_FUNCTIONS_BASE_URL;
 };
 
 // Export the base URL
@@ -53,4 +53,4 @@ export const buildApiUrl = (endpoint) => {
   return `${API_BASE_URL}${endpoint}`;
 };
 
-console.log(`🔗 API Base URL: ${API_BASE_URL || '(relative path - same origin)'}`);
+console.log(`API Base URL: ${API_BASE_URL}`);
