@@ -30,8 +30,10 @@ import {
   SelectValue,
 } from "../components/ui/select";
 import { Navbar } from "./navbar";
-import { authenticatedFetch, handleResponse } from "../../lib/auth-helper";
+import { supabase } from "../../../lib/supabaseClient";
 import { API_ENDPOINTS } from "../../lib/api-config";
+
+const API_URL = import.meta.env.VITE_API_BASE;
 import { useAuth } from "../contexts/AuthContext";
 
 interface Problem {
@@ -103,9 +105,14 @@ function TipModal({
     try {
       setLoading(true);
       setError("");
-      const res = await authenticatedFetch(API_ENDPOINTS.TIP_PROPOSAL(proposal.id), {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      const res = await fetch(API_ENDPOINTS.TIP_PROPOSAL(proposal.id), {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
         body: JSON.stringify({
           amount: parseFloat(amount),
           currency: chain,
@@ -114,7 +121,9 @@ function TipModal({
           toWallet: proposal.builderId,
         }),
       });
-      await handleResponse(res);
+      if (!res.ok) {
+        throw new Error(`API Error ${res.status}: ${await res.text()}`);
+      }
       setSuccess(true);
     } catch (err: any) {
       setError(err.message || "Failed to record tip");
@@ -378,12 +387,20 @@ export function ProblemDetail() {
     const fetchAll = async () => {
       try {
         setLoading(true);
+        const { data: sessionData } = await supabase.auth.getSession();
+        const token = sessionData.session?.access_token;
         const [problemRes, proposalsRes] = await Promise.all([
-          authenticatedFetch(API_ENDPOINTS.PROBLEM_BY_ID(id), { method: "GET" }),
-          authenticatedFetch(API_ENDPOINTS.PROPOSALS(id), { method: "GET" }),
+          fetch(API_ENDPOINTS.PROBLEM_BY_ID(id), { method: "GET", headers: { "Authorization": `Bearer ${token}` } }),
+          fetch(API_ENDPOINTS.PROPOSALS(id), { method: "GET", headers: { "Authorization": `Bearer ${token}` } }),
         ]);
-        const problemData = await handleResponse(problemRes);
-        const proposalsData = await handleResponse(proposalsRes);
+        if (!problemRes.ok) {
+          throw new Error(`API Error ${problemRes.status}: ${await problemRes.text()}`);
+        }
+        if (!proposalsRes.ok) {
+          throw new Error(`API Error ${proposalsRes.status}: ${await proposalsRes.text()}`);
+        }
+        const problemData = await problemRes.json();
+        const proposalsData = await proposalsRes.json();
         setProblem(problemData);
         setUpvoteCount(problemData.upvotes || 0);
         setProposals(
@@ -410,13 +427,17 @@ export function ProblemDetail() {
       setUpvoted(false);
       setUpvoteCount((c) => c - 1);
       try {
-        await authenticatedFetch(API_ENDPOINTS.REMOVE_UPVOTE(id), { method: "DELETE" });
+        const { data: sessionData } = await supabase.auth.getSession();
+        const token = sessionData.session?.access_token;
+        await fetch(API_ENDPOINTS.REMOVE_UPVOTE(id), { method: "DELETE", headers: { "Authorization": `Bearer ${token}` } });
       } catch {}
     } else {
       setUpvoted(true);
       setUpvoteCount((c) => c + 1);
       try {
-        await authenticatedFetch(API_ENDPOINTS.UPVOTE_PROBLEM(id), { method: "POST" });
+        const { data: sessionData } = await supabase.auth.getSession();
+        const token = sessionData.session?.access_token;
+        await fetch(API_ENDPOINTS.UPVOTE_PROBLEM(id), { method: "POST", headers: { "Authorization": `Bearer ${token}` } });
       } catch {}
     }
   };
@@ -437,9 +458,14 @@ export function ProblemDetail() {
         .split(",")
         .map((t) => t.trim())
         .filter(Boolean);
-      const res = await authenticatedFetch(API_ENDPOINTS.PROPOSALS(id), {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      const res = await fetch(API_ENDPOINTS.PROPOSALS(id), {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
         body: JSON.stringify({
           title: `Proposal for: ${problem?.title}`,
           description: proposalForm.briefSolution,
@@ -450,7 +476,10 @@ export function ProblemDetail() {
           builderName: user?.username || user?.email || "Builder",
         }),
       });
-      const data = await handleResponse(res);
+      if (!res.ok) {
+        throw new Error(`API Error ${res.status}: ${await res.text()}`);
+      }
+      const data = await res.json();
       setProposals((prev) => [data, ...prev]);
       setSubmitSuccess(true);
       setProposalForm({ briefSolution: "", timeline: "", cost: "", expertise: "" });

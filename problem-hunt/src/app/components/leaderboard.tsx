@@ -3,8 +3,10 @@ import { Trophy, Star, DollarSign, Send, RefreshCw } from "lucide-react";
 import { Navbar } from "./navbar";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
-import { authenticatedFetch, handleResponse } from "../../lib/auth-helper";
+import { supabase } from "../../../lib/supabaseClient";
 import { API_ENDPOINTS } from "../../lib/api-config";
+
+const API_URL = import.meta.env.VITE_API_BASE;
 import { useAuth } from "../contexts/AuthContext";
 
 interface LeaderboardEntry {
@@ -50,8 +52,18 @@ export function Leaderboard() {
   const fetchLeaderboard = async (p: string) => {
     try {
       setLoading(true);
-      const res = await authenticatedFetch(`${API_ENDPOINTS.LEADERBOARD}?period=${p}&limit=20`, { method: "GET" });
-      const data = await handleResponse(res);
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      const res = await fetch(`${API_ENDPOINTS.LEADERBOARD}?period=${p}&limit=20`, {
+        method: "GET",
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
+      });
+      if (!res.ok) {
+        throw new Error(`API Error ${res.status}: ${await res.text()}`);
+      }
+      const data = await res.json();
       const entries: LeaderboardEntry[] = data.leaderboard || [];
       setLeaderboard(entries);
 

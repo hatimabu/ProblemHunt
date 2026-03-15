@@ -15,7 +15,7 @@ import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Badge } from "../components/ui/badge";
 import { Navbar } from "./navbar";
-import { authenticatedFetch, handleResponse } from "../../lib/auth-helper";
+import { supabase } from "../../../lib/supabaseClient";
 import { API_ENDPOINTS } from "../../lib/api-config";
 
 const CATEGORIES = [
@@ -118,11 +118,18 @@ export function BrowseProblems() {
       try {
         setLoading(true);
         const category = selectedCategory === "All" ? "all" : selectedCategory;
-        const res = await authenticatedFetch(
-          `${API_ENDPOINTS.PROBLEMS}?category=${encodeURIComponent(category)}&sortBy=${sortBy}`,
-          { method: "GET" }
-        );
-        const data = await handleResponse(res);
+        const { data: sessionData } = await supabase.auth.getSession();
+        const token = sessionData.session?.access_token;
+        const res = await fetch(`${API_ENDPOINTS.PROBLEMS}?category=${encodeURIComponent(category)}&sortBy=${sortBy}`, {
+          method: "GET",
+          headers: {
+            "Authorization": `Bearer ${token}`
+          }
+        });
+        if (!res.ok) {
+          throw new Error(`API Error ${res.status}: ${await res.text()}`);
+        }
+        const data = await res.json();
         setProblems(
           Array.isArray(data.problems)
             ? data.problems

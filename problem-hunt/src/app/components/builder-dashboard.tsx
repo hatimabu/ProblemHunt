@@ -22,8 +22,10 @@ import {
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { supabase } from "../../../lib/supabaseClient";
-import { authenticatedFetch, handleResponse } from "../../lib/auth-helper";
+import { supabase } from "../../../lib/supabaseClient";
 import { API_ENDPOINTS } from "../../lib/api-config";
+
+const API_URL = import.meta.env.VITE_API_BASE;
 import { LinkWallet } from "./LinkWallet";
 import { Navbar } from "./navbar";
 import { Button } from "./ui/button";
@@ -154,8 +156,18 @@ export function BuilderDashboard() {
     if (!user) return;
     try {
       setProposalsLoading(true);
-      const response = await authenticatedFetch(API_ENDPOINTS.USER_PROPOSALS, { method: 'GET' });
-      const data = await handleResponse(response);
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      const response = await fetch(API_ENDPOINTS.USER_PROPOSALS, {
+        method: 'GET',
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
+      });
+      if (!response.ok) {
+        throw new Error(`API Error ${response.status}: ${await response.text()}`);
+      }
+      const data = await response.json();
       setUserProposals(Array.isArray(data.proposals) ? data.proposals : []);
     } catch (err) {
       console.error('Error fetching user proposals:', err);
@@ -193,13 +205,18 @@ export function BuilderDashboard() {
 
     try {
       setProblemsLoading(true);
-      const response = await authenticatedFetch(`${API_ENDPOINTS.USER_PROBLEMS}?sortBy=newest`, {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      const response = await fetch(`${API_ENDPOINTS.USER_PROBLEMS}?sortBy=newest`, {
         method: 'GET',
-        headers: {},
-        body: null,
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
       });
-
-      const data = await handleResponse(response);
+      if (!response.ok) {
+        throw new Error(`API Error ${response.status}: ${await response.text()}`);
+      }
+      const data = await response.json();
       setUserProblems(Array.isArray(data.problems) ? data.problems : []);
     } catch (error) {
       console.error('Error fetching user problems:', error);
@@ -228,13 +245,17 @@ export function BuilderDashboard() {
   const handleDeleteProblem = async (problemId: string) => {
     try {
       setDeletingProblemId(problemId);
-      const response = await authenticatedFetch(API_ENDPOINTS.PROBLEM_BY_ID(problemId), {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      const response = await fetch(API_ENDPOINTS.PROBLEM_BY_ID(problemId), {
         method: 'DELETE',
-        headers: {},
-        body: null,
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
       });
-
-      await handleResponse(response);
+      if (!response.ok) {
+        throw new Error(`API Error ${response.status}: ${await response.text()}`);
+      }
       // Remove the problem from the local state
       setUserProblems(prev => prev.filter(p => p.id !== problemId));
     } catch (error) {

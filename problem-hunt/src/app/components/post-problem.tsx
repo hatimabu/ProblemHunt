@@ -13,8 +13,10 @@ import {
   SelectValue,
 } from "../components/ui/select";
 import { useAuth } from "../contexts/AuthContext";
-import { authenticatedFetch, handleResponse } from "../../lib/auth-helper";
+import { supabase } from "../../../lib/supabaseClient";
 import { API_ENDPOINTS } from "../../lib/api-config";
+
+const API_URL = import.meta.env.VITE_API_BASE;
 import { Navbar } from "./navbar";
 
 const CATEGORIES = ["AI/ML", "Web3", "Finance", "Governance", "Trading", "Infrastructure"];
@@ -45,9 +47,15 @@ export function PostProblem() {
     setError(null);
     
     try {
-      const response = await authenticatedFetch(API_ENDPOINTS.PROBLEMS, {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      const response = await fetch(API_ENDPOINTS.PROBLEMS, {
         method: 'POST',
-        body: {
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({
           title: formData.title,
           description: formData.description,
           category: formData.category,
@@ -55,10 +63,12 @@ export function PostProblem() {
           requirements: formData.requirements,
           deadline: formData.deadline,
           author: user?.username || user?.email || 'Anonymous User',
-        },
+        }),
       });
-
-      const problem = await handleResponse(response);
+      if (!response.ok) {
+        throw new Error(`API Error ${response.status}: ${await response.text()}`);
+      }
+      const problem = await response.json();
       // Navigate to the newly created problem
       navigate(`/problem/${problem.id}`);
     } catch (err) {

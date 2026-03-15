@@ -4,8 +4,10 @@ import { Rocket, Zap, TrendingUp, ArrowRight, Star, Users, DollarSign, CheckCirc
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { Navbar } from "./navbar";
-import { authenticatedFetch, handleResponse } from "../../lib/auth-helper";
+import { supabase } from "../../../lib/supabaseClient";
 import { API_ENDPOINTS } from "../../lib/api-config";
+
+const API_URL = import.meta.env.VITE_API_BASE;
 
 interface Problem {
   id: string;
@@ -113,8 +115,18 @@ export function LandingPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await authenticatedFetch(`${API_ENDPOINTS.PROBLEMS}?sortBy=upvotes&limit=6`, { method: "GET" });
-        const data = await handleResponse(res);
+        const { data: sessionData } = await supabase.auth.getSession();
+        const token = sessionData.session?.access_token;
+        const res = await fetch(`${API_ENDPOINTS.PROBLEMS}?sortBy=upvotes&limit=6`, {
+          method: "GET",
+          headers: {
+            "Authorization": `Bearer ${token}`
+          }
+        });
+        if (!res.ok) {
+          throw new Error(`API Error ${res.status}: ${await res.text()}`);
+        }
+        const data = await res.json();
         const problems: Problem[] = Array.isArray(data.problems) ? data.problems : [];
         setTrending(problems.slice(0, 6));
         const total = problems.reduce((s, p) => s + (p.budgetValue || 0), 0);
