@@ -1,0 +1,5 @@
+=== JWKS Fetch ===
+JWKS fetched — 1 key(s)
+JWKS URL: https://ajvobbpwgopinxtbpcpu.supabase.co/auth/v1/.well-known/jwks.json
+No SAMPLE_JWT found in environment or sample_jwt.txt.
+Provide a JWT via env var SAMPLE_JWT or file sample_jwt.txt.
