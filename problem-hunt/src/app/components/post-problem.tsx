@@ -14,6 +14,7 @@ import {
 } from "../components/ui/select";
 import { useAuth } from "../contexts/AuthContext";
 import { authenticatedFetch, handleResponse } from "../../lib/auth-helper";
+import { API_ENDPOINTS } from "../../lib/api-config";
 import { Navbar } from "./navbar";
 
 const CATEGORIES = ["AI/ML", "Web3", "Finance", "Governance", "Trading", "Infrastructure"];
@@ -44,7 +45,7 @@ export function PostProblem() {
     setError(null);
     
     try {
-      const response = await authenticatedFetch('/api/problems', {
+      const response = await authenticatedFetch(API_ENDPOINTS.PROBLEMS, {
         method: 'POST',
         body: {
           title: formData.title,

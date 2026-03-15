@@ -5,6 +5,7 @@ import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { Navbar } from "./navbar";
 import { authenticatedFetch, handleResponse } from "../../lib/auth-helper";
+import { API_ENDPOINTS } from "../../lib/api-config";
 
 interface Problem {
   id: string;
@@ -112,7 +113,7 @@ export function LandingPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await authenticatedFetch("/api/problems?sortBy=upvotes&limit=6", { method: "GET" });
+        const res = await authenticatedFetch(`${API_ENDPOINTS.PROBLEMS}?sortBy=upvotes&limit=6`, { method: "GET" });
         const data = await handleResponse(res);
         const problems: Problem[] = Array.isArray(data.problems) ? data.problems : [];
         setTrending(problems.slice(0, 6));

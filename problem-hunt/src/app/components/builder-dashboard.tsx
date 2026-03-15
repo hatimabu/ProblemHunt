@@ -23,6 +23,7 @@ import {
 import { useAuth } from "../contexts/AuthContext";
 import { supabase } from "../../../lib/supabaseClient";
 import { authenticatedFetch, handleResponse } from "../../lib/auth-helper";
+import { API_ENDPOINTS } from "../../lib/api-config";
 import { LinkWallet } from "./LinkWallet";
 import { Navbar } from "./navbar";
 import { Button } from "./ui/button";
@@ -153,7 +154,7 @@ export function BuilderDashboard() {
     if (!user) return;
     try {
       setProposalsLoading(true);
-      const response = await authenticatedFetch('/api/user/proposals', { method: 'GET' });
+      const response = await authenticatedFetch(API_ENDPOINTS.USER_PROPOSALS, { method: 'GET' });
       const data = await handleResponse(response);
       setUserProposals(Array.isArray(data.proposals) ? data.proposals : []);
     } catch (err) {
@@ -192,7 +193,7 @@ export function BuilderDashboard() {
 
     try {
       setProblemsLoading(true);
-      const response = await authenticatedFetch('/api/user/problems?sortBy=newest', {
+      const response = await authenticatedFetch(`${API_ENDPOINTS.USER_PROBLEMS}?sortBy=newest`, {
         method: 'GET',
         headers: {},
         body: null,
@@ -227,7 +228,7 @@ export function BuilderDashboard() {
   const handleDeleteProblem = async (problemId: string) => {
     try {
       setDeletingProblemId(problemId);
-      const response = await authenticatedFetch(`/api/problems/${problemId}`, {
+      const response = await authenticatedFetch(API_ENDPOINTS.PROBLEM_BY_ID(problemId), {
         method: 'DELETE',
         headers: {},
         body: null,

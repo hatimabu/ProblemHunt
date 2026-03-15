@@ -31,6 +31,7 @@ import {
 } from "../components/ui/select";
 import { Navbar } from "./navbar";
 import { authenticatedFetch, handleResponse } from "../../lib/auth-helper";
+import { API_ENDPOINTS } from "../../lib/api-config";
 import { useAuth } from "../contexts/AuthContext";
 
 interface Problem {
@@ -102,7 +103,7 @@ function TipModal({
     try {
       setLoading(true);
       setError("");
-      const res = await authenticatedFetch(`/api/proposals/${proposal.id}/tip`, {
+      const res = await authenticatedFetch(API_ENDPOINTS.TIP_PROPOSAL(proposal.id), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -378,8 +379,8 @@ export function ProblemDetail() {
       try {
         setLoading(true);
         const [problemRes, proposalsRes] = await Promise.all([
-          authenticatedFetch(`/api/problems/${id}`, { method: "GET" }),
-          authenticatedFetch(`/api/problems/${id}/proposals`, { method: "GET" }),
+          authenticatedFetch(API_ENDPOINTS.PROBLEM_BY_ID(id), { method: "GET" }),
+          authenticatedFetch(API_ENDPOINTS.PROPOSALS(id), { method: "GET" }),
         ]);
         const problemData = await handleResponse(problemRes);
         const proposalsData = await handleResponse(proposalsRes);
@@ -409,13 +410,13 @@ export function ProblemDetail() {
       setUpvoted(false);
       setUpvoteCount((c) => c - 1);
       try {
-        await authenticatedFetch(`/api/problems/${id}/upvote`, { method: "DELETE" });
+        await authenticatedFetch(API_ENDPOINTS.REMOVE_UPVOTE(id), { method: "DELETE" });
       } catch {}
     } else {
       setUpvoted(true);
       setUpvoteCount((c) => c + 1);
       try {
-        await authenticatedFetch(`/api/problems/${id}/upvote`, { method: "POST" });
+        await authenticatedFetch(API_ENDPOINTS.UPVOTE_PROBLEM(id), { method: "POST" });
       } catch {}
     }
   };
@@ -436,7 +437,7 @@ export function ProblemDetail() {
         .split(",")
         .map((t) => t.trim())
         .filter(Boolean);
-      const res = await authenticatedFetch(`/api/problems/${id}/proposals`, {
+      const res = await authenticatedFetch(API_ENDPOINTS.PROPOSALS(id), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

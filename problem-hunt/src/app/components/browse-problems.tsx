@@ -16,6 +16,7 @@ import { Input } from "../components/ui/input";
 import { Badge } from "../components/ui/badge";
 import { Navbar } from "./navbar";
 import { authenticatedFetch, handleResponse } from "../../lib/auth-helper";
+import { API_ENDPOINTS } from "../../lib/api-config";
 
 const CATEGORIES = [
   "All",
@@ -118,7 +119,7 @@ export function BrowseProblems() {
         setLoading(true);
         const category = selectedCategory === "All" ? "all" : selectedCategory;
         const res = await authenticatedFetch(
-          `/api/problems?category=${encodeURIComponent(category)}&sortBy=${sortBy}`,
+          `${API_ENDPOINTS.PROBLEMS}?category=${encodeURIComponent(category)}&sortBy=${sortBy}`,
           { method: "GET" }
         );
         const data = await handleResponse(res);

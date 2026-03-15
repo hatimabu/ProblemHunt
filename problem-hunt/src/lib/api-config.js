@@ -14,7 +14,7 @@ const DEFAULT_AZURE_FUNCTIONS_BASE_URL = 'https://problemhunt-api.azurewebsites.
 // Determine the API base URL based on environment
 export const getApiBaseUrl = () => {
   const configuredBaseUrl =
-    import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_BASE;
+    import.meta.env.VITE_API_BASE;
 
   // Always prefer explicit environment configuration when provided.
   if (configuredBaseUrl) {
@@ -27,22 +27,27 @@ export const getApiBaseUrl = () => {
 
 // Export the base URL
 export const API_BASE_URL = getApiBaseUrl();
+export const API_URL = getApiBaseUrl();
 
 // API Endpoints
 export const API_ENDPOINTS = {
   // Problems
-  PROBLEMS: '/api/problems',
-  PROBLEM_BY_ID: (id) => `/api/problems/${id}`,
-  USER_PROBLEMS: '/api/user/problems',
-  SEARCH_PROBLEMS: '/api/problems/search',
+  PROBLEMS: `${API_URL}/api/problems`,
+  PROBLEM_BY_ID: (id) => `${API_URL}/api/problems/${id}`,
+  USER_PROBLEMS: `${API_URL}/api/user/problems`,
+  USER_PROPOSALS: `${API_URL}/api/user/proposals`,
+  SEARCH_PROBLEMS: `${API_URL}/api/problems/search`,
 
   // Upvotes
-  UPVOTE_PROBLEM: (id) => `/api/problems/${id}/upvote`,
-  REMOVE_UPVOTE: (id) => `/api/problems/${id}/upvote`,
+  UPVOTE_PROBLEM: (id) => `${API_URL}/api/problems/${id}/upvote`,
+  REMOVE_UPVOTE: (id) => `${API_URL}/api/problems/${id}/upvote`,
 
   // Proposals
-  PROPOSALS: (problemId) => `/api/problems/${problemId}/proposals`,
-  TIP_PROPOSAL: (proposalId) => `/api/proposals/${proposalId}/tip`,
+  PROPOSALS: (problemId) => `${API_URL}/api/problems/${problemId}/proposals`,
+  TIP_PROPOSAL: (proposalId) => `${API_URL}/api/proposals/${proposalId}/tip`,
+
+  // Leaderboard
+  LEADERBOARD: `${API_URL}/api/leaderboard`,
 };
 
 // Helper function to build full API URLs (supports both relative and absolute)

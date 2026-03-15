@@ -4,6 +4,7 @@ import { Navbar } from "./navbar";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import { authenticatedFetch, handleResponse } from "../../lib/auth-helper";
+import { API_ENDPOINTS } from "../../lib/api-config";
 import { useAuth } from "../contexts/AuthContext";
 
 interface LeaderboardEntry {
@@ -49,7 +50,7 @@ export function Leaderboard() {
   const fetchLeaderboard = async (p: string) => {
     try {
       setLoading(true);
-      const res = await authenticatedFetch(`/api/leaderboard?period=${p}&limit=20`, { method: "GET" });
+      const res = await authenticatedFetch(`${API_ENDPOINTS.LEADERBOARD}?period=${p}&limit=20`, { method: "GET" });
       const data = await handleResponse(res);
       const entries: LeaderboardEntry[] = data.leaderboard || [];
       setLeaderboard(entries);
