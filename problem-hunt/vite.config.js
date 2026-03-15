@@ -31,7 +31,7 @@ export default defineConfig(({ mode }) => {
     server: {
       middlewareMode: false,
       headers: {
-        'Content-Security-Policy': "default-src 'self' https://ajvobbpwgopinxtbpcpu.supabase.co; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; font-src 'self' https://r2cdn.perplexity.ai; connect-src 'self' https://ajvobbpwgopinxtbpcpu.supabase.co https://*.supabase.co"
+        'Content-Security-Policy': `default-src 'self' ${env.VITE_SUPABASE_URL || 'https://*.supabase.co'}; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; font-src 'self' https://r2cdn.perplexity.ai; connect-src 'self' ${env.VITE_SUPABASE_URL || 'https://*.supabase.co'} https://*.supabase.co https://*.ingest.us.sentry.io`
       },
       proxy: {
         '/api': {

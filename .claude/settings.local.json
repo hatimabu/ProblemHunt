@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(tail:*)"
+      "Bash(tail:*)",
+      "Bash(grep -r \"0x\\\\|ETH_RPC\\\\|POLYGON_RPC\\\\|hardcoded\\\\|TODO\\\\|FIXME\\\\|BUG\" /a/REPO/ProblemHunt/problem-hunt/src --include=*.ts --include=*.tsx)"
     ]
   }
 }
