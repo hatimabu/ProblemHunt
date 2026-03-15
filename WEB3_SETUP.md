@@ -86,7 +86,8 @@ const PLATFORM_WALLETS = {
 
 ## 📁 File Structure
 
-```
+``
+
 problem-hunt/
 ├── src/app/components/
 │   ├── SignInWithWallet.tsx       # Web3 wallet sign-in UI
@@ -101,11 +102,12 @@ problem-hunt/
 │       │   └── index.ts           # Wallet authentication Edge Function
 │       └── verify-payment/
 │           └── index.ts           # Payment verification Edge Function
-```
+``
 
 ## 🔐 Security Considerations
 
 ### Rate Limiting
+
 Add rate limiting to Edge Functions to prevent abuse:
 
 ```typescript
@@ -119,6 +121,7 @@ const limiter = new RateLimiter({
 ```
 
 ### CAPTCHA Integration
+
 Consider adding CAPTCHA for wallet sign-in:
 
 ```bash
@@ -126,11 +129,14 @@ npm install @hcaptcha/react-hcaptcha
 ```
 
 ### Allowed Redirect URLs
+
 Configure in Supabase Dashboard → Authentication → URL Configuration:
+
 - Add your production domain
 - Add localhost for development
 
 ### Service Role Key
+
 - **Never** expose `SUPABASE_SERVICE_ROLE_KEY` to the client
 - Only use in Edge Functions (server-side)
 - Rotate regularly
@@ -191,6 +197,7 @@ function PaymentPage() {
 **Endpoint:** `POST /functions/v1/auth-wallet`
 
 **Request Body:**
+
 ```json
 {
   "chain": "ethereum" | "solana" | "polygon" | "arbitrum",
@@ -201,6 +208,7 @@ function PaymentPage() {
 ```
 
 **Response:**
+
 ```json
 {
   "access_token": "jwt_token",
@@ -216,6 +224,7 @@ function PaymentPage() {
 **Endpoint:** `POST /functions/v1/verify-payment`
 
 **Request Body:**
+
 ```json
 {
   "order_id": "uuid",
@@ -224,6 +233,7 @@ function PaymentPage() {
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -235,6 +245,7 @@ function PaymentPage() {
 ## 📊 Database Schema
 
 ### `wallets` Table
+
 - `id` (uuid, primary key)
 - `user_id` (uuid, foreign key to auth.users)
 - `chain` (text: ethereum, solana, polygon, arbitrum)
@@ -243,6 +254,7 @@ function PaymentPage() {
 - `created_at` (timestamp)
 
 ### `orders` Table
+
 - `id` (uuid, primary key)
 - `user_id` (uuid, foreign key to auth.users)
 - `wallet_address` (text)
@@ -291,22 +303,26 @@ SOL_RPC_URL=https://api.devnet.solana.com
 ## 🐛 Troubleshooting
 
 ### "No wallet detected"
+
 - Ensure MetaMask/Phantom is installed
 - Reload the page after installation
 - Check browser console for errors
 
 ### "Transaction verification failed"
+
 - Verify RPC URL is correct
 - Check transaction is confirmed on-chain
 - Ensure correct network (mainnet vs testnet)
 - Review Edge Function logs in Supabase
 
 ### "User creation failed"
+
 - Check service role key is correct
 - Verify database migrations ran successfully
 - Review RLS policies in Supabase
 
 ### Edge Function Timeout
+
 - Payment verification can take 30-60 seconds for large blocks
 - Consider implementing webhook for async verification
 - Use faster RPC providers (Alchemy, Quicknode)
