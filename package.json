@@ -11,7 +11,8 @@
   "dependencies": {
     "@sentry/react": "^10.38.0",
     "@supabase/supabase-js": "^2.91.1",
-    "@types/react": "^19.2.10"
+    "@types/react": "^19.2.10",
+    "jose": "^6.2.1"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.1.12",
