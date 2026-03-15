@@ -18,13 +18,63 @@ from datetime import datetime
 from azure.cosmos import CosmosClient, PartitionKey, exceptions
 import uuid
 
-
 logger = logging.getLogger(__name__)
 
 
 class CosmosDBError(Exception):
-    """Custom exception for Cosmos DB errors."""
-    pass
+    """Raised when a Cosmos DB operation fails."""
+
+
+class MockContainer:
+    """Mock Cosmos DB container for local development"""
+    
+    def __init__(self):
+        self.items = {}  # key: (partition_key, item_id), value: item
+    
+    def upsert_item(self, body):
+        """Upsert an item"""
+        item_id = body.get('id')
+        partition_key = body.get('user_id')
+        if not item_id or not partition_key:
+            raise ValueError("Item must have 'id' and 'user_id' fields")
+        self.items[(partition_key, item_id)] = body
+        return body
+    
+    def query_items(self, query, parameters):
+        """Mock query implementation - simple in-memory filter"""
+        # For simplicity, return all items for the user_id in parameters
+        user_id = None
+        for param in parameters:
+            if param['name'] == '@user_id':
+                user_id = param['value']
+                break
+        if user_id:
+            return [item for (pk, iid), item in self.items.items() if pk == user_id]
+        return list(self.items.values())
+    
+    def read_item(self, item, partition_key):
+        """Read an item"""
+        key = (partition_key, item)
+        if key in self.items:
+            return self.items[key]
+        raise exceptions.CosmosResourceNotFoundError("Item not found")
+    
+    def delete_item(self, item, partition_key):
+        """Delete an item"""
+        key = (partition_key, item)
+        if key in self.items:
+            del self.items[key]
+        else:
+            raise exceptions.CosmosResourceNotFoundError("Item not found")
+    
+    def replace_item(self, item, body):
+        """Replace an item"""
+        partition_key = body.get('user_id')
+        key = (partition_key, item)
+        if key in self.items:
+            self.items[key] = body
+            return body
+        raise exceptions.CosmosResourceNotFoundError("Item not found")
 
 
 class CosmosDBClient:
@@ -54,11 +104,18 @@ class CosmosDBClient:
             database_name = os.getenv("COSMOS_DATABASE", "ProblemHuntDB")
             container_name = os.getenv("COSMOS_CONTAINER_PROBLEMS", "Problems")
             
-            if not endpoint or not key:
-                raise CosmosDBError(
-                    "Missing Cosmos DB credentials. "
-                    "Set COSMOS_ENDPOINT and COSMOS_KEY environment variables."
-                )
+            # Check for mock/placeholder values
+            if (not endpoint or not key or 
+                endpoint == 'placeholder-endpoint' or 
+                key == 'placeholder-key' or
+                len(key) < 20):
+                logger.warning("Using MOCK in-memory database (local development mode)")
+                logger.warning("To use real Cosmos DB, set COSMOS_ENDPOINT and COSMOS_KEY in local.settings.json")
+                self.use_mock = True
+                self._container = MockContainer()
+                return
+            
+            self.use_mock = False
             
             # Create client
             self._client = CosmosClient(endpoint, credential=key)
