@@ -30,3 +30,7 @@ problem-hunt/mock-db-data.json
 # OS files
 .DS_Store
 Thumbs.db
+
+# Azurite local storage
+__azurite_db_*.json
+__azurite_db_*_extent__.json
