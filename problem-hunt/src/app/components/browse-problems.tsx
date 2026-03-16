@@ -18,6 +18,7 @@ import { Navbar } from "./navbar";
 import { supabase } from "../../../lib/supabaseClient";
 import { API_ENDPOINTS } from "../../lib/api-config";
 
+
 const CATEGORIES = [
   "All",
   "AI/ML",

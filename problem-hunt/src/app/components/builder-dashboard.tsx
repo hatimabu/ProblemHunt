@@ -19,13 +19,11 @@ import {
   DollarSign,
   Trophy,
   Loader2,
+  Heart,
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { supabase } from "../../../lib/supabaseClient";
-import { supabase } from "../../../lib/supabaseClient";
 import { API_ENDPOINTS } from "../../lib/api-config";
-
-const API_URL = import.meta.env.VITE_API_BASE;
 import { LinkWallet } from "./LinkWallet";
 import { Navbar } from "./navbar";
 import { Button } from "./ui/button";
@@ -53,6 +51,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "./ui/dialog";
+
 
 interface ProfileData {
   username: string;

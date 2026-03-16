@@ -32,9 +32,9 @@ import {
 import { Navbar } from "./navbar";
 import { supabase } from "../../../lib/supabaseClient";
 import { API_ENDPOINTS } from "../../lib/api-config";
-
-const API_URL = import.meta.env.VITE_API_BASE;
 import { useAuth } from "../contexts/AuthContext";
+
+console.log("API_URL =", import.meta.env.VITE_API_BASE);
 
 interface Problem {
   id: string;

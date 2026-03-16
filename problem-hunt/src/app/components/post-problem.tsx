@@ -15,9 +15,9 @@ import {
 import { useAuth } from "../contexts/AuthContext";
 import { supabase } from "../../../lib/supabaseClient";
 import { API_ENDPOINTS } from "../../lib/api-config";
-
-const API_URL = import.meta.env.VITE_API_BASE;
 import { Navbar } from "./navbar";
+
+console.log("API_URL =", import.meta.env.VITE_API_BASE);
 
 const CATEGORIES = ["AI/ML", "Web3", "Finance", "Governance", "Trading", "Infrastructure"];
 
