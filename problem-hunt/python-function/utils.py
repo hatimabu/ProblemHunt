@@ -2,8 +2,8 @@ import json
 import uuid
 import datetime
 from typing import Optional, Dict, Any, List
-import os
-import jwt
+
+from shared.auth import authenticate_request, AuthError
 
 
 def create_response(status_code: int, body: Any, headers: Dict = None) -> Dict:
@@ -32,22 +32,10 @@ def error_response(status_code: int, message: str) -> Dict:
 
 def get_authenticated_user_id(req) -> Optional[str]:
     """Get authenticated user ID from JWT token"""
-    auth_header = req.headers.get('Authorization') or req.headers.get('authorization')
-    
-    if not auth_header or not auth_header.startswith('Bearer '):
-        return None
-    
-    token = auth_header.replace('Bearer ', '').strip()
-    
     try:
-        secret = os.getenv('JWT_SECRET') or os.getenv('SUPABASE_JWT_SECRET')
-        if not secret:
-            return None
-        
-        payload = jwt.decode(token, secret, algorithms=['HS256'])
-        user_id = payload.get('sub')
+        user_id, _ = authenticate_request(req)
         return user_id
-    except (jwt.PyJWTError, Exception):
+    except AuthError:
         return None
 
 
@@ -62,14 +50,10 @@ def get_user_id(req) -> str:
         return _hash_id(f"{ip}-{user_agent}")
     
     try:
-        token = auth_header.replace('Bearer ', '').strip()
-        secret = os.getenv('JWT_SECRET') or os.getenv('SUPABASE_JWT_SECRET')
-        if secret:
-            payload = jwt.decode(token, secret, algorithms=['HS256'])
-            user_id = payload.get('sub')
-            if user_id:
-                return user_id
-    except (jwt.PyJWTError, Exception):
+        user_id, _ = authenticate_request(req)
+        if user_id:
+            return user_id
+    except AuthError:
         pass
     
     # Fallback to IP-based ID
