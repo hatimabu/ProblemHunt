@@ -13,12 +13,14 @@ from functools import lru_cache, wraps
 from typing import Any, Dict, Optional, Tuple
 
 import jwt
+import requests
 from azure.functions import HttpRequest
 from jwt import PyJWKClient
 
 
 logger = logging.getLogger(__name__)
 SUPPORTED_ASYMMETRIC_ALGORITHMS = {"ES256", "RS256"}
+DEFAULT_INTROSPECTION_TIMEOUT_SECONDS = 10
 
 
 class AuthError(Exception):
@@ -56,6 +58,28 @@ def get_jwks_url() -> str:
         )
 
     return f"{supabase_url}/auth/v1/.well-known/jwks.json"
+
+
+def get_supabase_url() -> str:
+    """Retrieve the project's Supabase base URL."""
+    supabase_url = os.getenv("SUPABASE_URL", "").rstrip("/")
+    if not supabase_url:
+        raise AuthError(
+            "SUPABASE_URL environment variable is not set. "
+            "Please configure it in local.settings.json or Azure Function App settings."
+        )
+    return supabase_url
+
+
+def get_supabase_anon_key() -> str:
+    """Retrieve the publishable key required for Supabase auth introspection."""
+    anon_key = os.getenv("SUPABASE_ANON_KEY", "").strip()
+    if not anon_key:
+        raise AuthError(
+            "SUPABASE_ANON_KEY environment variable is not set. "
+            "Please configure it in local.settings.json or Azure Function App settings."
+        )
+    return anon_key
 
 
 def get_allowed_issuer() -> Optional[str]:
@@ -165,6 +189,51 @@ def validate_asymmetric_jwt(token: str, algorithm: str) -> Dict[str, Any]:
     )
 
 
+def introspect_token_with_supabase(token: str) -> Dict[str, Any]:
+    """
+    Ask Supabase Auth to validate the token and return the authenticated user.
+
+    This is a safe fallback for local environments where asymmetric crypto
+    primitives are unavailable or the Python worker has not been rebuilt yet.
+    """
+    auth_user_url = f"{get_supabase_url()}/auth/v1/user"
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "apikey": get_supabase_anon_key(),
+    }
+
+    try:
+        response = requests.get(
+            auth_user_url,
+            headers=headers,
+            timeout=DEFAULT_INTROSPECTION_TIMEOUT_SECONDS,
+        )
+    except requests.RequestException as e:
+        raise AuthError(f"Token introspection failed: {str(e)}") from e
+
+    if response.status_code != 200:
+        raise AuthError("Authentication required")
+
+    try:
+        user_payload = response.json()
+    except ValueError as e:
+        raise AuthError("Token introspection returned invalid JSON") from e
+
+    if not isinstance(user_payload, dict):
+        raise AuthError("Token introspection returned an unexpected payload")
+
+    user_id = user_payload.get("id")
+    if not user_id:
+        raise AuthError("Authenticated user ID missing from introspection response")
+
+    normalized_payload = dict(user_payload)
+    normalized_payload.setdefault("sub", user_id)
+    normalized_payload.setdefault("role", "authenticated")
+    normalized_payload.setdefault("aud", "authenticated")
+
+    return normalized_payload
+
+
 def validate_jwt(token: str) -> Dict[str, Any]:
     """
     Validate and decode a Supabase JWT token.
@@ -179,7 +248,15 @@ def validate_jwt(token: str) -> Dict[str, Any]:
             return validate_hs256_jwt(token)
 
         if algorithm in SUPPORTED_ASYMMETRIC_ALGORITHMS:
-            return validate_asymmetric_jwt(token, algorithm)
+            try:
+                return validate_asymmetric_jwt(token, algorithm)
+            except Exception as e:
+                logger.warning(
+                    "Asymmetric JWT verification failed for %s; falling back to Supabase introspection: %s",
+                    algorithm,
+                    str(e),
+                )
+                return introspect_token_with_supabase(token)
 
         raise AuthError(f"Unsupported token algorithm: {algorithm}")
     except jwt.ExpiredSignatureError:
