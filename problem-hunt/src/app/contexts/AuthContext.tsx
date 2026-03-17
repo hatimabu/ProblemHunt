@@ -133,102 +133,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    isMountedRef.current = true;
-
-    /**
-     * Step 1 — eagerly resolve the session that is already stored in the
-     * browser (localStorage / cookie).  This is the only code path that is
-     * allowed to keep isLoading=true for an extended period.
-     */
-    const initializeAuth = async () => {
-      try {
-        const result = await withTimeout<Awaited<ReturnType<typeof supabase.auth.getSession>>>(
-          supabase.auth.getSession(),
-          AUTH_TIMEOUT_MS,
-          'Session retrieval'
-        );
-        const { data: { session }, error } = result;
-
-        if (error) {
-          console.error('Error getting session:', error);
-          if (isMountedRef.current) setUser(null);
-          return;
+    // 1. Load session immediately on page load
+    supabase.auth.getSession().then(async ({ data: { session } }: Awaited<ReturnType<typeof supabase.auth.getSession>>) => {
+      if (session?.user) {
+        try {
+          const profile = await getOrCreateProfile(session.user.id);
+          const appUser = toAppUser(session.user, profile);
+          setUser(appUser);
+        } catch (error) {
+          console.error('Failed to fetch profile on load:', error);
+          const appUser = toAppUser(session.user, null);
+          setUser(appUser);
         }
-
-        await resolveAuthState(session?.user ?? null);
-      } catch (error) {
-        console.error('Error initializing auth:', error);
-        if (isMountedRef.current) setUser(null);
-      } finally {
-        if (isMountedRef.current) {
-          // First boot is done — drop the initial-load flag first so that any
-          // subsequent auth event never re-enables it.
-          setIsInitialLoad(false);
-          setIsLoading(false);
-        }
+      } else {
+        setUser(null);
       }
-    };
+      setIsInitialLoad(false);
+      setIsLoading(false);
+    });
 
-    initializeAuth();
-
-    /**
-     * Step 2 — subscribe to subsequent auth events.
-     *
-     * Loading-screen decision matrix
-     * ─────────────────────────────────────────────────────────────────────────
-     * Event              userRef.current   Action
-     * ─────────────────────────────────────────────────────────────────────────
-     * TOKEN_REFRESHED    non-null          → early return (token-only refresh)
-     * TOKEN_REFRESHED    null              → silent resolveAuthState
-     * INITIAL_SESSION    any               → silent resolveAuthState
-     * USER_UPDATED       any               → silent resolveAuthState
-     * SIGNED_IN          non-null          → silent resolveAuthState
-     *                                        (cross-tab sync / re-establishment)
-     * SIGNED_IN          null              → full loading cycle (first login)
-     * SIGNED_OUT         any               → full loading cycle (logout)
-     * ─────────────────────────────────────────────────────────────────────────
-     */
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event: string, session: any) => {
-        if (!isMountedRef.current) return;
-
-        // ── Fully silent events ───────────────────────────────────────────────
-        if (SILENT_EVENTS.has(event)) {
-          // TOKEN_REFRESHED only updates the JWT; if the user object is already
-          // populated there is no need to re-fetch the profile at all.
-          if (event === 'TOKEN_REFRESHED' && userRef.current !== null) return;
-
-          await resolveAuthState(session?.user ?? null, /* isSilent */ true);
-          return;
+    // 2. Listen for login/logout events
+    const { data: listener } = supabase.auth.onAuthStateChange(async (event: string, session: any) => {
+      if (session?.user) {
+        try {
+          const profile = await getOrCreateProfile(session.user.id);
+          const appUser = toAppUser(session.user, profile);
+          setUser(appUser);
+        } catch (error) {
+          console.error('Failed to fetch profile on auth change:', error);
+          const appUser = toAppUser(session.user, null);
+          setUser(appUser);
         }
-
-        // ── SIGNED_IN with an existing user ───────────────────────────────────
-        // Supabase fires SIGNED_IN not only on an explicit login, but also when:
-        //   • the user switches back to a tab and the SDK re-establishes the
-        //     session after a background refresh,
-        //   • another tab completes a login (cross-tab storage event).
-        // In those cases the user is already authenticated; showing the loading
-        // screen would cause a jarring flicker.  We update state silently instead.
-        if (event === 'SIGNED_IN' && userRef.current !== null) {
-          await resolveAuthState(session?.user ?? null, /* isSilent */ true);
-          return;
-        }
-
-        // ── SIGNED_IN (first login) and SIGNED_OUT ────────────────────────────
-        // These are genuine auth transitions that warrant a loading indicator.
-        setIsLoading(true);
-        await resolveAuthState(session?.user ?? null, /* isSilent */ false);
-        if (isMountedRef.current) {
-          setIsLoading(false);
-        }
+      } else {
+        setUser(null);
       }
-    );
+    });
 
-    return () => {
-      isMountedRef.current = false;
-      subscription.unsubscribe();
-    };
-  }, [resolveAuthState]);
+    return () => listener.subscription.unsubscribe();
+  }, []);
 
   // ── Explicit auth actions ─────────────────────────────────────────────────
   // These are always initiated by the user pressing a button, so a loading
