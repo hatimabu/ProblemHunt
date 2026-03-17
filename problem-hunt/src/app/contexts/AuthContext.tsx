@@ -142,11 +142,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
      */
     const initializeAuth = async () => {
       try {
-        const { data: { session }, error } = await withTimeout(
+        const result = await withTimeout<Awaited<ReturnType<typeof supabase.auth.getSession>>>(
           supabase.auth.getSession(),
           AUTH_TIMEOUT_MS,
           'Session retrieval'
         );
+        const { data: { session }, error } = result;
 
         if (error) {
           console.error('Error getting session:', error);
@@ -188,7 +189,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
      * ─────────────────────────────────────────────────────────────────────────
      */
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      async (event: string, session: any) => {
         if (!isMountedRef.current) return;
 
         // ── Fully silent events ───────────────────────────────────────────────
@@ -238,18 +239,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let succeeded = false;
     setIsLoading(true);
     try {
-      const { error } = await withTimeout(
+      const { error } = await withTimeout<Awaited<ReturnType<typeof supabase.auth.signInWithPassword>>>(
         supabase.auth.signInWithPassword({ email, password }),
         AUTH_TIMEOUT_MS,
         'Login'
       );
       if (error) throw error;
       succeeded = true;
-    } catch (error) {
-      if (isFetchFailure(error)) {
+    } catch (err: unknown) {
+      if (isFetchFailure(err)) {
         throw new Error('Cannot reach Supabase. Check VITE_SUPABASE_URL and network connectivity.');
       }
-      throw error;
+      throw err;
     } finally {
       // Only reset loading on failure; the SIGNED_IN event clears it on success.
       if (!succeeded && isMountedRef.current) {
@@ -268,7 +269,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let hasSession = false;
     setIsLoading(true);
     try {
-      const { data, error } = await withTimeout(
+      const { data, error } = await withTimeout<Awaited<ReturnType<typeof supabase.auth.signUp>>>(
         supabase.auth.signUp({
           email,
           password,
@@ -282,11 +283,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (error) throw error;
       hasSession = Boolean(data.session?.access_token);
-    } catch (error) {
-      if (isFetchFailure(error)) {
+    } catch (err: unknown) {
+      if (isFetchFailure(err)) {
         throw new Error('Cannot reach Supabase. Check VITE_SUPABASE_URL and network connectivity.');
       }
-      throw error;
+      throw err;
     } finally {
       // If Supabase requires email confirmation there is no session yet;
       // clear loading immediately.  If there is a session, the SIGNED_IN event clears it.
@@ -300,7 +301,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let succeeded = false;
     setIsLoading(true);
     try {
-      const { error } = await withTimeout(supabase.auth.signOut(), AUTH_TIMEOUT_MS, 'Logout');
+      const { error } = await withTimeout<Awaited<ReturnType<typeof supabase.auth.signOut>>>(supabase.auth.signOut(), AUTH_TIMEOUT_MS, 'Logout');
       if (error) throw error;
       succeeded = true;
     } finally {
