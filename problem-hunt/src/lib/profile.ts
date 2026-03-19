@@ -1,6 +1,6 @@
 import { supabase } from '../../lib/supabaseClient';
 
-const PROFILE_QUERY_TIMEOUT_MS = 10000;
+const PROFILE_QUERY_TIMEOUT_MS = 15000;
 
 type ProfileRow = {
   user_id?: string;
@@ -22,6 +22,14 @@ function isMissingRowError(error: any): boolean {
   return error?.code === 'PGRST116' || /no rows/i.test(error?.message || '');
 }
 
+function isTransientProfileError(error: unknown): boolean {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+
+  return /timed out/i.test(error.message) || /failed to fetch/i.test(error.message);
+}
+
 // Fetches the profile for the given auth uid using user_id column.
 // If no profile exists (trigger may not have run yet), inserts a minimal row.
 // Never throws — returns null on any unrecoverable error.
@@ -40,14 +48,16 @@ export async function getOrCreateProfile(userId: string): Promise<ProfileRow | n
 
     if (error) {
       if (!isMissingRowError(error)) {
-        console.error('Profile fetch error:', error);
+        const log = isTransientProfileError(error) ? console.warn : console.error;
+        log('Profile fetch error:', error);
         return null;
       }
     }
 
     if (data) return data;
   } catch (error) {
-    console.error('Profile fetch error:', error);
+    const log = isTransientProfileError(error) ? console.warn : console.error;
+    log('Profile fetch error:', error);
     return null;
   }
 
@@ -67,13 +77,15 @@ export async function getOrCreateProfile(userId: string): Promise<ProfileRow | n
     );
 
     if (error) {
-      console.error('Profile insert error:', error);
+      const log = isTransientProfileError(error) ? console.warn : console.error;
+      log('Profile insert error:', error);
       return null;
     }
 
     return data;
   } catch (error) {
-    console.error('Profile insert error:', error);
+    const log = isTransientProfileError(error) ? console.warn : console.error;
+    log('Profile insert error:', error);
     return null;
   }
 }

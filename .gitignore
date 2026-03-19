@@ -34,3 +34,9 @@ Thumbs.db
 # Azurite local storage
 __azurite_db_*.json
 __azurite_db_*_extent__.json
+__blobstorage__/
+
+# Local runtime artifacts
+problem-hunt/python-function/func-host*.log
+problem-hunt/supabase/.temp/
+supabase/.temp/

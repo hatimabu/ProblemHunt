@@ -252,6 +252,10 @@ export function BuilderDashboard() {
           "Authorization": `Bearer ${token}`
         }
       });
+      if (response.status === 404) {
+        setUserProblems(prev => prev.filter(p => p.id !== problemId));
+        return;
+      }
       if (!response.ok) {
         throw new Error(`API Error ${response.status}: ${await response.text()}`);
       }

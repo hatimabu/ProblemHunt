@@ -45,7 +45,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const AUTH_TIMEOUT_MS = 10000;
+const AUTH_TIMEOUT_MS = 15000;
 
 function withTimeout<T>(
   promise: Promise<T>,
@@ -84,6 +84,14 @@ function toAppUser(supabaseUser: SupabaseUser, profile: any): User {
 
 function isFetchFailure(error: unknown): boolean {
   return error instanceof TypeError && /failed to fetch/i.test(error.message);
+}
+
+function isTimeoutError(error: unknown): boolean {
+  return error instanceof Error && /timed out/i.test(error.message);
+}
+
+function isTransientAuthError(error: unknown): boolean {
+  return isTimeoutError(error) || isFetchFailure(error);
 }
 
 /**
@@ -149,7 +157,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       userRef.current = appUser;
       setUser(appUser);
     } catch (error) {
-      console.error('Failed to fetch or create profile:', error);
+      const log = isTransientAuthError(error) ? console.warn : console.error;
+      log('Failed to fetch or create profile:', error);
       if (!isMountedRef.current || authRunRef.current !== runId) return;
       // Fall back to basic user info; never leave user as null when Supabase
       // confirmed a valid session.
@@ -178,7 +187,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         );
 
         if (error) {
-          console.error("Error getting session:", error);
+          const log = isTransientAuthError(error) ? console.warn : console.error;
+          log("Error getting session:", error);
           if (isMountedRef.current) {
             setSession(null);
             setUser(null);
@@ -192,7 +202,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         await resolveAuthState(initialSession?.user ?? null);
       } catch (error) {
-        console.error("Error initializing auth:", error);
+        const log = isTransientAuthError(error) ? console.warn : console.error;
+        log("Error initializing auth:", error);
         if (isMountedRef.current) {
           setSession(null);
           setUser(null);
@@ -257,6 +268,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       subscription.unsubscribe();
     };
   }, [resolveAuthState]);
+
+  useEffect(() => {
+    setAuthState({
+      isLoading,
+      user,
+    });
+  }, [isLoading, user]);
 
   // ── Explicit auth actions ─────────────────────────────────────────────────
   // These are always initiated by the user pressing a button, so a loading

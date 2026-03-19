@@ -14,6 +14,7 @@ const DEFAULT_AZURE_FUNCTIONS_BASE_URL = 'https://problemhunt-api.azurewebsites.
 // Determine the API base URL based on environment
 export const getApiBaseUrl = () => {
   const configuredBaseUrl =
+    import.meta.env.VITE_API_BASE_URL ||
     import.meta.env.VITE_API_BASE;
 
   // Always prefer explicit environment configuration when provided.

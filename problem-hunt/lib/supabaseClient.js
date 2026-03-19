@@ -2,7 +2,11 @@ import { createClient } from '@supabase/supabase-js'
 
 const supabaseUrl = (import.meta.env.VITE_SUPABASE_URL || '').trim();
 const supabaseAnonKey = (import.meta.env.VITE_SUPABASE_ANON_KEY || '').trim();
-const SUPABASE_TIMEOUT_MS = 10000;
+const DEFAULT_SUPABASE_TIMEOUT_MS = 20000;
+const parsedTimeoutMs = Number(import.meta.env.VITE_SUPABASE_TIMEOUT_MS);
+const SUPABASE_TIMEOUT_MS = Number.isFinite(parsedTimeoutMs) && parsedTimeoutMs > 0
+  ? parsedTimeoutMs
+  : DEFAULT_SUPABASE_TIMEOUT_MS;
 
 if (!supabaseUrl || !supabaseAnonKey) {
   console.warn('Supabase environment variables not found. Auth features will not work. Please add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to your .env file.');
