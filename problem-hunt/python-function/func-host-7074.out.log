@@ -1,0 +1,45 @@
+
+
+Azure Functions Core Tools
+Core Tools Version:       4.8.0+ec58eb7110992ea02aa19e9c060e45ac8882cc02 (64-bit)
+Function Runtime Version: 4.1046.100.25610
+
+[2026-03-19T01:30:29.487Z] Worker process started and initialized.
+
+Functions:
+
+	CreateProblem: [POST] http://localhost:7074/api/problems
+
+	CreateProposal: [POST] http://localhost:7074/api/problems/{id}/proposals
+
+	DeleteProblem: [DELETE] http://localhost:7074/api/problems/{id}
+
+	GetLeaderboard: [GET] http://localhost:7074/api/leaderboard
+
+	GetProblemById: [GET] http://localhost:7074/api/problems/{id}
+
+	GetProblems: [GET] http://localhost:7074/api/problems
+
+	GetProposals: [GET] http://localhost:7074/api/problems/{id}/proposals
+
+	GetUserProblems: [GET] http://localhost:7074/api/user/problems
+
+	GetUserProposals: [GET] http://localhost:7074/api/user/proposals
+
+	PythonFunction: [GET,POST,PUT,DELETE,PATCH] http://localhost:7074/api/{route:regex(^(problems|user).*)?}
+
+	RemoveUpvote: [DELETE] http://localhost:7074/api/problems/{id}/upvote
+
+	SearchProblems: [GET] http://localhost:7074/api/problems/search
+
+	TipBuilder: [POST] http://localhost:7074/api/proposals/{id}/tip
+
+	UpdateProblem: [PUT] http://localhost:7074/api/problems/{id}
+
+	UpvoteProblem: [POST] http://localhost:7074/api/problems/{id}/upvote
+
+	WalletById: [DELETE] http://localhost:7074/api/user/wallets/{wallet_id}
+
+	Wallets: [GET,POST] http://localhost:7074/api/user/wallets
+
+For detailed output, run func with --verbose flag.
