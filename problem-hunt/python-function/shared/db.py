@@ -57,7 +57,7 @@ class MockContainer:
         key = (partition_key, item)
         if key in self.items:
             return self.items[key]
-        raise exceptions.CosmosResourceNotFoundError("Item not found")
+        raise KeyError("Item not found")
     
     def delete_item(self, item, partition_key):
         """Delete an item"""
@@ -65,7 +65,7 @@ class MockContainer:
         if key in self.items:
             del self.items[key]
         else:
-            raise exceptions.CosmosResourceNotFoundError("Item not found")
+            raise KeyError("Item not found")
     
     def replace_item(self, item, body):
         """Replace an item"""
@@ -74,7 +74,7 @@ class MockContainer:
         if key in self.items:
             self.items[key] = body
             return body
-        raise exceptions.CosmosResourceNotFoundError("Item not found")
+        raise KeyError("Item not found")
 
 
 class CosmosDBClient:
@@ -261,7 +261,7 @@ class CosmosDBClient:
             logger.info(f"Retrieved post {post_id}")
             return item
         
-        except exceptions.CosmosResourceNotFoundError:
+        except (exceptions.CosmosResourceNotFoundError, KeyError):
             raise CosmosDBError(f"Post with id {post_id} not found")
         except exceptions.CosmosHttpResponseError as e:
             logger.error(f"Error retrieving post: {str(e)}")
@@ -292,7 +292,7 @@ class CosmosDBClient:
             logger.info(f"Post {post_id} deleted successfully")
             return True
         
-        except exceptions.CosmosResourceNotFoundError:
+        except (exceptions.CosmosResourceNotFoundError, KeyError):
             raise CosmosDBError(f"Post with id {post_id} not found")
         except exceptions.CosmosHttpResponseError as e:
             logger.error(f"Error deleting post: {str(e)}")
@@ -342,6 +342,8 @@ class CosmosDBClient:
         
         except CosmosDBError:
             raise
+        except KeyError:
+            raise CosmosDBError(f"Post with id {post_id} not found")
         except exceptions.CosmosHttpResponseError as e:
             logger.error(f"Error updating post: {str(e)}")
             raise CosmosDBError(f"Failed to update post: {str(e)}")

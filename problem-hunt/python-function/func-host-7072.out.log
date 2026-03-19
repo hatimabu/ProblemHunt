@@ -1,0 +1,61 @@
+
+
+Azure Functions Core Tools
+Core Tools Version:       4.8.0+ec58eb7110992ea02aa19e9c060e45ac8882cc02 (64-bit)
+Function Runtime Version: 4.1046.100.25610
+
+[2026-03-19T01:28:56.640Z] Worker process started and initialized.
+
+Functions:
+
+	CreateProblem: [POST] http://localhost:7072/api/problems
+
+	CreateProposal: [POST] http://localhost:7072/api/problems/{id}/proposals
+
+	DeleteProblem: [DELETE] http://localhost:7072/api/problems/{id}
+
+	GetLeaderboard: [GET] http://localhost:7072/api/leaderboard
+
+	GetProblemById: [GET] http://localhost:7072/api/problems/{id}
+
+	GetProblems: [GET] http://localhost:7072/api/problems
+
+	GetProposals: [GET] http://localhost:7072/api/problems/{id}/proposals
+
+	GetUserProblems: [GET] http://localhost:7072/api/user/problems
+
+	GetUserProposals: [GET] http://localhost:7072/api/user/proposals
+
+	PythonFunction: [GET,POST,PUT,DELETE,PATCH] http://localhost:7072/api/{route:regex(^(problems|user).*)?}
+
+	RemoveUpvote: [DELETE] http://localhost:7072/api/problems/{id}/upvote
+
+	SearchProblems: [GET] http://localhost:7072/api/problems/search
+
+	TipBuilder: [POST] http://localhost:7072/api/proposals/{id}/tip
+
+	UpdateProblem: [PUT] http://localhost:7072/api/problems/{id}
+
+	UpvoteProblem: [POST] http://localhost:7072/api/problems/{id}/upvote
+
+	WalletById: [DELETE] http://localhost:7072/api/user/wallets/{wallet_id}
+
+	Wallets: [GET,POST] http://localhost:7072/api/user/wallets
+
+For detailed output, run func with --verbose flag.
+[2026-03-19T01:28:57.567Z] Worker failed to load function: 'DeleteProblem' with functionId: '078b8eb0-d967-4099-8b77-30422b0d7a19'.
+[2026-03-19T01:28:57.570Z] Result: Failure
+Type: 
+Exception: FunctionLoadError: cannot load the DeleteProblem function: the following parameters are declared in Python but not in function.json: {'id'}
+Stack: Traceback (most recent call last):
+  File "C:\Users\Hatim\AppData\Roaming\npm\node_modules\azure-functions-core-tools\bin\workers\python\3.14\WINDOWS\X64\azure_functions_runtime_v1\handle_event.py", line 124, in function_load_request
+    _functions.add_function(
+  File "C:\Users\Hatim\AppData\Roaming\npm\node_modules\azure-functions-core-tools\bin\workers\python\3.14\WINDOWS\X64\azure_functions_runtime_v1\functions.py", line 374, in add_function
+    input_types, output_types = self.validate_function_params(
+  File "C:\Users\Hatim\AppData\Roaming\npm\node_modules\azure-functions-core-tools\bin\workers\python\3.14\WINDOWS\X64\azure_functions_runtime_v1\functions.py", line 129, in validate_function_params
+    raise FunctionLoadError(
+azure_functions_runtime_v1.functions.FunctionLoadError: cannot load the DeleteProblem function: the following parameters are declared in Python but not in function.json: {'id'}
+.
+[2026-03-19T01:29:21.424Z] Worker process started and initialized.
+[2026-03-19T01:30:12.200Z] Worker process started and initialized.
+[2026-03-19T01:30:17.230Z] Host lock lease acquired by instance ID '0000000000000000000000008ADC6A36'.

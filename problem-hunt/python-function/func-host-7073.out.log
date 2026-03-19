@@ -1,0 +1,56 @@
+
+
+Azure Functions Core Tools
+Core Tools Version:       4.8.0+ec58eb7110992ea02aa19e9c060e45ac8882cc02 (64-bit)
+Function Runtime Version: 4.1046.100.25610
+
+[2026-03-19T01:29:36.049Z] Worker process started and initialized.
+
+Functions:
+
+	CreateProblem: [POST] http://localhost:7073/api/problems
+
+	CreateProposal: [POST] http://localhost:7073/api/problems/{id}/proposals
+
+	DeleteProblem: [DELETE] http://localhost:7073/api/problems/{id}
+
+	GetLeaderboard: [GET] http://localhost:7073/api/leaderboard
+
+	GetProblemById: [GET] http://localhost:7073/api/problems/{id}
+
+	GetProblems: [GET] http://localhost:7073/api/problems
+
+	GetProposals: [GET] http://localhost:7073/api/problems/{id}/proposals
+
+	GetUserProblems: [GET] http://localhost:7073/api/user/problems
+
+	GetUserProposals: [GET] http://localhost:7073/api/user/proposals
+
+	PythonFunction: [GET,POST,PUT,DELETE,PATCH] http://localhost:7073/api/{route:regex(^(problems|user).*)?}
+
+	RemoveUpvote: [DELETE] http://localhost:7073/api/problems/{id}/upvote
+
+	SearchProblems: [GET] http://localhost:7073/api/problems/search
+
+	TipBuilder: [POST] http://localhost:7073/api/proposals/{id}/tip
+
+	UpdateProblem: [PUT] http://localhost:7073/api/problems/{id}
+
+	UpvoteProblem: [POST] http://localhost:7073/api/problems/{id}/upvote
+
+	WalletById: [DELETE] http://localhost:7073/api/user/wallets/{wallet_id}
+
+	Wallets: [GET,POST] http://localhost:7073/api/user/wallets
+
+For detailed output, run func with --verbose flag.
+[2026-03-19T01:29:45.216Z] Executing 'Functions.DeleteProblem' (Reason='This function was programmatically called via the host APIs.', Id=a6975502-775d-464d-8ca3-e9711857bd76)
+[2026-03-19T01:29:45.264Z] [WARNING] Using MOCK in-memory database (local development mode)
+[2026-03-19T01:29:45.267Z]    To use real Cosmos DB, set COSMOS_ENDPOINT and COSMOS_KEY in local.settings.json
+[2026-03-19T01:29:45.270Z] User test-user authenticated successfully
+[2026-03-19T01:29:45.272Z] Unexpected error retrieving post: %d format: a real number is required, not str
+[2026-03-19T01:29:45.274Z] Database error: Unexpected error: %d format: a real number is required, not str
+[2026-03-19T01:29:45.276Z] Database error: Unexpected error: %d format: a real number is required, not str
+[2026-03-19T01:29:45.301Z] Executed 'Functions.DeleteProblem' (Succeeded, Id=a6975502-775d-464d-8ca3-e9711857bd76, Duration=118ms)
+[2026-03-19T01:30:11.142Z] [Tag=''] Process reporting unhealthy: Unhealthy. Health check entries are {"azure.functions.web_host.lifecycle":{"status":"Healthy","description":null},"azure.functions.script_host.lifecycle":{"status":"Unhealthy","description":"No script host available"},"azure.functions.webjobs.storage":{"status":"Healthy","description":null}}
+[2026-03-19T01:30:11.146Z] [Tag='azure.functions.readiness'] Process reporting unhealthy: Unhealthy. Health check entries are {"azure.functions.script_host.lifecycle":{"status":"Unhealthy","description":"No script host available"}}
+[2026-03-19T01:30:12.260Z] Worker process started and initialized.
