@@ -43,3 +43,9 @@ Functions:
 	Wallets: [GET,POST] http://localhost:7074/api/user/wallets
 
 For detailed output, run func with --verbose flag.
+[2026-03-19T01:30:38.728Z] Executing 'Functions.DeleteProblem' (Reason='This function was programmatically called via the host APIs.', Id=a9af41f2-e0f9-4fbe-9f41-278b002f6c0f)
+[2026-03-19T01:30:38.787Z] [WARNING] Using MOCK in-memory database (local development mode)
+[2026-03-19T01:30:38.790Z]    To use real Cosmos DB, set COSMOS_ENDPOINT and COSMOS_KEY in local.settings.json
+[2026-03-19T01:30:38.797Z] User test-user authenticated successfully
+[2026-03-19T01:30:38.800Z] Database error: Post with id 11111111-1111-1111-1111-111111111111 not found
+[2026-03-19T01:30:38.832Z] Executed 'Functions.DeleteProblem' (Succeeded, Id=a9af41f2-e0f9-4fbe-9f41-278b002f6c0f, Duration=134ms)
