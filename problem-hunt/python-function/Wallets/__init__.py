@@ -18,6 +18,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 import json
 import re
 import azure.functions as func
+from handlers.marketplace_helpers import sync_profile_wallet_address
 from utils import get_authenticated_user_id
 from supabase_client import get_supabase_client
 
@@ -108,6 +109,8 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                 })
                 .execute()
             )
+            if chain == "solana":
+                sync_profile_wallet_address(user_id, address)
             return _json(result.data[0] if result.data else {}, 201)
 
         except Exception as exc:

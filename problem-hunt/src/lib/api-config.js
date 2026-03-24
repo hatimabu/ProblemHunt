@@ -45,6 +45,9 @@ export const API_ENDPOINTS = {
 
   // Proposals
   PROPOSALS: (problemId) => `${API_URL}/api/problems/${problemId}/proposals`,
+  ACCEPT_PROPOSAL: (problemId, proposalId) => `${API_URL}/api/problems/${problemId}/proposals/${proposalId}/accept`,
+  MARK_JOB_COMPLETE: (problemId) => `${API_URL}/api/problems/${problemId}/complete`,
+  RECORD_PAYMENT: (problemId) => `${API_URL}/api/problems/${problemId}/payments`,
   TIP_PROPOSAL: (proposalId) => `${API_URL}/api/proposals/${proposalId}/tip`,
 
   // Leaderboard
@@ -59,4 +62,3 @@ export const buildApiUrl = (endpoint) => {
   return `${API_BASE_URL}${endpoint}`;
 };
 
-console.log(`API Base URL: ${API_BASE_URL}`);

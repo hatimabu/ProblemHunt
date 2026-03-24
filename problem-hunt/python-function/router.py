@@ -1,5 +1,6 @@
 import azure.functions as func
 from handlers import (
+    accept_proposal,
     create_problem,
     get_problems,
     get_problem_by_id,
@@ -13,6 +14,8 @@ from handlers import (
     get_user_problems,
     get_user_proposals,
     get_leaderboard,
+    mark_job_complete,
+    record_payment,
     tip_builder,
 )
 
@@ -55,6 +58,15 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
 
         elif route == 'problems/{id}/proposals' and method == 'POST':
             return create_proposal.handle(req)
+
+        elif route == 'problems/{id}/proposals/{proposal_id}/accept' and method == 'POST':
+            return accept_proposal.handle(req)
+
+        elif route == 'problems/{id}/complete' and method == 'POST':
+            return mark_job_complete.handle(req)
+
+        elif route == 'problems/{id}/payments' and method == 'POST':
+            return record_payment.handle(req)
 
         elif route == 'proposals/{id}/tip' and method == 'POST':
             return tip_builder.handle(req)

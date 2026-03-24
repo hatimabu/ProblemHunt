@@ -11,6 +11,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 import json
 import azure.functions as func
+from handlers.marketplace_helpers import sync_profile_wallet_address
 from utils import get_authenticated_user_id
 from supabase_client import get_supabase_client
 
@@ -38,7 +39,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         # Verify ownership before deleting
         check = (
             sb.table("wallets")
-            .select("id")
+            .select("id, chain")
             .eq("id", wallet_id)
             .eq("user_id", user_id)
             .execute()
@@ -46,7 +47,10 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         if not check.data:
             return _json({"error": "Wallet not found or access denied"}, 404)
 
+        wallet = check.data[0]
         sb.table("wallets").delete().eq("id", wallet_id).eq("user_id", user_id).execute()
+        if wallet.get("chain") == "solana":
+            sync_profile_wallet_address(user_id, None)
 
         return _json({"deleted": wallet_id})
 

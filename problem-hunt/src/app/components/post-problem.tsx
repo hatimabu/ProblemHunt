@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router";
-import { DollarSign, Calendar, FileText, Tag } from "lucide-react";
+import { Briefcase, Calendar, Coins, FileText, Lightbulb, Tag } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Textarea } from "../components/ui/textarea";
@@ -16,64 +16,97 @@ import { useAuth } from "../contexts/AuthContext";
 import { supabase } from "../../../lib/supabaseClient";
 import { API_ENDPOINTS } from "../../lib/api-config";
 import { Navbar } from "./navbar";
-
-console.log("API_URL =", import.meta.env.VITE_API_BASE);
+import { splitListInput } from "../../lib/marketplace";
 
 const CATEGORIES = ["AI/ML", "Web3", "Finance", "Governance", "Trading", "Infrastructure"];
+const JOB_TYPES = [
+  { value: "one-time", label: "One-Time" },
+  { value: "contract", label: "Contract" },
+  { value: "ongoing", label: "Ongoing" },
+];
 
 export function PostProblem() {
   const navigate = useNavigate();
   const { user, isLoading } = useAuth();
   const [formData, setFormData] = useState({
+    type: "problem",
     title: "",
     description: "",
     requirements: "",
     category: "",
-    bounty: "",
+    budget: "",
+    budgetSol: "",
     deadline: "",
+    jobType: "",
+    skillsRequired: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const isJob = formData.type === "job";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (isLoading || !user) {
-      setError('Please wait for authentication to complete before posting.');
+      setError("Please wait for authentication to complete before posting.");
+      return;
+    }
+
+    if (isJob && (!formData.budgetSol || !formData.deadline || !formData.jobType)) {
+      setError("Jobs require a budget in SOL, deadline, and job type.");
+      return;
+    }
+
+    if (!isJob && !formData.budget) {
+      setError("Problem posts still require a bounty.");
       return;
     }
 
     setIsSubmitting(true);
     setError(null);
-    
+
     try {
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData.session?.access_token;
+
+      const payload = {
+        type: formData.type,
+        title: formData.title,
+        description: formData.description,
+        category: formData.category,
+        requirements: formData.requirements,
+        deadline: formData.deadline || null,
+        author: user?.username || user?.email || "Anonymous User",
+        ...(isJob
+          ? {
+              budget: `${formData.budgetSol} SOL`,
+              budgetSol: Number(formData.budgetSol),
+              jobType: formData.jobType,
+              skillsRequired: splitListInput(formData.skillsRequired),
+            }
+          : {
+              budget: formData.budget,
+            }),
+      };
+
       const response = await fetch(API_ENDPOINTS.PROBLEMS, {
-        method: 'POST',
+        method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
+          Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          title: formData.title,
-          description: formData.description,
-          category: formData.category,
-          budget: formData.bounty,
-          requirements: formData.requirements,
-          deadline: formData.deadline,
-          author: user?.username || user?.email || 'Anonymous User',
-        }),
+        body: JSON.stringify(payload),
       });
+
       if (!response.ok) {
         throw new Error(`API Error ${response.status}: ${await response.text()}`);
       }
+
       const problem = await response.json();
-      // Navigate to the newly created problem
       navigate(`/problem/${problem.id}`);
     } catch (err) {
-      console.error('Error posting problem:', err);
-      setError(err instanceof Error ? err.message : 'Failed to post problem');
+      setError(err instanceof Error ? err.message : "Failed to create post");
     } finally {
       setIsSubmitting(false);
     }
@@ -87,31 +120,77 @@ export function PostProblem() {
         <div className="max-w-3xl mx-auto">
           <div className="mb-8">
             <h1 className="text-4xl font-bold mb-3 bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">
-              Post a Problem
+              Post a Problem or Job
             </h1>
             <p className="text-gray-400 text-lg">
-              Define your problem, set a bounty, and let builders compete to solve it
+              Problems invite community solutions and tips. Jobs add a builder workflow with direct SOL payment.
             </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Error Message */}
             {error && (
               <div className="bg-red-500/10 border border-red-500/50 text-red-400 px-4 py-3 rounded-lg">
                 {error}
               </div>
             )}
 
-            {/* Title */}
+            <div className="relative">
+              <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/5 to-blue-500/5 rounded-2xl blur-xl" />
+              <div className="relative bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-2xl p-6">
+                <Label className="text-white mb-3 block">Post Type</Label>
+                <div className="grid grid-cols-2 gap-3">
+                  {[
+                    {
+                      value: "problem",
+                      title: "Problem",
+                      description: "Community ideas, proposals, and tips.",
+                      icon: Lightbulb,
+                    },
+                    {
+                      value: "job",
+                      title: "Job",
+                      description: "Budgeted work with proposal acceptance and direct SOL payout.",
+                      icon: Briefcase,
+                    },
+                  ].map((option) => {
+                    const Icon = option.icon;
+                    const active = formData.type === option.value;
+                    return (
+                      <button
+                        key={option.value}
+                        type="button"
+                        onClick={() => setFormData((current) => ({ ...current, type: option.value }))}
+                        className={`rounded-xl border p-4 text-left transition-colors ${
+                          active
+                            ? "border-cyan-500/60 bg-cyan-500/10"
+                            : "border-gray-700 bg-gray-800/40 hover:border-gray-600"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 text-white font-semibold mb-1">
+                          <Icon className="w-4 h-4" />
+                          {option.title}
+                        </div>
+                        <p className="text-sm text-gray-400">{option.description}</p>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
             <div className="relative">
               <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/5 to-blue-500/5 rounded-2xl blur-xl" />
               <div className="relative bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-2xl p-6">
                 <Label htmlFor="title" className="text-white mb-2 block">
-                  Problem Title *
+                  {isJob ? "Job Title *" : "Problem Title *"}
                 </Label>
                 <Input
                   id="title"
-                  placeholder="e.g., AI-Powered Code Review Tool for Web3 Projects"
+                  placeholder={
+                    isJob
+                      ? "e.g., Harden our Kubernetes deployment pipeline"
+                      : "e.g., Need a better Terraform drift detection workflow"
+                  }
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                   className="bg-gray-800/50 border-gray-700 focus:border-cyan-500/50 text-white placeholder:text-gray-500"
@@ -120,17 +199,20 @@ export function PostProblem() {
               </div>
             </div>
 
-            {/* Description */}
             <div className="relative">
               <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-indigo-500/5 rounded-2xl blur-xl" />
               <div className="relative bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-2xl p-6">
                 <Label htmlFor="description" className="text-white mb-2 block">
                   <FileText className="w-4 h-4 inline mr-2" />
-                  Problem Description *
+                  {isJob ? "Scope *" : "Problem Description *"}
                 </Label>
                 <Textarea
                   id="description"
-                  placeholder="Describe the problem you need solved in detail..."
+                  placeholder={
+                    isJob
+                      ? "Describe the deliverable, constraints, and what success looks like..."
+                      : "Describe the problem you want the community to solve..."
+                  }
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   className="bg-gray-800/50 border-gray-700 focus:border-cyan-500/50 text-white placeholder:text-gray-500 min-h-[150px]"
@@ -139,7 +221,6 @@ export function PostProblem() {
               </div>
             </div>
 
-            {/* Requirements */}
             <div className="relative">
               <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/5 to-purple-500/5 rounded-2xl blur-xl" />
               <div className="relative bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-2xl p-6">
@@ -148,19 +229,15 @@ export function PostProblem() {
                 </Label>
                 <Textarea
                   id="requirements"
-                  placeholder="List the key requirements (one per line)"
+                  placeholder="List the key requirements, one per line"
                   value={formData.requirements}
                   onChange={(e) => setFormData({ ...formData, requirements: e.target.value })}
                   className="bg-gray-800/50 border-gray-700 focus:border-cyan-500/50 text-white placeholder:text-gray-500 min-h-[120px]"
                 />
-                <p className="text-sm text-gray-500 mt-2">
-                  Enter each requirement on a new line
-                </p>
               </div>
             </div>
 
-            {/* Category and Bounty */}
-            <div className="grid md:grid-cols-2 gap-6">
+            <div className={`grid gap-6 ${isJob ? "md:grid-cols-2" : "md:grid-cols-3"}`}>
               <div className="relative">
                 <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/5 to-blue-500/5 rounded-2xl blur-xl" />
                 <div className="relative bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-2xl p-6">
@@ -190,53 +267,101 @@ export function PostProblem() {
               <div className="relative">
                 <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-indigo-500/5 rounded-2xl blur-xl" />
                 <div className="relative bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-2xl p-6">
-                  <Label htmlFor="bounty" className="text-white mb-2 block">
-                    <DollarSign className="w-4 h-4 inline mr-2" />
-                    Bounty (USD) *
+                  <Label htmlFor={isJob ? "budgetSol" : "budget"} className="text-white mb-2 block">
+                    <Coins className="w-4 h-4 inline mr-2" />
+                    {isJob ? "Budget (SOL) *" : "Bounty *"}
                   </Label>
                   <Input
-                    id="bounty"
-                    type="number"
-                    placeholder="5000"
-                    value={formData.bounty}
-                    onChange={(e) => setFormData({ ...formData, bounty: e.target.value })}
+                    id={isJob ? "budgetSol" : "budget"}
+                    type={isJob ? "number" : "text"}
+                    step={isJob ? "0.000001" : undefined}
+                    placeholder={isJob ? "3.5" : "$500 / 1 SOL / tip-friendly"}
+                    value={isJob ? formData.budgetSol : formData.budget}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        [isJob ? "budgetSol" : "budget"]: e.target.value,
+                      })
+                    }
                     className="bg-gray-800/50 border-gray-700 focus:border-cyan-500/50 text-white placeholder:text-gray-500"
                     required
                   />
                 </div>
               </div>
-            </div>
 
-            {/* Deadline */}
-            <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 to-pink-500/5 rounded-2xl blur-xl" />
-              <div className="relative bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-2xl p-6">
-                <Label htmlFor="deadline" className="text-white mb-2 block">
-                  <Calendar className="w-4 h-4 inline mr-2" />
-                  Deadline *
-                </Label>
-                <Input
-                  id="deadline"
-                  type="date"
-                  value={formData.deadline}
-                  onChange={(e) => setFormData({ ...formData, deadline: e.target.value })}
-                  className="bg-gray-800/50 border-gray-700 focus:border-cyan-500/50 text-white"
-                  required
-                />
+              <div className="relative">
+                <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 to-pink-500/5 rounded-2xl blur-xl" />
+                <div className="relative bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-2xl p-6">
+                  <Label htmlFor="deadline" className="text-white mb-2 block">
+                    <Calendar className="w-4 h-4 inline mr-2" />
+                    Deadline {isJob ? "*" : ""}
+                  </Label>
+                  <Input
+                    id="deadline"
+                    type="date"
+                    value={formData.deadline}
+                    onChange={(e) => setFormData({ ...formData, deadline: e.target.value })}
+                    className="bg-gray-800/50 border-gray-700 focus:border-cyan-500/50 text-white"
+                    required={isJob}
+                  />
+                </div>
               </div>
             </div>
 
-            {/* Submit */}
+            {isJob && (
+              <div className="grid md:grid-cols-2 gap-6">
+                <div className="relative">
+                  <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/5 to-blue-500/5 rounded-2xl blur-xl" />
+                  <div className="relative bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-2xl p-6">
+                    <Label htmlFor="jobType" className="text-white mb-2 block">
+                      <Briefcase className="w-4 h-4 inline mr-2" />
+                      Job Type *
+                    </Label>
+                    <Select
+                      value={formData.jobType}
+                      onValueChange={(value) => setFormData({ ...formData, jobType: value })}
+                    >
+                      <SelectTrigger className="bg-gray-800/50 border-gray-700 focus:border-cyan-500/50 text-white">
+                        <SelectValue placeholder="Select the engagement type" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-gray-800 border-gray-700 text-white">
+                        {JOB_TYPES.map((jobType) => (
+                          <SelectItem key={jobType.value} value={jobType.value}>
+                            {jobType.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="relative">
+                  <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/5 to-purple-500/5 rounded-2xl blur-xl" />
+                  <div className="relative bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-2xl p-6">
+                    <Label htmlFor="skillsRequired" className="text-white mb-2 block">
+                      Skills Required
+                    </Label>
+                    <Input
+                      id="skillsRequired"
+                      placeholder="Terraform, Kubernetes, GitHub Actions"
+                      value={formData.skillsRequired}
+                      onChange={(e) => setFormData({ ...formData, skillsRequired: e.target.value })}
+                      className="bg-gray-800/50 border-gray-700 focus:border-cyan-500/50 text-white placeholder:text-gray-500"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div className="relative">
               <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/10 to-blue-500/10 rounded-2xl blur-xl" />
               <div className="relative bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-2xl p-6">
                 <div className="mb-4">
-                  <h3 className="font-bold text-white mb-2">Important Notes</h3>
+                  <h3 className="font-bold text-white mb-2">What happens next</h3>
                   <ul className="space-y-1 text-sm text-gray-400">
-                    <li>• Bounty will be held in escrow until solution is delivered</li>
-                    <li>• Builders must create an account and post progress to receive tips</li>
-                    <li>• If no solution is delivered by deadline, bounty is refunded</li>
-                    <li>• Tips given to builders are non-refundable</li>
+                    <li>Problem posts keep the current community proposal and tipping flow.</li>
+                    <li>Job posts let you accept one builder, track completion, and pay them directly in SOL.</li>
+                    <li>Tips stay available on both post types.</li>
                   </ul>
                 </div>
 
@@ -251,7 +376,7 @@ export function PostProblem() {
                     disabled={isSubmitting || isLoading || !user}
                     className="flex-1 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white border-0 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {isSubmitting ? 'Posting...' : 'Post Problem'}
+                    {isSubmitting ? "Posting..." : isJob ? "Post Job" : "Post Problem"}
                   </Button>
                 </div>
               </div>

@@ -1,26 +1,6 @@
-import { useState, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router";
-import {
-  TrendingUp,
-  Target,
-  Clock,
-  Send,
-  Award,
-  ChevronRight,
-  Tag,
-  Trash2,
-  Wallet,
-  User,
-  Edit2,
-  Save,
-  X,
-  AlertTriangle,
-  CheckCircle,
-  DollarSign,
-  Trophy,
-  Loader2,
-  Heart,
-} from "lucide-react";
+import { Bell, Briefcase, CheckCircle, Coins, Edit2, Loader2, Save, User, Wallet } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { supabase } from "../../../lib/supabaseClient";
 import { API_ENDPOINTS } from "../../lib/api-config";
@@ -31,970 +11,289 @@ import { Badge } from "./ui/badge";
 import { Textarea } from "./ui/textarea";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
-import { Avatar, AvatarFallback } from "./ui/avatar";
-import { Progress } from "./ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "./ui/alert-dialog";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "./ui/dialog";
-
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
+import { formatBudget, formatJobStatus, formatSol, shortWallet, type NotificationRow, type ProblemPost, type ProposalRecord } from "../../lib/marketplace";
 
 interface ProfileData {
   username: string;
   full_name: string | null;
   bio: string | null;
-  avatar_url: string | null;
   reputation_score: number;
   user_type: string;
   created_at: string;
-}
-
-interface Problem {
-  id: string;
-  title: string;
-  description: string;
-  category: string;
-  budget: string;
-  budgetValue: number;
-  upvotes: number;
-  proposals: number;
-  author: string;
-  authorId: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface UserProposal {
-  id: string;
-  problemId: string;
-  problemTitle: string;
-  briefSolution: string;
-  timeline?: string;
-  cost?: string;
-  expertise?: string[];
-  status?: string;
-  tipTotal: number;
-  upvotes?: number;
-  createdAt: string;
-}
-
-const TIER_CONFIG = [
-  { name: "Newcomer", min: 0, max: 100, color: "text-gray-400", bg: "bg-gray-500" },
-  { name: "Builder", min: 100, max: 500, color: "text-blue-400", bg: "bg-blue-500" },
-  { name: "Senior", min: 500, max: 1500, color: "text-purple-400", bg: "bg-purple-500" },
-  { name: "Expert", min: 1500, max: 5000, color: "text-yellow-400", bg: "bg-yellow-500" },
-  { name: "Legend", min: 5000, max: 10000, color: "text-cyan-400", bg: "bg-cyan-400" },
-];
-
-function getTier(score: number) {
-  return TIER_CONFIG.find((t, i) => score >= t.min && (score < t.max || i === TIER_CONFIG.length - 1))
-    || TIER_CONFIG[0];
-}
-
-function getNextTier(score: number) {
-  const idx = TIER_CONFIG.findIndex((t, i) => score >= t.min && (score < t.max || i === TIER_CONFIG.length - 1));
-  return idx < TIER_CONFIG.length - 1 ? TIER_CONFIG[idx + 1] : null;
-}
-
-function tierProgress(score: number) {
-  const tier = getTier(score);
-  const next = getNextTier(score);
-  if (!next) return 100;
-  return Math.round(((score - tier.min) / (tier.max - tier.min)) * 100);
+  wallet_address?: string | null;
 }
 
 export function BuilderDashboard() {
-  const [updateText, setUpdateText] = useState("");
   const { user } = useAuth();
   const [profile, setProfile] = useState<ProfileData | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [userProblems, setUserProblems] = useState<Problem[]>([]);
-  const [problemsLoading, setProblemsLoading] = useState(true);
-  const [deletingProblemId, setDeletingProblemId] = useState<string | null>(null);
+  const [posts, setPosts] = useState<ProblemPost[]>([]);
+  const [proposals, setProposals] = useState<ProposalRecord[]>([]);
+  const [notifications, setNotifications] = useState<NotificationRow[]>([]);
   const [walletCount, setWalletCount] = useState(0);
-  const [activeTab, setActiveTab] = useState("profile");
+  const [loading, setLoading] = useState(true);
   const [walletModalOpen, setWalletModalOpen] = useState(false);
+  const [editingProfile, setEditingProfile] = useState(false);
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [profileForm, setProfileForm] = useState({ full_name: "", bio: "" });
 
-  // Proposals tab state
-  const [userProposals, setUserProposals] = useState<UserProposal[]>([]);
-  const [proposalsLoading, setProposalsLoading] = useState(false);
-
-  // Profile editing state
-  const [isEditingProfile, setIsEditingProfile] = useState(false);
-  const [isSavingProfile, setIsSavingProfile] = useState(false);
-  const [profileError, setProfileError] = useState("");
-  const [profileSuccess, setProfileSuccess] = useState("");
-  const [editForm, setEditForm] = useState({
-    full_name: "",
-    bio: "",
-  });
+  const activeJobs = useMemo(
+    () => proposals.filter((proposal) => proposal.problemType === "job" && proposal.isAcceptedBuilder),
+    [proposals]
+  );
 
   useEffect(() => {
-    if (user) {
-      fetchProfile();
-      fetchUserProblems();
-      fetchWalletCount();
-    }
+    const load = async () => {
+      if (!user) return;
+      setLoading(true);
+      try {
+        const [profileResult, walletCountResult, notificationsResult] = await Promise.all([
+          supabase
+            .from("profiles")
+            .select("username, full_name, bio, reputation_score, user_type, created_at, wallet_address")
+            .eq("user_id", user.id)
+            .single(),
+          supabase.from("wallets").select("*", { count: "exact", head: true }).eq("user_id", user.id),
+          supabase
+            .from("notifications")
+            .select("id, message, link, is_read, created_at")
+            .order("created_at", { ascending: false })
+            .limit(20),
+        ]);
+
+        if (profileResult.data) {
+          setProfile(profileResult.data);
+          setProfileForm({
+            full_name: profileResult.data.full_name || "",
+            bio: profileResult.data.bio || "",
+          });
+        }
+        setWalletCount(walletCountResult.count || 0);
+        setNotifications(notificationsResult.data || []);
+
+        const token = (await supabase.auth.getSession()).data.session?.access_token;
+        const [postsResponse, proposalsResponse] = await Promise.all([
+          fetch(`${API_ENDPOINTS.USER_PROBLEMS}?sortBy=newest`, { headers: { Authorization: `Bearer ${token}` } }),
+          fetch(API_ENDPOINTS.USER_PROPOSALS, { headers: { Authorization: `Bearer ${token}` } }),
+        ]);
+
+        if (postsResponse.ok) {
+          const postsData = await postsResponse.json();
+          setPosts(Array.isArray(postsData.problems) ? postsData.problems : []);
+        }
+        if (proposalsResponse.ok) {
+          const proposalsData = await proposalsResponse.json();
+          setProposals(Array.isArray(proposalsData.proposals) ? proposalsData.proposals : []);
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    load();
   }, [user]);
 
-  const fetchUserProposals = async () => {
-    if (!user) return;
-    try {
-      setProposalsLoading(true);
-      const { data: sessionData } = await supabase.auth.getSession();
-      const token = sessionData.session?.access_token;
-      const response = await fetch(API_ENDPOINTS.USER_PROPOSALS, {
-        method: 'GET',
-        headers: {
-          "Authorization": `Bearer ${token}`
-        }
-      });
-      if (!response.ok) {
-        throw new Error(`API Error ${response.status}: ${await response.text()}`);
-      }
-      const data = await response.json();
-      setUserProposals(Array.isArray(data.proposals) ? data.proposals : []);
-    } catch (err) {
-      console.error('Error fetching user proposals:', err);
-      setUserProposals([]);
-    } finally {
-      setProposalsLoading(false);
-    }
-  };
-
-  const fetchProfile = async () => {
-    if (!user) return;
-
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('username, full_name, bio, avatar_url, reputation_score, user_type, created_at')
-        .eq('user_id', user.id)
-        .single();
-
-      if (error) throw error;
-      setProfile(data);
-      setEditForm({
-        full_name: data.full_name || "",
-        bio: data.bio || "",
-      });
-    } catch (error) {
-      console.error('Error fetching profile:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const fetchUserProblems = async () => {
-    if (!user) return;
-
-    try {
-      setProblemsLoading(true);
-      const { data: sessionData } = await supabase.auth.getSession();
-      const token = sessionData.session?.access_token;
-      const response = await fetch(`${API_ENDPOINTS.USER_PROBLEMS}?sortBy=newest`, {
-        method: 'GET',
-        headers: {
-          "Authorization": `Bearer ${token}`
-        }
-      });
-      if (!response.ok) {
-        throw new Error(`API Error ${response.status}: ${await response.text()}`);
-      }
-      const data = await response.json();
-      setUserProblems(Array.isArray(data.problems) ? data.problems : []);
-    } catch (error) {
-      console.error('Error fetching user problems:', error);
-      setUserProblems([]);
-    } finally {
-      setProblemsLoading(false);
-    }
-  };
-
-  const fetchWalletCount = async () => {
-    if (!user) return;
-
-    try {
-      const { count, error } = await supabase
-        .from("wallets")
-        .select("*", { count: "exact", head: true })
-        .eq("user_id", user.id);
-
-      if (error) throw error;
-      setWalletCount(count ?? 0);
-    } catch (error) {
-      console.error('Error fetching wallet count:', error);
-    }
-  };
-
-  const handleDeleteProblem = async (problemId: string) => {
-    try {
-      setDeletingProblemId(problemId);
-      const { data: sessionData } = await supabase.auth.getSession();
-      const token = sessionData.session?.access_token;
-      const response = await fetch(API_ENDPOINTS.PROBLEM_BY_ID(problemId), {
-        method: 'DELETE',
-        headers: {
-          "Authorization": `Bearer ${token}`
-        }
-      });
-      if (response.status === 404) {
-        setUserProblems(prev => prev.filter(p => p.id !== problemId));
-        return;
-      }
-      if (!response.ok) {
-        throw new Error(`API Error ${response.status}: ${await response.text()}`);
-      }
-      // Remove the problem from the local state
-      setUserProblems(prev => prev.filter(p => p.id !== problemId));
-    } catch (error) {
-      console.error('Error deleting problem:', error);
-      alert('Error deleting problem. Please try again.');
-    } finally {
-      setDeletingProblemId(null);
-    }
-  };
-
-  const handleEditProfile = () => {
-    setIsEditingProfile(true);
-    setProfileError("");
-    setProfileSuccess("");
-  };
-
-  const handleCancelProfileEdit = () => {
-    setIsEditingProfile(false);
-    if (profile) {
-      setEditForm({
-        full_name: profile.full_name || "",
-        bio: profile.bio || "",
-      });
-    }
-    setProfileError("");
-    setProfileSuccess("");
-  };
-
   const handleSaveProfile = async () => {
-    if (!user || !profile) return;
-
+    if (!user) return;
     try {
-      setIsSavingProfile(true);
-      setProfileError("");
-      setProfileSuccess("");
-
-      const { data, error: updateError } = await supabase
-        .from('profiles')
+      setSavingProfile(true);
+      const { data } = await supabase
+        .from("profiles")
         .update({
-          full_name: editForm.full_name,
-          bio: editForm.bio,
+          full_name: profileForm.full_name,
+          bio: profileForm.bio,
         })
-        .eq('user_id', user.id)
-        .select()
+        .eq("user_id", user.id)
+        .select("username, full_name, bio, reputation_score, user_type, created_at, wallet_address")
         .single();
-
-      if (updateError) throw updateError;
-
-      setProfile(data);
-      setIsEditingProfile(false);
-      setProfileSuccess("Profile updated successfully!");
-
-      setTimeout(() => setProfileSuccess(""), 3000);
-    } catch (err: any) {
-      console.error('Error updating profile:', err);
-      setProfileError(err.message || 'Failed to update profile');
+      if (data) {
+        setProfile(data);
+      }
+      setEditingProfile(false);
     } finally {
-      setIsSavingProfile(false);
+      setSavingProfile(false);
     }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#0a0a0f] text-gray-100">
+        <Navbar />
+        <div className="container mx-auto px-4 py-16 flex justify-center">
+          <Loader2 className="w-8 h-8 animate-spin text-cyan-400" />
+        </div>
+      </div>
+    );
+  }
 
   const displayName = profile?.full_name || profile?.username || user?.username || "Builder";
-  const avatarInitials = displayName.substring(0, 2).toUpperCase();
-  const reputationScore = profile?.reputation_score || 0;
 
   return (
     <div className="min-h-screen bg-[#0a0a0f] text-gray-100">
       <Navbar />
-
       <div className="container mx-auto px-4 py-12">
-        {/* Profile Header */}
-        <div className="relative mb-12">
-          <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/5 to-blue-500/5 rounded-2xl blur-xl" />
-          <div className="relative bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-2xl p-8">
-            {isLoading ? (
-              <div className="flex items-center justify-center py-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-500"></div>
+        <div className="bg-gray-900/50 border border-gray-800 rounded-2xl p-8 mb-8">
+          <div className="flex flex-col md:flex-row md:items-center gap-6 justify-between">
+            <div>
+              <div className="flex items-center gap-3 mb-2">
+                <h1 className="text-3xl font-bold text-white">{displayName}</h1>
+                <Badge className="bg-cyan-500/20 text-cyan-300 border-cyan-500/30">
+                  {profile?.user_type === "builder" ? "Builder" : "Problem Poster"}
+                </Badge>
               </div>
-            ) : (
-              <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
-                <Avatar className="w-20 h-20 border-4 border-cyan-500/30">
-                  <AvatarFallback className="bg-gradient-to-br from-cyan-500 to-blue-600 text-white font-bold text-2xl">
-                    {avatarInitials}
-                  </AvatarFallback>
-                </Avatar>
-
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
-                    <h1 className="text-3xl font-bold text-white">{displayName}</h1>
-                    <Badge className="bg-cyan-500/20 text-cyan-400 border-cyan-500/30">
-                      {profile?.user_type === 'builder' ? 'Builder' : 'Problem Poster'}
-                    </Badge>
-                  </div>
-                  <div className="flex items-center gap-4 text-sm text-gray-400">
-                    <div className="flex items-center gap-1">
-                      <Award className="w-4 h-4" />
-                      <span>⭐ {reputationScore} reputation</span>
-                    </div>
-                    <div>•</div>
-                    <div className="flex items-center gap-1">
-                      {walletCount > 0 ? (
-                        <>
-                          <CheckCircle className="w-4 h-4 text-green-400" />
-                          <span className="text-green-400">{walletCount} wallet{walletCount !== 1 ? 's' : ''} linked</span>
-                        </>
-                      ) : (
-                        <>
-                          <AlertTriangle className="w-4 h-4 text-yellow-400" />
-                          <span className="text-yellow-400">No payment wallet</span>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Add Wallet button – right side of profile card */}
-                <div className="shrink-0">
-                  <Button
-                    onClick={() => setWalletModalOpen(true)}
-                    className={
-                      walletCount === 0
-                        ? "bg-gradient-to-r from-yellow-500 to-orange-600 hover:from-yellow-600 hover:to-orange-700 text-white border-0"
-                        : "bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white border-0"
-                    }
-                  >
-                    <Wallet className="w-4 h-4 mr-2" />
-                    {walletCount === 0 ? "Add Wallet" : "Manage Wallets"}
-                  </Button>
-                </div>
+              <div className="flex flex-wrap gap-4 text-sm text-gray-400">
+                <span>{profile?.reputation_score || 0} reputation</span>
+                <span>{walletCount} wallet{walletCount === 1 ? "" : "s"} linked</span>
+                <span>{activeJobs.length} active accepted job{activeJobs.length === 1 ? "" : "s"}</span>
               </div>
-            )}
+              {profile?.wallet_address && (
+                <div className="mt-3 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-200 inline-block">
+                  Primary SOL wallet: {shortWallet(profile.wallet_address)}
+                </div>
+              )}
+            </div>
+            <Button onClick={() => setWalletModalOpen(true)} className="bg-gradient-to-r from-cyan-500 to-blue-600 text-white border-0">
+              <Wallet className="w-4 h-4 mr-2" />
+              Manage Wallets
+            </Button>
           </div>
         </div>
 
-        {/* Main Dashboard Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-white">User Dashboard</h2>
-            <Link to="/post">
-              <Button className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white border-0">
-                Post New Problem
-              </Button>
-            </Link>
-          </div>
-
-          <TabsList className="bg-gray-900/50 border border-gray-800 p-1">
-            <TabsTrigger
-              value="profile"
-              className="data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-400 text-gray-400"
-            >
-              <User className="w-4 h-4 mr-2" />
-              Profile Info
-            </TabsTrigger>
-            <TabsTrigger
-              value="wallets"
-              className="data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-400 text-gray-400"
-            >
-              <Wallet className="w-4 h-4 mr-2" />
-              Payment Wallets
-              {walletCount === 0 && (
-                <Badge className="ml-2 bg-yellow-500/20 text-yellow-400 border-yellow-500/30 text-[10px] px-1.5 py-0">
-                  Setup Required
-                </Badge>
-              )}
-            </TabsTrigger>
-            <TabsTrigger
-              value="problems"
-              className="data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-400 text-gray-400"
-            >
-              Posted Problems
-            </TabsTrigger>
-            <TabsTrigger
-              value="proposals"
-              onClick={() => { if (userProposals.length === 0 && !proposalsLoading) fetchUserProposals(); }}
-              className="data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-400 text-gray-400"
-            >
-              My Proposals
-            </TabsTrigger>
+        <Tabs defaultValue="profile" className="space-y-6">
+          <TabsList className="bg-gray-900/50 border border-gray-800 p-1 flex flex-wrap h-auto">
+            <TabsTrigger value="profile"><User className="w-4 h-4 mr-2" />Profile</TabsTrigger>
+            <TabsTrigger value="posts"><Briefcase className="w-4 h-4 mr-2" />My Posts</TabsTrigger>
+            <TabsTrigger value="proposals"><Coins className="w-4 h-4 mr-2" />My Proposals</TabsTrigger>
+            <TabsTrigger value="active-jobs"><CheckCircle className="w-4 h-4 mr-2" />Active Jobs</TabsTrigger>
+            <TabsTrigger value="notifications"><Bell className="w-4 h-4 mr-2" />Notifications</TabsTrigger>
           </TabsList>
 
-          {/* Profile Tab */}
-          <TabsContent value="profile" className="space-y-6">
-            {walletCount === 0 && (
-              <div className="relative">
-                <div className="absolute inset-0 bg-gradient-to-r from-yellow-500/5 to-orange-500/5 rounded-2xl blur-xl" />
-                <div className="relative bg-gray-900/50 backdrop-blur-sm border border-yellow-500/30 rounded-2xl p-6">
-                  <div className="flex items-start gap-4">
-                    <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-yellow-500/20 to-orange-600/20 border border-yellow-500/30 flex items-center justify-center shrink-0">
-                      <Wallet className="w-5 h-5 text-yellow-400" />
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="text-lg font-bold text-white mb-1">Setup Payment Wallet</h3>
-                      <p className="text-sm text-gray-400 mb-4">
-                        Link your crypto wallets to start receiving tips and payments from other users. You can add wallets for Ethereum, Polygon, Arbitrum, and Solana.
-                      </p>
-                      <Button
-                        onClick={() => setActiveTab("wallets")}
-                        className="bg-gradient-to-r from-yellow-500 to-orange-600 hover:from-yellow-600 hover:to-orange-700 text-white border-0"
-                      >
-                        <Wallet className="w-4 h-4 mr-2" />
-                        Add Payment Wallet
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-indigo-500/5 rounded-2xl blur-xl" />
-              <div className="relative bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-2xl p-6">
-                {profileError && (
-                  <div className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg p-3 mb-4">
-                    {profileError}
-                  </div>
-                )}
-
-                {profileSuccess && (
-                  <div className="text-sm text-green-400 bg-green-500/10 border border-green-500/20 rounded-lg p-3 mb-4">
-                    {profileSuccess}
-                  </div>
-                )}
-
-                {isEditingProfile ? (
-                  <div className="space-y-4">
+          <TabsContent value="profile">
+            <div className="bg-gray-900/50 border border-gray-800 rounded-2xl p-6 space-y-4">
+              {editingProfile ? (
+                <>
+                  <div><Label className="mb-2 block">Full Name</Label><Input value={profileForm.full_name} onChange={(e) => setProfileForm({ ...profileForm, full_name: e.target.value })} className="bg-gray-800 border-gray-700 text-white" /></div>
+                  <div><Label className="mb-2 block">Bio</Label><Textarea value={profileForm.bio} onChange={(e) => setProfileForm({ ...profileForm, bio: e.target.value })} className="bg-gray-800 border-gray-700 text-white min-h-[120px]" /></div>
+                  <div className="flex gap-3"><Button onClick={handleSaveProfile} disabled={savingProfile} className="bg-gradient-to-r from-cyan-500 to-blue-600 text-white border-0"><Save className="w-4 h-4 mr-2" />{savingProfile ? "Saving..." : "Save"}</Button><Button variant="outline" onClick={() => setEditingProfile(false)} className="border-gray-700 text-white hover:bg-gray-800">Cancel</Button></div>
+                </>
+              ) : (
+                <>
+                  <div className="flex justify-between items-start gap-4">
                     <div>
-                      <Label htmlFor="full_name" className="text-white mb-2 block">
-                        Full Name
-                      </Label>
-                      <Input
-                        id="full_name"
-                        type="text"
-                        value={editForm.full_name}
-                        onChange={(e) => setEditForm({ ...editForm, full_name: e.target.value })}
-                        className="bg-gray-800/50 border-gray-700 focus:border-cyan-500/50 text-white"
-                        placeholder="Your full name"
-                      />
+                      <h2 className="text-xl font-semibold text-white mb-1">Profile Details</h2>
+                      <p className="text-gray-400 text-sm">Keep your builder profile and payout wallet up to date.</p>
                     </div>
-
-                    <div>
-                      <Label htmlFor="bio" className="text-white mb-2 block">
-                        Bio
-                      </Label>
-                      <Textarea
-                        id="bio"
-                        value={editForm.bio}
-                        onChange={(e) => setEditForm({ ...editForm, bio: e.target.value })}
-                        className="bg-gray-800/50 border-gray-700 focus:border-cyan-500/50 text-white min-h-[120px] resize-none"
-                        placeholder="Tell us about yourself..."
-                        maxLength={500}
-                      />
-                      <p className="text-xs text-gray-500 mt-1">
-                        {editForm.bio.length}/500 characters
-                      </p>
-                    </div>
-
-                    <div className="pt-4 flex gap-3">
-                      <Button
-                        onClick={handleSaveProfile}
-                        disabled={isSavingProfile}
-                        className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white border-0"
-                      >
-                        <Save className="w-4 h-4 mr-2" />
-                        {isSavingProfile ? "Saving..." : "Save Changes"}
-                      </Button>
-                      <Button
-                        onClick={handleCancelProfileEdit}
-                        disabled={isSavingProfile}
-                        variant="outline"
-                        className="border-gray-700 text-gray-400 hover:bg-gray-800"
-                      >
-                        <X className="w-4 h-4 mr-2" />
-                        Cancel
-                      </Button>
-                    </div>
+                    <Button variant="outline" onClick={() => setEditingProfile(true)} className="border-gray-700 text-white hover:bg-gray-800"><Edit2 className="w-4 h-4 mr-2" />Edit</Button>
                   </div>
-                ) : (
-                  <div>
-                    <div className="space-y-6 mb-6">
-                      <div>
-                        <h3 className="text-sm font-medium text-gray-400 mb-2">Full Name</h3>
-                        <p className="text-white text-lg">
-                          {profile?.full_name || <span className="text-gray-500 text-sm">Not provided</span>}
-                        </p>
-                      </div>
-
-                      <div>
-                        <h3 className="text-sm font-medium text-gray-400 mb-2">Bio</h3>
-                        <p className="text-white whitespace-pre-wrap">
-                          {profile?.bio || <span className="text-gray-500 text-sm">No bio yet</span>}
-                        </p>
-                      </div>
-
-                      <div>
-                        <h3 className="text-sm font-medium text-gray-400 mb-2">Email</h3>
-                        <p className="text-white font-mono text-sm bg-gray-800/50 px-3 py-2 rounded w-fit">
-                          {user?.email}
-                        </p>
-                      </div>
-
-                      <div>
-                        <h3 className="text-sm font-medium text-gray-400 mb-2">Member Since</h3>
-                        <p className="text-white text-sm">
-                          {profile?.created_at && new Date(profile.created_at).toLocaleDateString('en-US', {
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric',
-                          })}
-                        </p>
-                      </div>
-                    </div>
-
-                    <Button
-                      onClick={handleEditProfile}
-                      className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white border-0"
-                    >
-                      <Edit2 className="w-4 h-4 mr-2" />
-                      Edit Profile
-                    </Button>
+                  <div className="space-y-3 text-sm text-gray-300">
+                    <div><span className="text-gray-500 block mb-1">Username</span>{profile?.username}</div>
+                    <div><span className="text-gray-500 block mb-1">Full Name</span>{profile?.full_name || "Not set"}</div>
+                    <div><span className="text-gray-500 block mb-1">Bio</span>{profile?.bio || "No bio yet"}</div>
+                    <div><span className="text-gray-500 block mb-1">Primary Solana Wallet</span>{profile?.wallet_address ? shortWallet(profile.wallet_address) : "Not linked"}</div>
                   </div>
-                )}
-              </div>
+                </>
+              )}
             </div>
           </TabsContent>
 
-          {/* Crypto Wallets Tab */}
-          <TabsContent value="wallets">
-            <LinkWallet onWalletsChange={(count) => setWalletCount(count)} />
-          </TabsContent>
-
-          {/* Posted Problems Tab */}
-          <TabsContent value="problems" className="space-y-6">
-            {problemsLoading ? (
-              <div className="flex items-center justify-center py-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-500"></div>
-              </div>
-            ) : userProblems.length === 0 ? (
-              <div className="text-center py-12">
-                <div className="text-gray-400 mb-4">
-                  <Target className="w-16 h-16 mx-auto mb-4 opacity-50" />
-                  <h3 className="text-xl font-semibold text-white mb-2">No Problems Posted Yet</h3>
-                  <p className="text-sm">Start by posting a problem you need solved</p>
-                </div>
-                <Link to="/post">
-                  <Button className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white border-0 mt-4">
-                    Post Your First Problem
-                  </Button>
-                </Link>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {userProblems.map((problem) => (
-                  <div key={problem.id} className="relative">
-                    <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-indigo-500/5 rounded-2xl blur-xl" />
-                    <div className="relative bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-2xl p-6 hover:border-cyan-500/30 transition-colors">
-                      <div className="flex flex-col lg:flex-row gap-6">
-                        <div className="flex-1">
-                          <div className="flex items-start justify-between mb-4">
-                            <div className="flex-1">
-                              <Link to={`/problem/${problem.id}`}>
-                                <h3 className="text-2xl font-bold text-white mb-2 hover:text-cyan-400 transition-colors">
-                                  {problem.title}
-                                </h3>
-                              </Link>
-                              <p className="text-gray-400 mb-3 line-clamp-2">{problem.description}</p>
-                              <div className="flex flex-wrap gap-4 text-sm text-gray-400">
-                                <div className="flex items-center gap-1">
-                                  <Tag className="w-4 h-4" />
-                                  <span>{problem.category}</span>
-                                </div>
-                                <div className="flex items-center gap-1">
-                                  <Clock className="w-4 h-4" />
-                                  <span>{new Date(problem.createdAt).toLocaleDateString()}</span>
-                                </div>
-                                <div className="flex items-center gap-1">
-                                  <TrendingUp className="w-4 h-4" />
-                                  <span>{problem.upvotes} upvotes</span>
-                                </div>
-                                <div className="flex items-center gap-1">
-                                  <Send className="w-4 h-4" />
-                                  <span>{problem.proposals} proposals</span>
-                                </div>
-                              </div>
-                            </div>
-                            <div className="text-right ml-4">
-                              <Badge className="bg-cyan-500/20 text-cyan-400 border-cyan-500/30 mb-2">
-                                {problem.category}
-                              </Badge>
-                              <div className="text-sm text-gray-400 mb-1">Budget</div>
-                              <div className="text-2xl font-bold text-cyan-400">
-                                {problem.budget}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex flex-col gap-2 lg:min-w-[180px]">
-                          <Link to={`/problem/${problem.id}`}>
-                            <Button className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white border-0 w-full">
-                              View Details
-                              <ChevronRight className="w-4 h-4 ml-2" />
-                            </Button>
-                          </Link>
-                          <Button
-                            variant="outline"
-                            className="border-gray-700 hover:bg-gray-800 text-white w-full"
-                          >
-                            View Proposals
-                          </Button>
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button
-                                variant="outline"
-                                className="border-red-500/30 text-red-400 hover:bg-red-500/10 hover:border-red-500/50 w-full"
-                                disabled={deletingProblemId === problem.id}
-                              >
-                                <Trash2 className="w-4 h-4 mr-2" />
-                                {deletingProblemId === problem.id ? 'Deleting...' : 'Delete'}
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent className="bg-gray-900 border-gray-800 text-white">
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Delete Problem?</AlertDialogTitle>
-                                <AlertDialogDescription className="text-gray-400">
-                                  Are you sure you want to delete "{problem.title}"? This action cannot be undone and will remove all associated proposals and upvotes.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel className="bg-gray-800 border-gray-700 text-white hover:bg-gray-700">
-                                  Cancel
-                                </AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={() => handleDeleteProblem(problem.id)}
-                                  className="bg-red-600 hover:bg-red-700 text-white"
-                                >
-                                  Delete Problem
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </TabsContent>
-
-          <TabsContent value="proposals" className="space-y-6">
-            {/* Stats row */}
-            {!proposalsLoading && userProposals.length > 0 && (() => {
-              const accepted = userProposals.filter(p => p.status === 'accepted').length;
-              const totalTips = userProposals.reduce((s, p) => s + (p.tipTotal || 0), 0);
-              const acceptanceRate = userProposals.length > 0 ? Math.round((accepted / userProposals.length) * 100) : 0;
-              const tier = getTier(reputationScore);
-              const nextTier = getNextTier(reputationScore);
-              const progress = tierProgress(reputationScore);
-              return (
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                  {[
-                    { label: "Proposals Submitted", val: userProposals.length, icon: <Send className="w-5 h-5 text-cyan-400" /> },
-                    { label: "Acceptance Rate", val: `${acceptanceRate}%`, icon: <CheckCircle className="w-5 h-5 text-green-400" /> },
-                    { label: "Tips Received", val: `$${totalTips.toFixed(0)}`, icon: <DollarSign className="w-5 h-5 text-yellow-400" /> },
-                    { label: "Reputation", val: reputationScore, icon: <Trophy className="w-5 h-5 text-purple-400" /> },
-                  ].map(({ label, val, icon }) => (
-                    <div key={label} className="bg-gray-900/50 border border-gray-800 rounded-2xl p-4 text-center">
-                      <div className="flex justify-center mb-2">{icon}</div>
-                      <div className="text-2xl font-bold text-white">{val}</div>
-                      <div className="text-xs text-gray-400 mt-0.5">{label}</div>
-                    </div>
-                  ))}
-                </div>
-              );
-            })()}
-
-            {/* Reputation tier */}
-            {!proposalsLoading && (() => {
-              const tier = getTier(reputationScore);
-              const nextTier = getNextTier(reputationScore);
-              const progress = tierProgress(reputationScore);
-              return (
-                <div className="relative bg-gray-900/50 border border-gray-800 rounded-2xl p-5">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      <Trophy className={`w-5 h-5 ${tier.color}`} />
-                      <span className={`font-bold text-lg ${tier.color}`}>{tier.name}</span>
-                      <span className="text-gray-400 text-sm">tier</span>
-                    </div>
-                    {nextTier && (
-                      <span className="text-xs text-gray-400">
-                        {nextTier.min - reputationScore} pts to {nextTier.name}
-                      </span>
-                    )}
-                  </div>
-                  <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
-                    <div
-                      className={`h-full ${tier.bg} rounded-full transition-all`}
-                      style={{ width: `${progress}%` }}
-                    />
-                  </div>
-                  <p className="text-xs text-gray-500 mt-1.5">
-                    {reputationScore} / {nextTier?.max || tier.max} points
-                  </p>
-                </div>
-              );
-            })()}
-
-            {/* Proposals list */}
-            {proposalsLoading ? (
-              <div className="flex items-center justify-center py-12">
-                <Loader2 className="w-8 h-8 animate-spin text-cyan-400" />
-              </div>
-            ) : userProposals.length === 0 ? (
-              <div className="text-center py-12">
-                <Target className="w-16 h-16 mx-auto mb-4 opacity-30 text-gray-400" />
-                <h3 className="text-xl font-semibold text-white mb-2">No Proposals Yet</h3>
-                <p className="text-sm text-gray-400 mb-4">Browse problems and submit your first proposal</p>
-                <Link to="/browse">
-                  <Button className="bg-gradient-to-r from-cyan-500 to-blue-600 text-white border-0">
-                    Browse Problems
-                  </Button>
-                </Link>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {userProposals.map((proposal) => (
-                  <div key={proposal.id} className="relative bg-gray-900/50 border border-gray-800 hover:border-cyan-500/30 rounded-2xl p-5 transition-colors">
-                    <div className="flex flex-col lg:flex-row gap-4">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between mb-2">
-                          <div className="flex-1 min-w-0">
-                            <Link to={`/problem/${proposal.problemId}`}>
-                              <h3 className="font-bold text-white hover:text-cyan-400 transition-colors truncate mb-1">
-                                {proposal.problemTitle}
-                              </h3>
-                            </Link>
-                            <p className="text-gray-400 text-sm line-clamp-2">{proposal.briefSolution}</p>
-                          </div>
-                        </div>
-                        <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500 mt-2">
-                          {proposal.timeline && <span>⏱ {proposal.timeline}</span>}
-                          {proposal.cost && <span>💵 {proposal.cost}</span>}
-                          <span>
-                            <Clock className="w-3 h-3 inline mr-0.5" />
-                            {new Date(proposal.createdAt).toLocaleDateString()}
-                          </span>
-                          {proposal.tipTotal > 0 && (
-                            <span className="text-cyan-400 font-medium">💰 ${proposal.tipTotal.toFixed(0)} tips</span>
-                          )}
-                        </div>
-                        {proposal.expertise && proposal.expertise.length > 0 && (
-                          <div className="flex gap-1.5 flex-wrap mt-2">
-                            {proposal.expertise.slice(0, 5).map(tag => (
-                              <span key={tag} className="px-1.5 py-0.5 bg-gray-800/60 border border-gray-700/50 rounded text-gray-300 text-[10px]">
-                                {tag}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                      <div className="shrink-0 flex flex-row lg:flex-col items-center lg:items-end gap-3">
-                        <Badge
-                          className={`${
-                            proposal.status === 'accepted'
-                              ? 'bg-green-500/20 text-green-300 border-green-500/30'
-                              : proposal.status === 'rejected'
-                              ? 'bg-red-500/20 text-red-300 border-red-500/30'
-                              : 'bg-gray-500/20 text-gray-400 border-gray-600/30'
-                          }`}
-                        >
-                          {proposal.status || 'Pending'}
-                        </Badge>
-                        <Link to={`/problem/${proposal.problemId}`}>
-                          <Button size="sm" className="bg-gradient-to-r from-cyan-500 to-blue-600 text-white border-0 text-xs">
-                            View <ChevronRight className="w-3.5 h-3.5 ml-1" />
-                          </Button>
-                        </Link>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </TabsContent>
-        </Tabs>
-
-        {/* Hidden for now - will be populated with real data */}
-        {false && (
-          <Tabs defaultValue="active" className="space-y-6">
-            <TabsList className="bg-gray-900/50 border border-gray-800 p-1">
-              <TabsTrigger
-                value="active"
-                className="data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-400 text-gray-400"
-              >
-                Active Projects (0)
-              </TabsTrigger>
-              <TabsTrigger
-                value="completed"
-                className="data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-400 text-gray-400"
-              >
-                Completed (0)
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="active" className="space-y-6">
-              {[].map((project: any) => (
-              <div key={project.id} className="relative">
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-indigo-500/5 rounded-2xl blur-xl" />
-                <div className="relative bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-2xl p-6 hover:border-cyan-500/30 transition-colors">
-                  <div className="flex flex-col lg:flex-row gap-6">
-                    <div className="flex-1">
-                      <div className="flex items-start justify-between mb-4">
-                        <div>
-                          <h3 className="text-2xl font-bold text-white mb-2">{project.title}</h3>
-                          <div className="flex flex-wrap gap-4 text-sm text-gray-400">
-                            <div className="flex items-center gap-1">
-                              <Clock className="w-4 h-4" />
-                              <span>{project.deadline} left</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <Heart className="w-4 h-4" />
-                              <span>${project.tips} in tips</span>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-sm text-gray-400 mb-1">Bounty</div>
-                          <div className="text-2xl font-bold text-cyan-400">
-                            ${project.bounty.toLocaleString()}
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="mb-4">
-                        <div className="flex items-center justify-between text-sm mb-2">
-                          <span className="text-gray-400">Your Progress</span>
-                          <span className="text-white font-medium">{project.progress}%</span>
-                        </div>
-                        <Progress value={project.progress} className="h-2 bg-gray-800">
-                          <div
-                            className="h-full bg-gradient-to-r from-cyan-500 to-blue-600 rounded-full transition-all"
-                            style={{ width: `${project.progress}%` }}
-                          />
-                        </Progress>
-                      </div>
-
-                      {/* Post Update */}
-                      <div className="bg-gray-800/30 rounded-lg p-4 border border-gray-700/50">
-                        <div className="text-sm font-medium text-white mb-2">
-                          Post Progress Update
-                        </div>
-                        <Textarea
-                          placeholder="Share your progress to earn tips..."
-                          value={updateText}
-                          onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setUpdateText(e.target.value)}
-                          className="bg-gray-800/50 border-gray-700 focus:border-cyan-500/50 text-white placeholder:text-gray-500 mb-2 min-h-[80px]"
-                        />
-                        <div className="flex justify-between items-center">
-                          <span className="text-xs text-gray-500">
-                            Last updated: {project.lastUpdate}
-                          </span>
-                          <Button
-                            size="sm"
-                            className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white border-0"
-                          >
-                            <Send className="w-4 h-4 mr-2" />
-                            Post Update
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-col gap-2 lg:min-w-[180px]">
-                      <Link to={`/problem/${project.id}`}>
-                        <Button className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white border-0 w-full">
-                          View Problem
-                          <ChevronRight className="w-4 h-4 ml-2" />
-                        </Button>
-                      </Link>
-                      <Button
-                        variant="outline"
-                        className="border-gray-700 hover:bg-gray-800 text-white w-full"
-                      >
-                        Submit Solution
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </TabsContent>
-
-          <TabsContent value="completed" className="space-y-6">
-            {[].map((project: any) => (
-              <div key={project.id} className="relative">
-                <div className="absolute inset-0 bg-gradient-to-r from-green-500/5 to-emerald-500/5 rounded-2xl blur-xl" />
-                <div className="relative bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-2xl p-6">
-                  <div className="flex items-center justify-between">
+          <TabsContent value="posts">
+            <div className="space-y-4">
+              {posts.length === 0 ? (
+                <div className="bg-gray-900/50 border border-gray-800 rounded-2xl p-6 text-gray-400">No posts yet.</div>
+              ) : posts.map((post) => (
+                <div key={post.id} className="bg-gray-900/50 border border-gray-800 rounded-2xl p-5">
+                  <div className="flex flex-col md:flex-row justify-between gap-4">
                     <div>
-                      <h3 className="text-xl font-bold text-white mb-2">{project.title}</h3>
-                      <div className="text-sm text-gray-400">
-                        Completed on {project.completedDate}
+                      <div className="flex flex-wrap gap-2 mb-2">
+                        <Badge className="bg-gray-800 text-gray-300 border-gray-700">{post.type === "job" ? "Job" : "Problem"}</Badge>
+                        {post.type === "job" && post.jobStatus && <Badge className="bg-cyan-500/20 text-cyan-300 border-cyan-500/30">{formatJobStatus(post.jobStatus)}</Badge>}
                       </div>
+                      <Link to={`/problem/${post.id}`} className="text-lg font-semibold text-white hover:text-cyan-300">{post.title}</Link>
+                      <p className="text-sm text-gray-400 mt-1">{post.description}</p>
                     </div>
-                    <div className="text-right">
-                      <div className="text-sm text-gray-400 mb-1">Total Earned</div>
-                      <div className="text-2xl font-bold text-green-400">
-                        ${project.earned.toLocaleString()}
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        Bounty: ${project.bounty.toLocaleString()}
-                      </div>
+                    <div className="text-right text-sm text-gray-400">
+                      <div className="text-cyan-300 font-semibold">{formatBudget(post)}</div>
+                      <div>{post.proposals} proposals</div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="proposals">
+            <div className="space-y-4">
+              {proposals.length === 0 ? (
+                <div className="bg-gray-900/50 border border-gray-800 rounded-2xl p-6 text-gray-400">No proposals submitted yet.</div>
+              ) : proposals.map((proposal) => (
+                <div key={proposal.id} className="bg-gray-900/50 border border-gray-800 rounded-2xl p-5">
+                  <div className="flex flex-col md:flex-row justify-between gap-4">
+                    <div>
+                      <div className="flex flex-wrap gap-2 mb-2">
+                        <Badge className="bg-gray-800 text-gray-300 border-gray-700">{proposal.problemType === "job" ? "Job" : "Problem"}</Badge>
+                        <Badge className="bg-gray-800 text-gray-300 border-gray-700">{proposal.status || "pending"}</Badge>
+                        {proposal.jobStatus && <Badge className="bg-cyan-500/20 text-cyan-300 border-cyan-500/30">{formatJobStatus(proposal.jobStatus)}</Badge>}
+                      </div>
+                      <Link to={`/problem/${proposal.problemId}`} className="text-lg font-semibold text-white hover:text-cyan-300">{proposal.problemTitle || "Untitled Post"}</Link>
+                      <p className="text-sm text-gray-400 mt-1">{proposal.briefSolution || proposal.description}</p>
+                    </div>
+                    <div className="text-right text-sm text-gray-400">
+                      {proposal.proposedPriceSol ? <div className="text-cyan-300 font-semibold">{formatSol(proposal.proposedPriceSol)} SOL</div> : proposal.cost ? <div>{proposal.cost}</div> : null}
+                      {proposal.tipTotal ? <div>{formatSol(proposal.tipTotal)} tipped</div> : null}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="active-jobs">
+            <div className="space-y-4">
+              {activeJobs.length === 0 ? (
+                <div className="bg-gray-900/50 border border-gray-800 rounded-2xl p-6 text-gray-400">No accepted jobs yet.</div>
+              ) : activeJobs.map((job) => (
+                <div key={job.id} className="bg-gray-900/50 border border-gray-800 rounded-2xl p-5">
+                  <div className="flex flex-col md:flex-row justify-between gap-4">
+                    <div>
+                      <Badge className="bg-cyan-500/20 text-cyan-300 border-cyan-500/30 mb-2">{formatJobStatus(job.jobStatus)}</Badge>
+                      <Link to={`/problem/${job.problemId}`} className="text-lg font-semibold text-white hover:text-cyan-300">{job.problemTitle || "Untitled Job"}</Link>
+                      <p className="text-sm text-gray-400 mt-1">{job.estimatedDelivery || job.timeline || "Timeline pending"}</p>
+                    </div>
+                    <div className="text-right text-sm text-gray-400">
+                      {job.proposedPriceSol ? <div className="text-cyan-300 font-semibold">{formatSol(job.proposedPriceSol)} SOL</div> : null}
+                      <Link to={`/problem/${job.problemId}`} className="text-cyan-300 hover:text-cyan-200">Open job</Link>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="notifications">
+            <div className="space-y-4">
+              {notifications.length === 0 ? (
+                <div className="bg-gray-900/50 border border-gray-800 rounded-2xl p-6 text-gray-400">No notifications yet.</div>
+              ) : notifications.map((notification) => (
+                <div key={notification.id} className="bg-gray-900/50 border border-gray-800 rounded-2xl p-5">
+                  <div className="flex justify-between gap-4">
+                    <div>
+                      <p className="text-white">{notification.message}</p>
+                      <p className="text-sm text-gray-500 mt-1">{new Date(notification.created_at).toLocaleString()}</p>
+                    </div>
+                    {notification.link ? <Link to={notification.link} className="text-cyan-300 hover:text-cyan-200 text-sm">Open</Link> : null}
+                  </div>
+                </div>
+              ))}
+            </div>
           </TabsContent>
         </Tabs>
-        )}
       </div>
 
-      {/* Wallet modal */}
       <Dialog open={walletModalOpen} onOpenChange={setWalletModalOpen}>
         <DialogContent className="bg-gray-900 border border-gray-800 text-white max-w-2xl max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-bold text-white flex items-center gap-2">
-              <Wallet className="w-5 h-5 text-cyan-400" />
-              {walletCount === 0 ? "Add Payment Wallet" : "Manage Wallets"}
-            </DialogTitle>
-          </DialogHeader>
-          <LinkWallet
-            onWalletsChange={(count) => {
-              setWalletCount(count);
-            }}
-          />
+          <DialogHeader><DialogTitle className="text-xl font-bold text-white flex items-center gap-2"><Wallet className="w-5 h-5 text-cyan-400" />Manage Wallets</DialogTitle></DialogHeader>
+          <LinkWallet onWalletsChange={setWalletCount} />
         </DialogContent>
       </Dialog>
     </div>

@@ -1,88 +1,96 @@
-"""Create Problem Handler"""
-import json
+"""Create Problem/Job Handler."""
+
 import azure.functions as func
+
 from cosmos import containers
-from utils import (
-    create_response, error_response, get_authenticated_user_id, 
-    generate_id, validate_required, parse_budget_value, get_timestamp,
-    parse_requirements
+from handlers.marketplace_helpers import (
+    PROBLEM_TYPE_JOB,
+    VALID_JOB_TYPES,
+    json_response,
+    normalize_problem,
+    parse_problem_type,
+    parse_sol_amount,
+    parse_string_list,
+    sol_amount_to_string,
 )
+from utils import generate_id, get_authenticated_user_id, get_timestamp, parse_budget_value, parse_requirements, validate_required
 
 
 def handle(req: func.HttpRequest) -> func.HttpResponse:
-    """Create a new problem"""
+    """Create a new problem or job."""
     try:
-        # Get authenticated user
         user_id = get_authenticated_user_id(req)
         if not user_id:
-            return func.HttpResponse(
-                json.dumps({'error': 'Authentication required'}),
-                status_code=401,
-                mimetype="application/json"
-            )
-        
-        # Parse request body
+            return json_response({"error": "Authentication required"}, 401)
+
         try:
             data = req.get_json()
         except ValueError:
-            return func.HttpResponse(
-                json.dumps({'error': 'Invalid JSON'}),
-                status_code=400,
-                mimetype="application/json"
-            )
-        
-        # Validate required fields
-        validation_error = validate_required(data, ['title', 'description', 'category', 'budget'])
+            return json_response({"error": "Invalid JSON"}, 400)
+
+        problem_type = parse_problem_type(data.get("type"))
+        validation_error = validate_required(data, ['title', 'description', 'category'])
         if validation_error:
-            return func.HttpResponse(
-                json.dumps({'error': validation_error}),
-                status_code=400,
-                mimetype="application/json"
-            )
-        
-        # Validate category
+            return json_response({'error': validation_error}, 400)
+
         valid_categories = ['AI/ML', 'Web3', 'Finance', 'Governance', 'Trading', 'Infrastructure']
         if data['category'] not in valid_categories:
-            return func.HttpResponse(
-                json.dumps({'error': 'Invalid category'}),
-                status_code=400,
-                mimetype="application/json"
-            )
-        
-        # Parse requirements
+            return json_response({'error': 'Invalid category'}, 400)
+
+        timestamp = get_timestamp()
         requirements = parse_requirements(data.get('requirements', []))
-        
-        # Create problem object
+
         problem = {
             'id': generate_id(),
+            'type': problem_type,
             'title': data['title'].strip(),
             'description': data['description'].strip(),
             'requirements': requirements,
             'category': data['category'],
-            'budget': data['budget'],
-            'budgetValue': parse_budget_value(data['budget']),
             'upvotes': 0,
             'proposals': 0,
             'author': data.get('author', 'Anonymous User'),
             'authorId': user_id,
             'deadline': data.get('deadline'),
-            'createdAt': get_timestamp(),
-            'updatedAt': get_timestamp()
+            'createdAt': timestamp,
+            'updatedAt': timestamp
         }
-        
-        # Save to database
+
+        if problem_type == PROBLEM_TYPE_JOB:
+            budget_sol = parse_sol_amount(data.get("budgetSol") or data.get("budget_sol") or data.get("budget"))
+            job_type = str(data.get("jobType") or data.get("job_type") or "").strip().lower()
+            if budget_sol is None or not data.get("deadline") or job_type not in VALID_JOB_TYPES:
+                return json_response(
+                    {'error': 'Jobs require budgetSol, deadline, and jobType (one-time, contract, or ongoing)'},
+                    400,
+                )
+
+            problem.update(
+                {
+                    'budget': data.get('budget') or f"{sol_amount_to_string(budget_sol)} SOL",
+                    'budgetSol': budget_sol,
+                    'budgetValue': budget_sol,
+                    'jobType': job_type,
+                    'skillsRequired': parse_string_list(data.get('skillsRequired') or data.get('skills_required')),
+                    'jobStatus': 'open',
+                    'acceptedProposalId': None,
+                }
+            )
+        else:
+            budget = str(data.get('budget') or '').strip()
+            if not budget:
+                return json_response({'error': 'Problem posts require a budget'}, 400)
+            problem.update(
+                {
+                    'budget': budget,
+                    'budgetValue': parse_budget_value(budget),
+                }
+            )
+
+        problem = normalize_problem(problem)
         containers['problems'].create_item(body=problem)
-        
-        return func.HttpResponse(
-            json.dumps(problem),
-            status_code=201,
-            mimetype="application/json"
-        )
-    
-    except Exception as e:
-        print(f"CreateProblem error: {str(e)}")
-        return func.HttpResponse(
-            json.dumps({'error': 'Failed to create problem', 'details': str(e)}),
-            status_code=500,
-            mimetype="application/json"
-        )
+
+        return json_response(problem, 201)
+
+    except Exception as exc:
+        return json_response({'error': 'Failed to create post', 'details': str(exc)}, 500)

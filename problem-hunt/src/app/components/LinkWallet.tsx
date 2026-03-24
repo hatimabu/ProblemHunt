@@ -15,6 +15,7 @@ import { Label } from "./ui/label";
 import { Badge } from "./ui/badge";
 import { supabase } from "../../../lib/supabaseClient";
 import { useAuth } from "../contexts/AuthContext";
+import { clearUserSolanaWallet, syncUserSolanaWallet } from "../../lib/wallets";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -186,6 +187,10 @@ export function LinkWallet({ onWalletsChange }: LinkWalletProps) {
       });
       if (insertErr) throw insertErr;
 
+      if (chain === "solana") {
+        await syncUserSolanaWallet(user!.id, trimmed);
+      }
+
       await fetchWallets();
       setExpandedChain(null);
       setInputAddress("");
@@ -218,7 +223,11 @@ export function LinkWallet({ onWalletsChange }: LinkWalletProps) {
         .delete()
         .eq("id", wallet.id);
       if (error) throw error;
+      if (wallet.chain === "solana") {
+        await clearUserSolanaWallet(user!.id);
+      }
       setWallets((prev) => prev.filter((w) => w.id !== wallet.id));
+      onWalletsChange?.(Math.max(wallets.length - 1, 0));
     } catch (err: any) {
       setGlobalError(err.message ?? "Failed to remove wallet.");
     } finally {
