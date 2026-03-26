@@ -50,21 +50,58 @@ export function Navbar() {
     : null;
 
   const isActive = (path: string) => location.pathname === path;
+  const isLanding = location.pathname === "/";
 
   const navLinks = [
     { path: "/browse", label: "Browse" },
     { path: "/leaderboard", label: "Leaderboard" },
   ];
 
+  const palette = isLanding
+    ? {
+        header: "border-[color:rgba(19,39,56,0.12)] bg-[rgba(247,241,228,0.72)] backdrop-blur-xl",
+        logoBox: "rounded-none bg-[linear-gradient(135deg,var(--ph-ink),var(--ph-sky))]",
+        logoText: "bg-none text-[var(--ph-ink)]",
+        activeLink: "text-[var(--ph-ink)] bg-white/55",
+        inactiveLink: "text-[rgba(19,39,56,0.74)] hover:text-[var(--ph-ink)] hover:bg-white/45",
+        wallet: "bg-white/45 border-[color:rgba(19,39,56,0.14)] text-[var(--ph-sky)] hover:border-[color:rgba(29,125,179,0.45)]",
+        primaryCta: "rounded-none bg-[var(--ph-ink)] text-[var(--ph-cream)] hover:bg-[var(--ph-sky)]",
+        userButton: "bg-white/45 border-[color:rgba(19,39,56,0.14)] hover:border-[color:rgba(19,39,56,0.24)]",
+        avatar: "rounded-none bg-[linear-gradient(135deg,var(--ph-sky),var(--ph-teal))]",
+        dropdown: "bg-[var(--ph-cream)] border-[color:rgba(19,39,56,0.12)] shadow-2xl shadow-[rgba(19,39,56,0.12)]",
+        dropdownDivider: "border-[color:rgba(19,39,56,0.1)]",
+        dropdownItem: "text-[rgba(19,39,56,0.76)] hover:text-[var(--ph-ink)] hover:bg-white/50",
+        signIn: "rounded-none bg-[var(--ph-sky)] text-white hover:bg-[var(--ph-ink)]",
+        mobileToggle: "text-[rgba(19,39,56,0.62)] hover:text-[var(--ph-ink)] hover:bg-white/45",
+        mobileMenu: "border-[color:rgba(19,39,56,0.12)] bg-[rgba(247,241,228,0.94)]",
+      }
+    : {
+        header: "border-gray-800/50 bg-[#0a0a0f]/80 backdrop-blur-md",
+        logoBox: "rounded-lg bg-gradient-to-br from-cyan-400 to-blue-600",
+        logoText: "bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent",
+        activeLink: "text-cyan-400 bg-cyan-500/10",
+        inactiveLink: "text-gray-300 hover:text-white hover:bg-gray-800/60",
+        wallet: "bg-gray-800/60 border-gray-700/50 text-cyan-400 hover:border-cyan-500/50",
+        primaryCta: "bg-gradient-to-r from-cyan-500 to-blue-600 text-white hover:from-cyan-600 hover:to-blue-700",
+        userButton: "bg-gray-800/60 border-gray-700/50 hover:border-gray-600",
+        avatar: "rounded-full bg-gradient-to-br from-cyan-500 to-blue-600",
+        dropdown: "bg-gray-900 border-gray-700/60 shadow-2xl shadow-black/50",
+        dropdownDivider: "border-gray-800",
+        dropdownItem: "text-gray-300 hover:text-white hover:bg-gray-800/60",
+        signIn: "bg-gradient-to-r from-cyan-500 to-blue-600 text-white hover:from-cyan-600 hover:to-blue-700",
+        mobileToggle: "text-gray-400 hover:text-white hover:bg-gray-800",
+        mobileMenu: "border-gray-800/50 bg-[#0a0a0f]/95",
+      };
+
   return (
-    <header className="sticky top-0 z-50 border-b border-gray-800/50 bg-[#0a0a0f]/80 backdrop-blur-md">
+    <header className={`sticky top-0 z-50 border-b ${palette.header}`}>
       <div className="container mx-auto px-4 py-3 flex items-center justify-between gap-4">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2 shrink-0">
-          <div className="w-8 h-8 bg-gradient-to-br from-cyan-400 to-blue-600 rounded-lg flex items-center justify-center logo-glow">
+          <div className={`w-8 h-8 flex items-center justify-center logo-glow ${palette.logoBox}`}>
             <Code className="w-5 h-5 text-white" />
           </div>
-          <span className="text-xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent hidden sm:block">
+          <span className={`text-xl font-bold hidden sm:block ${palette.logoText}`}>
             problemhunt.cc
           </span>
         </Link>
@@ -76,8 +113,8 @@ export function Navbar() {
               <button
                 className={`nav-link px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
                   isActive(path)
-                    ? "text-cyan-400 bg-cyan-500/10"
-                    : "text-gray-300 hover:text-white hover:bg-gray-800/60"
+                    ? palette.activeLink
+                    : palette.inactiveLink
                 }`}
               >
                 {label}
@@ -93,7 +130,7 @@ export function Navbar() {
             <button
               onClick={copyWallet}
               title="Copy wallet address"
-              className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 bg-gray-800/60 border border-gray-700/50 rounded-full text-xs font-mono text-cyan-400 hover:border-cyan-500/50 transition-colors"
+              className={`hidden sm:flex items-center gap-1.5 px-2.5 py-1 border rounded-full text-xs font-mono transition-colors ${palette.wallet}`}
             >
               {copied ? <Check className="w-3 h-3 text-green-400" /> : <Copy className="w-3 h-3" />}
               {shortAddress}
@@ -104,7 +141,7 @@ export function Navbar() {
           <Link to="/post" className="hidden sm:block">
             <Button
               size="sm"
-              className="btn-shimmer bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white border-0 text-sm font-semibold"
+              className={`btn-shimmer border-0 text-sm font-semibold ${palette.primaryCta}`}
             >
               Post Problem
             </Button>
@@ -115,28 +152,28 @@ export function Navbar() {
             <div className="relative" ref={dropdownRef}>
               <button
                 onClick={() => setDropdownOpen((o) => !o)}
-                className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg bg-gray-800/60 border border-gray-700/50 hover:border-gray-600 transition-colors"
+                className={`flex items-center gap-1.5 px-2 py-1.5 rounded-lg border transition-colors ${palette.userButton}`}
               >
-                <div className="w-7 h-7 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white text-xs font-bold">
+                <div className={`w-7 h-7 flex items-center justify-center text-white text-xs font-bold ${palette.avatar}`}>
                   {(user.username || user.email || "U").substring(0, 1).toUpperCase()}
                 </div>
-                <ChevronDown className={`w-3.5 h-3.5 text-gray-400 transition-transform ${dropdownOpen ? "rotate-180" : ""}`} />
+                <ChevronDown className={`w-3.5 h-3.5 ${isLanding ? "text-[rgba(19,39,56,0.5)]" : "text-gray-400"} transition-transform ${dropdownOpen ? "rotate-180" : ""}`} />
               </button>
 
               {dropdownOpen && (
-                <div className="absolute right-0 mt-2 w-52 bg-gray-900 border border-gray-700/60 rounded-xl shadow-2xl shadow-black/50 overflow-hidden z-50 fade-in">
-                  <div className="px-4 py-3 border-b border-gray-800">
-                    <p className="text-sm font-semibold text-white truncate">
+                <div className={`absolute right-0 mt-2 w-52 rounded-xl border overflow-hidden z-50 fade-in ${palette.dropdown}`}>
+                  <div className={`px-4 py-3 border-b ${palette.dropdownDivider}`}>
+                    <p className={`text-sm font-semibold truncate ${isLanding ? "text-[var(--ph-ink)]" : "text-white"}`}>
                       {user.username || "Builder"}
                     </p>
-                    <p className="text-xs text-gray-400 truncate">{user.email}</p>
+                    <p className={`text-xs truncate ${isLanding ? "text-[rgba(19,39,56,0.56)]" : "text-gray-400"}`}>{user.email}</p>
                   </div>
 
                   <div className="py-1">
                     <Link
                       to="/dashboard"
                       onClick={() => setDropdownOpen(false)}
-                      className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-300 hover:text-white hover:bg-gray-800/60 transition-colors"
+                      className={`flex items-center gap-2.5 px-4 py-2.5 text-sm transition-colors ${palette.dropdownItem}`}
                     >
                       <LayoutDashboard className="w-4 h-4 text-cyan-400" />
                       Dashboard
@@ -144,14 +181,14 @@ export function Navbar() {
                     <Link
                       to="/leaderboard"
                       onClick={() => setDropdownOpen(false)}
-                      className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-300 hover:text-white hover:bg-gray-800/60 transition-colors"
+                      className={`flex items-center gap-2.5 px-4 py-2.5 text-sm transition-colors ${palette.dropdownItem}`}
                     >
                       <Trophy className="w-4 h-4 text-yellow-400" />
                       Leaderboard
                     </Link>
                   </div>
 
-                  <div className="border-t border-gray-800 py-1">
+                  <div className={`border-t py-1 ${palette.dropdownDivider}`}>
                     <button
                       onClick={() => { logout(); setDropdownOpen(false); }}
                       className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors"
@@ -167,7 +204,7 @@ export function Navbar() {
             <Link to="/auth">
               <Button
                 size="sm"
-                className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white border-0"
+                className={`border-0 ${palette.signIn}`}
               >
                 Sign In
               </Button>
@@ -176,7 +213,7 @@ export function Navbar() {
 
           {/* Mobile hamburger */}
           <button
-            className="md:hidden p-1.5 rounded-md text-gray-400 hover:text-white hover:bg-gray-800 transition-colors"
+            className={`md:hidden p-1.5 rounded-md transition-colors ${palette.mobileToggle}`}
             onClick={() => setMobileOpen((o) => !o)}
             aria-label="Toggle menu"
           >
@@ -187,7 +224,7 @@ export function Navbar() {
 
       {/* Mobile menu */}
       {mobileOpen && (
-        <div className="md:hidden border-t border-gray-800/50 bg-[#0a0a0f]/95 backdrop-blur-md fade-in">
+        <div className={`md:hidden border-t backdrop-blur-md fade-in ${palette.mobileMenu}`}>
           <div className="container mx-auto px-4 py-4 space-y-1">
             {navLinks.map(({ path, label }) => (
               <Link
@@ -196,8 +233,8 @@ export function Navbar() {
                 onClick={() => setMobileOpen(false)}
                 className={`block px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                   isActive(path)
-                    ? "text-cyan-400 bg-cyan-500/10"
-                    : "text-gray-300 hover:text-white hover:bg-gray-800/60"
+                    ? palette.activeLink
+                    : palette.inactiveLink
                 }`}
               >
                 {label}
@@ -205,7 +242,7 @@ export function Navbar() {
             ))}
 
             <Link to="/post" onClick={() => setMobileOpen(false)}>
-              <Button className="w-full mt-3 bg-gradient-to-r from-cyan-500 to-blue-600 text-white border-0">
+              <Button className={`w-full mt-3 border-0 ${palette.primaryCta}`}>
                 Post Problem
               </Button>
             </Link>
@@ -213,11 +250,11 @@ export function Navbar() {
             {user && shortAddress && (
               <button
                 onClick={() => { copyWallet(); }}
-                className="flex items-center gap-2 mt-2 px-4 py-2 bg-gray-800/40 border border-gray-700/50 rounded-lg text-xs font-mono text-cyan-400 w-full"
+                className={`flex items-center gap-2 mt-2 px-4 py-2 border rounded-lg text-xs font-mono w-full ${palette.wallet}`}
               >
                 {copied ? <Check className="w-3 h-3 text-green-400" /> : <Copy className="w-3 h-3" />}
                 <span>{shortAddress}</span>
-                <span className="text-gray-500 ml-auto">wallet</span>
+                <span className={`ml-auto ${isLanding ? "text-[rgba(19,39,56,0.42)]" : "text-gray-500"}`}>wallet</span>
               </button>
             )}
           </div>

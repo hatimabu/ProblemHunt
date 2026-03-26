@@ -2,6 +2,19 @@
 @import './tailwind.css';
 @import './theme.css';
 
+:root {
+  --ph-sand: #efe5d3;
+  --ph-cream: #f8f3e8;
+  --ph-ink: #132738;
+  --ph-muted: rgba(19, 39, 56, 0.74);
+  --ph-soft: rgba(19, 39, 56, 0.48);
+  --ph-line: rgba(19, 39, 56, 0.14);
+  --ph-sky: #1d7db3;
+  --ph-teal: #0e8a81;
+  --ph-amber: #bc6f23;
+  --ph-clay: #a95140;
+}
+
 /* ============================================================
    PROBLEMHUNT GLOBAL ANIMATIONS & MICRO-INTERACTIONS
    ============================================================ */
@@ -16,11 +29,11 @@
 .text-gradient-animated {
   background: linear-gradient(
     270deg,
-    #06b6d4,
-    #3b82f6,
-    #6366f1,
-    #8b5cf6,
-    #06b6d4
+    #0e8a81,
+    #1d7db3,
+    #bc6f23,
+    #a95140,
+    #0e8a81
   );
   background-size: 300% 300%;
   -webkit-background-clip: text;
@@ -165,7 +178,7 @@
   content: '|';
   margin-left: 2px;
   animation: cursorBlink 0.8s step-end infinite;
-  color: #06b6d4;
+  color: var(--ph-sky);
 }
 
 /* Fade slide-up for page content */
@@ -252,6 +265,184 @@
 
 .mesh-bg {
   animation: meshMove 20s ease-in-out infinite;
+}
+
+.landing-page {
+  background:
+    radial-gradient(circle at top left, rgba(14, 138, 129, 0.12), transparent 24%),
+    radial-gradient(circle at top right, rgba(188, 111, 35, 0.1), transparent 28%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.35), transparent 18%),
+    var(--ph-sand);
+}
+
+.landing-hero::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background:
+    linear-gradient(
+      90deg,
+      rgba(248, 243, 232, 0.98) 0%,
+      rgba(248, 243, 232, 0.94) 36%,
+      rgba(248, 243, 232, 0.6) 62%,
+      rgba(248, 243, 232, 0.16) 100%
+    );
+}
+
+.landing-hero__atmosphere {
+  background:
+    radial-gradient(circle at 16% 18%, rgba(14, 138, 129, 0.18), transparent 24%),
+    radial-gradient(circle at 76% 18%, rgba(188, 111, 35, 0.16), transparent 24%),
+    linear-gradient(130deg, rgba(255, 255, 255, 0.42), transparent 44%);
+}
+
+.landing-wordmark {
+  font-family: var(--font-display);
+  font-size: clamp(4.75rem, 14vw, 11rem);
+  font-weight: 700;
+  line-height: 0.82;
+  letter-spacing: -0.08em;
+  text-transform: uppercase;
+  color: var(--ph-ink);
+  text-wrap: balance;
+}
+
+.section-label {
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+  font-weight: 600;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--ph-sky);
+  margin-bottom: 1rem;
+}
+
+.landing-hero__plane {
+  position: absolute;
+  inset: -6% -16% -8% 38%;
+  z-index: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1rem;
+  transform: rotate(-11deg) scale(1.08);
+  opacity: 0.95;
+  pointer-events: none;
+}
+
+@keyframes problemLaneDrift {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-12%);
+  }
+}
+
+.landing-problem-lane {
+  display: flex;
+  gap: 1rem;
+  width: max-content;
+  animation: problemLaneDrift 30s linear infinite;
+}
+
+.landing-problem-lane--reverse {
+  animation-direction: reverse;
+  animation-duration: 36s;
+  opacity: 0.84;
+}
+
+.landing-problem-strip {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  min-width: clamp(260px, 24vw, 360px);
+  padding: 1rem 1.15rem;
+  border-top: 1px solid rgba(19, 39, 56, 0.18);
+  border-bottom: 1px solid rgba(19, 39, 56, 0.18);
+  background: rgba(248, 243, 232, 0.18);
+  backdrop-filter: blur(8px);
+}
+
+.landing-problem-strip__budget {
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ph-clay);
+  padding-top: 0.15rem;
+  flex: 0 0 auto;
+}
+
+.landing-problem-strip__category {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--ph-sky);
+}
+
+.landing-problem-strip__title {
+  margin-top: 0.45rem;
+  font-family: var(--font-display);
+  font-size: clamp(1.05rem, 1.6vw, 1.45rem);
+  font-weight: 600;
+  line-height: 1.02;
+  letter-spacing: -0.04em;
+  color: rgba(19, 39, 56, 0.88);
+}
+
+@media (max-width: 1024px) {
+  .landing-hero__plane {
+    inset: 26% -36% -16% 12%;
+    transform: rotate(-10deg) scale(1.1);
+    opacity: 0.7;
+  }
+
+  .landing-hero::after {
+    background:
+      linear-gradient(
+        180deg,
+        rgba(248, 243, 232, 0.98) 0%,
+        rgba(248, 243, 232, 0.94) 40%,
+        rgba(248, 243, 232, 0.5) 76%,
+        rgba(248, 243, 232, 0.14) 100%
+      );
+  }
+}
+
+@media (max-width: 640px) {
+  .landing-wordmark {
+    font-size: clamp(4rem, 20vw, 6rem);
+    line-height: 0.88;
+  }
+
+  .landing-hero__plane {
+    inset: 38% -58% -24% -16%;
+    transform: rotate(-12deg) scale(1.16);
+    opacity: 0.56;
+  }
+
+  .landing-problem-strip {
+    min-width: 248px;
+    padding: 0.85rem 1rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-problem-lane,
+  .logo-glow,
+  .fade-in,
+  .btn-glow,
+  .text-gradient-animated,
+  .orb-float,
+  .orb-float-slow,
+  .mesh-bg {
+    animation: none !important;
+  }
 }
 
 /* Scrollbar styling */
