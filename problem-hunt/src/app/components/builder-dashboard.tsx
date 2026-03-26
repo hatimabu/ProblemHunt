@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Link } from "react-router";
-import { Bell, Briefcase, CheckCircle2, Edit2, Loader2, Save, User, Wallet } from "lucide-react";
+import { Bell, Briefcase, CheckCircle2, Edit2, Loader2, Save, User, Wallet, Camera, AlertCircle } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { supabase } from "../../../lib/supabaseClient";
 import { API_ENDPOINTS } from "../../lib/api-config";
@@ -12,6 +12,7 @@ import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
+import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { formatBudget, formatJobStatus, formatSol, type NotificationRow, type ProblemPost, type ProposalRecord } from "../../lib/marketplace";
 
 interface ProfileData {
@@ -22,6 +23,7 @@ interface ProfileData {
   user_type: string;
   created_at: string;
   wallet_address?: string | null;
+  avatar_url?: string | null;
 }
 
 function MetaPill({
@@ -75,6 +77,9 @@ export function BuilderDashboard() {
   const [walletModalOpen, setWalletModalOpen] = useState(false);
   const [editingProfile, setEditingProfile] = useState(false);
   const [savingProfile, setSavingProfile] = useState(false);
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const [avatarError, setAvatarError] = useState<string | null>(null);
+  const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null);
   const [profileForm, setProfileForm] = useState({ full_name: "", bio: "" });
 
   const activeJobs = useMemo(
@@ -108,7 +113,7 @@ export function BuilderDashboard() {
         const [profileResult, walletCountResult, notificationsResult] = await Promise.all([
           supabase
             .from("profiles")
-            .select("username, full_name, bio, reputation_score, user_type, created_at, wallet_address")
+            .select("username, full_name, bio, reputation_score, user_type, created_at, wallet_address, avatar_url")
             .eq("user_id", user.id)
             .single(),
           supabase.from("wallets").select("*", { count: "exact", head: true }).eq("user_id", user.id),
@@ -154,6 +159,12 @@ export function BuilderDashboard() {
     load();
   }, [user]);
 
+  useEffect(() => {
+    return () => {
+      if (avatarPreviewUrl) URL.revokeObjectURL(avatarPreviewUrl);
+    };
+  }, [avatarPreviewUrl]);
+
   const handleSaveProfile = async () => {
     if (!user) {
       return;
@@ -168,7 +179,7 @@ export function BuilderDashboard() {
           bio: profileForm.bio,
         })
         .eq("user_id", user.id)
-        .select("username, full_name, bio, reputation_score, user_type, created_at, wallet_address")
+        .select("username, full_name, bio, reputation_score, user_type, created_at, wallet_address, avatar_url")
         .single();
 
       if (data) {
@@ -178,6 +189,57 @@ export function BuilderDashboard() {
       setEditingProfile(false);
     } finally {
       setSavingProfile(false);
+    }
+  };
+
+  const handleAvatarUpload = async (file: File) => {
+    if (!user) return;
+
+    setAvatarError(null);
+    setAvatarUploading(true);
+
+    const MAX_BYTES = 5 * 1024 * 1024;
+    if (!file.type.startsWith("image/")) {
+      setAvatarError("Please upload an image file.");
+      setAvatarUploading(false);
+      return;
+    }
+    if (file.size > MAX_BYTES) {
+      setAvatarError("Image is too large (max 5MB).");
+      setAvatarUploading(false);
+      return;
+    }
+
+    // Show an immediate preview while uploading.
+    if (avatarPreviewUrl) URL.revokeObjectURL(avatarPreviewUrl);
+    const previewUrl = URL.createObjectURL(file);
+    setAvatarPreviewUrl(previewUrl);
+
+    try {
+      const extRaw = (file.name.split(".").pop() || "").trim().toLowerCase();
+      const safeExt = extRaw && extRaw.length <= 6 ? extRaw : "png";
+      const objectPath = `${user.id}/${Date.now()}-${Math.random().toString(16).slice(2)}.${safeExt}`;
+
+      const uploadResult = await supabase.storage.from("avatars").upload(objectPath, file, {
+        upsert: true,
+        contentType: file.type,
+      });
+
+      if (uploadResult.error) throw uploadResult.error;
+
+      const { data: publicUrlData } = supabase.storage.from("avatars").getPublicUrl(objectPath);
+      const publicUrl = publicUrlData.publicUrl;
+
+      const { error: updateErr } = await supabase.from("profiles").update({ avatar_url: publicUrl }).eq("user_id", user.id);
+      if (updateErr) throw updateErr;
+
+      setProfile((prev) => (prev ? { ...prev, avatar_url: publicUrl } : prev));
+    } catch (err: any) {
+      setAvatarError(err?.message ?? "Failed to upload avatar.");
+      // If upload fails, clear the preview so we don't display a non-persisted image.
+      setAvatarPreviewUrl(null);
+    } finally {
+      setAvatarUploading(false);
     }
   };
 
@@ -345,8 +407,63 @@ export function BuilderDashboard() {
                     </>
                   )}
                 </div>
+                <aside className="border-t border-[color:var(--board-line)] pt-6 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0">
+                  <p className="board-kicker">Profile</p>
+                  <div className="mt-5 space-y-4">
+                    <div className="flex items-center gap-4">
+                      <Avatar className="size-16 border border-[color:var(--board-line-strong)] bg-white/50">
+                        {profile?.avatar_url ? (
+                          <AvatarImage src={profile.avatar_url} alt="Profile picture" className="object-cover" />
+                        ) : null}
+                        <AvatarFallback>
+                          <Camera className="h-5 w-5 text-[var(--board-soft)]" />
+                        </AvatarFallback>
+                      </Avatar>
 
-                {/* Payout path removed: primary wallet selection is managed in “Manage wallets” */}
+                      <div className="min-w-0">
+                        <p className="board-eyebrow">Profile picture</p>
+                        <p className="mt-2 text-sm text-[var(--board-muted)]">JPG/PNG/GIF up to 5MB</p>
+                      </div>
+                    </div>
+
+                    <label
+                      className="flex cursor-pointer items-center justify-center gap-2 border border-[color:var(--board-line-strong)] bg-white/56 px-4 py-2 text-sm font-semibold text-[var(--board-ink)] hover:bg-white disabled:opacity-50"
+                    >
+                      {avatarUploading ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          Uploading...
+                        </>
+                      ) : (
+                        <>
+                          <Camera className="h-4 w-4" />
+                          Upload picture
+                        </>
+                      )}
+
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        disabled={avatarUploading}
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          // Allow selecting the same file again.
+                          e.target.value = "";
+                          void handleAvatarUpload(file);
+                        }}
+                      />
+                    </label>
+
+                    {avatarError ? (
+                      <div className="flex items-center gap-2 border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+                        <AlertCircle className="h-4 w-4" />
+                        {avatarError}
+                      </div>
+                    ) : null}
+                  </div>
+                </aside>
               </div>
             </div>
           </TabsContent>
