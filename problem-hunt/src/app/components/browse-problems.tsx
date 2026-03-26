@@ -1,21 +1,13 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { startTransition, useDeferredValue, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router";
-import {
-  ArrowRight,
-  Briefcase,
-  Clock,
-  Flame,
-  Search,
-  SlidersHorizontal,
-  TrendingUp,
-  User,
-} from "lucide-react";
+import { ArrowRight, Briefcase, Clock, Flame, Search, TrendingUp, User } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Navbar } from "./navbar";
 import { supabase } from "../../../lib/supabaseClient";
 import { API_ENDPOINTS } from "../../lib/api-config";
 import { formatBudget, formatJobStatus, formatTimeAgo, isJobPost, type ProblemPost } from "../../lib/marketplace";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 
 const CATEGORIES = ["All", "AI/ML", "Web3", "Finance", "Governance", "Trading", "Infrastructure"];
 const TYPE_FILTERS = [
@@ -39,14 +31,14 @@ const CATEGORY_ACCENTS: Record<string, string> = {
   "Infrastructure": "text-[var(--neon-cyan)]",
 };
 
-function SkeletonRow() {
+function SkeletonSignal() {
   return (
-    <div className="neon-panel rounded-[1.25rem] p-6">
-      <div className="skeleton h-4 w-28 rounded-full mb-5" />
-      <div className="skeleton h-8 w-3/4 mb-3 rounded" />
+    <div className="market-row px-1 py-6">
+      <div className="skeleton h-4 w-28 rounded-full mb-4" />
+      <div className="skeleton h-9 w-3/4 mb-3 rounded" />
       <div className="skeleton h-4 w-full mb-2 rounded" />
       <div className="skeleton h-4 w-5/6 mb-5 rounded" />
-      <div className="skeleton h-4 w-48 rounded" />
+      <div className="skeleton h-4 w-56 rounded" />
     </div>
   );
 }
@@ -58,19 +50,6 @@ export function BrowseProblems() {
   const [sortBy, setSortBy] = useState("newest");
   const [posts, setPosts] = useState<ProblemPost[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filterOpen, setFilterOpen] = useState(false);
-  const filterRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handler = (event: MouseEvent) => {
-      if (filterRef.current && !filterRef.current.contains(event.target as Node)) {
-        setFilterOpen(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
 
   useEffect(() => {
     const fetchPosts = async () => {
@@ -101,135 +80,146 @@ export function BrowseProblems() {
     fetchPosts();
   }, [selectedCategory, selectedType, sortBy]);
 
+  const deferredSearchQuery = useDeferredValue(searchQuery);
   const filteredPosts = useMemo(() => {
-    if (!searchQuery) {
+    if (!deferredSearchQuery) {
       return posts;
     }
 
-    const query = searchQuery.toLowerCase();
+    const query = deferredSearchQuery.toLowerCase();
     return posts.filter((post) => {
       return (
         post.title.toLowerCase().includes(query) ||
         post.description.toLowerCase().includes(query)
       );
     });
-  }, [posts, searchQuery]);
+  }, [posts, deferredSearchQuery]);
 
   return (
     <div className="neon-page min-h-screen text-[var(--neon-text)]">
       <Navbar />
 
       <div className="mx-auto max-w-7xl px-4 py-10">
-        <section className="neon-panel relative overflow-hidden rounded-[1.75rem] p-8 md:p-10 mb-8">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,79,216,0.18),transparent_32%),radial-gradient(circle_at_bottom_left,rgba(89,243,255,0.14),transparent_28%)]" />
-          <div className="relative z-10 max-w-3xl">
-            <p className="neon-kicker">Marketplace Board</p>
-            <h1 className="font-cyber text-4xl uppercase tracking-[0.12em] text-[var(--neon-text)] md:text-6xl">
-              Browse The Bounty Board
-            </h1>
-            <p className="mt-5 max-w-2xl text-base leading-8 text-[var(--neon-muted)] md:text-lg">
-              Hunt problems, paid tasks, and technical requests from people who want something solved, shipped, or taken off their plate.
-            </p>
+        <section className="browse-stage relative isolate overflow-hidden border border-[color:var(--neon-line)]">
+          <div className="browse-stage__scene" aria-hidden="true">
+            <div className="browse-stage__scan" />
+            <div className="browse-stage__haze browse-stage__haze--cyan" />
+            <div className="browse-stage__haze browse-stage__haze--pink" />
+            <div className="browse-stage__wires" />
+            <div className="browse-stage__street" />
+            <div className="browse-stage__billboard">OPEN SIGNALS</div>
+          </div>
+
+          <div className="relative z-10 px-5 py-10 sm:px-8 md:py-14 lg:px-10">
+            <div className="max-w-3xl">
+              <p className="neon-kicker">Marketplace Board</p>
+              <h1 className="font-cyber text-4xl uppercase tracking-[0.12em] text-[var(--neon-text)] md:text-6xl">
+                Hunt Live Briefs
+              </h1>
+              <p className="mt-5 max-w-2xl text-base leading-8 text-[var(--neon-muted)] md:text-lg">
+                Browse open problems, paid tasks, and technical requests from people who need something solved, shipped, or taken off their plate.
+              </p>
+            </div>
+
+            <div className="mt-10 grid gap-4 border-t border-[color:rgba(89,243,255,0.16)] pt-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(240px,0.8fr)]">
+              <div className="grid gap-4">
+                <div className="relative">
+                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--neon-dim)]" />
+                  <Input
+                    placeholder="Search briefs, tasks, bounties..."
+                    value={searchQuery}
+                    onChange={(event) => {
+                      startTransition(() => {
+                        setSearchQuery(event.target.value);
+                      });
+                    }}
+                    className="h-12 rounded-none border-[color:var(--neon-line)] bg-[rgba(6,10,24,0.78)] pl-10 text-[var(--neon-text)] placeholder:text-[var(--neon-dim)] focus:border-[color:var(--neon-line-strong)]"
+                  />
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_180px]">
+                  <div className="grid grid-cols-3 border border-[color:var(--neon-line)] bg-[rgba(6,10,24,0.74)]">
+                    {TYPE_FILTERS.map((filter) => (
+                      <button
+                        key={filter.value}
+                        onClick={() => {
+                          startTransition(() => {
+                            setSelectedType(filter.value);
+                          });
+                        }}
+                        className={`min-h-12 px-3 text-[0.72rem] font-semibold uppercase tracking-[0.18em] transition-colors ${
+                          selectedType === filter.value
+                            ? "bg-[rgba(89,243,255,0.1)] text-[var(--neon-cyan)]"
+                            : "text-[var(--neon-dim)] hover:text-[var(--neon-text)]"
+                        }`}
+                      >
+                        {filter.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  <Select
+                    value={selectedCategory}
+                    onValueChange={(value) => {
+                      startTransition(() => {
+                        setSelectedCategory(value);
+                      });
+                    }}
+                  >
+                    <SelectTrigger className="h-12 rounded-none border-[color:var(--neon-line)] bg-[rgba(6,10,24,0.74)] text-[var(--neon-text)]">
+                      <SelectValue placeholder="Category" />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-none border-[color:var(--neon-line)] bg-[rgba(7,11,26,0.96)] text-[var(--neon-text)]">
+                      {CATEGORIES.map((category) => (
+                        <SelectItem key={category} value={category}>
+                          {category}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <Select
+                value={sortBy}
+                onValueChange={(value) => {
+                  startTransition(() => {
+                    setSortBy(value);
+                  });
+                }}
+              >
+                <SelectTrigger className="h-12 rounded-none border-[color:var(--neon-line)] bg-[rgba(6,10,24,0.74)] text-[var(--neon-text)] lg:self-end">
+                  <SelectValue placeholder="Sort By" />
+                </SelectTrigger>
+                <SelectContent className="rounded-none border-[color:var(--neon-line)] bg-[rgba(7,11,26,0.96)] text-[var(--neon-text)]">
+                  {SORT_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </section>
 
-        <div className="neon-panel rounded-[1.5rem] p-4 md:p-5 mb-5">
-          <div className="flex flex-col gap-3 lg:flex-row">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--neon-dim)]" />
-              <Input
-                placeholder="Search briefs, tasks, bounties..."
-                value={searchQuery}
-                onChange={(event) => setSearchQuery(event.target.value)}
-                className="pl-10 h-12 rounded-none border-[color:var(--neon-line)] bg-[rgba(6,10,24,0.78)] text-[var(--neon-text)] placeholder:text-[var(--neon-dim)] focus:border-[color:var(--neon-line-strong)]"
-              />
-            </div>
-
-            <div className="relative" ref={filterRef}>
-              <button
-                onClick={() => setFilterOpen((open) => !open)}
-                className="flex h-12 items-center gap-2 rounded-none border border-[color:var(--neon-line)] bg-[rgba(6,10,24,0.82)] px-4 text-sm font-semibold uppercase tracking-[0.18em] text-[var(--neon-muted)] transition-colors hover:text-[var(--neon-text)]"
-              >
-                <SlidersHorizontal className="w-4 h-4" />
-                {SORT_OPTIONS.find((option) => option.value === sortBy)?.label}
-              </button>
-
-              {filterOpen && (
-                <div className="absolute right-0 z-20 mt-2 w-56 overflow-hidden rounded-[1.1rem] border border-[color:var(--neon-line)] bg-[rgba(7,11,26,0.96)] shadow-[0_0_24px_rgba(89,243,255,0.12)]">
-                  {SORT_OPTIONS.map((option) => (
-                    <button
-                      key={option.value}
-                      onClick={() => {
-                        setSortBy(option.value);
-                        setFilterOpen(false);
-                      }}
-                      className={`w-full px-4 py-3 text-left text-sm transition-colors ${
-                        sortBy === option.value
-                          ? "bg-[rgba(89,243,255,0.08)] text-[var(--neon-cyan)]"
-                          : "text-[var(--neon-muted)] hover:bg-[rgba(255,255,255,0.04)] hover:text-[var(--neon-text)]"
-                      }`}
-                    >
-                      {option.label}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="mt-4 flex flex-wrap gap-2">
-            {TYPE_FILTERS.map((filter) => (
-              <button
-                key={filter.value}
-                onClick={() => setSelectedType(filter.value)}
-                className={`rounded-none border px-3.5 py-2 text-xs font-semibold uppercase tracking-[0.18em] transition-all ${
-                  selectedType === filter.value
-                    ? "border-[color:rgba(89,243,255,0.38)] bg-[rgba(89,243,255,0.08)] text-[var(--neon-cyan)]"
-                    : "border-[color:rgba(89,243,255,0.14)] bg-[rgba(6,10,24,0.58)] text-[var(--neon-dim)] hover:text-[var(--neon-text)]"
-                }`}
-              >
-                {filter.label}
-              </button>
-            ))}
-          </div>
-
-          <div className="mt-3 flex flex-wrap gap-2">
-            {CATEGORIES.map((category) => (
-              <button
-                key={category}
-                onClick={() => setSelectedCategory(category)}
-                className={`rounded-none border px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] transition-all ${
-                  selectedCategory === category
-                    ? "border-[color:rgba(255,79,216,0.34)] bg-[rgba(255,79,216,0.08)] text-[var(--neon-text)]"
-                    : "border-[color:rgba(89,243,255,0.12)] bg-[rgba(6,10,24,0.48)] text-[var(--neon-dim)] hover:text-[var(--neon-text)]"
-                }`}
-              >
-                {category}
-              </button>
-            ))}
-          </div>
-        </div>
-
         {!loading && (
-          <p className="mb-6 text-sm text-[var(--neon-dim)]">
-            {filteredPosts.length} signal{filteredPosts.length !== 1 ? "s" : ""} on the board
-            {searchQuery && ` for "${searchQuery}"`}
+          <p className="mt-6 text-sm text-[var(--neon-dim)]">
+            {filteredPosts.length} live signal{filteredPosts.length !== 1 ? "s" : ""}
+            {deferredSearchQuery && ` matching "${deferredSearchQuery}"`}
           </p>
         )}
 
-        <div className="space-y-4">
+        <div className="mt-6 border-t border-[color:var(--neon-line)]">
           {loading ? (
-            Array.from({ length: 4 }).map((_, index) => <SkeletonRow key={index} />)
+            Array.from({ length: 4 }).map((_, index) => <SkeletonSignal key={index} />)
           ) : filteredPosts.length === 0 ? (
-            <div className="neon-panel rounded-[1.75rem] px-6 py-18 text-center">
-              <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full border border-[color:var(--neon-line)] bg-[rgba(89,243,255,0.08)] text-[var(--neon-cyan)]">
-                <Search className="w-7 h-7" />
-              </div>
-              <h3 className="text-2xl font-semibold tracking-[-0.03em] text-[var(--neon-text)]">
-                No briefs found
-              </h3>
+            <div className="py-20 text-center">
+              <h2 className="text-2xl font-semibold tracking-[-0.03em] text-[var(--neon-text)]">
+                No live briefs in this slice of the city
+              </h2>
               <p className="mx-auto mt-3 max-w-xl text-sm leading-7 text-[var(--neon-muted)] md:text-base">
-                Try a different filter, or post the first bounty-backed request in this slice of the market.
+                Try another category or post the first bounty-backed request for this market.
               </p>
               <Link to="/post" className="inline-flex">
                 <Button className="mt-7 rounded-none border border-[color:rgba(89,243,255,0.34)] bg-[rgba(9,14,31,0.88)] text-[var(--neon-cyan)] hover:bg-[rgba(89,243,255,0.1)]">
@@ -244,37 +234,34 @@ export function BrowseProblems() {
 
               return (
                 <Link key={post.id} to={`/problem/${post.id}`} className="block">
-                  <article className="neon-panel group relative overflow-hidden rounded-[1.5rem] p-6 transition-transform hover:-translate-y-0.5">
-                    <div className="absolute inset-y-6 left-0 w-px bg-gradient-to-b from-transparent via-[var(--neon-cyan)] to-transparent opacity-75" />
-
-                    {hot && (
-                      <div className="absolute right-5 top-5 inline-flex items-center gap-1 rounded-none border border-[color:rgba(255,79,216,0.32)] bg-[rgba(255,79,216,0.12)] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--neon-text)]">
-                        <Flame className="w-3 h-3" />
-                        Hot
-                      </div>
-                    )}
-
-                    <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                      <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-2">
+                  <article className="market-row group py-8">
+                    <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_176px] lg:items-start">
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
                           <span
-                            className={`font-mono-alt text-[0.68rem] font-semibold uppercase tracking-[0.26em] ${
+                            className={`font-mono-alt text-[0.68rem] font-semibold uppercase tracking-[0.28em] ${
                               CATEGORY_ACCENTS[post.category] || "text-[var(--neon-cyan)]"
                             }`}
                           >
                             {post.category}
                           </span>
-                          <span className="rounded-none border border-[color:rgba(89,243,255,0.16)] bg-[rgba(89,243,255,0.06)] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--neon-muted)]">
+                          <span className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-[var(--neon-dim)]">
                             {job ? "Paid Task" : "Problem Brief"}
                           </span>
-                          {job && post.jobStatus && (
-                            <span className="rounded-none border border-[color:rgba(255,79,216,0.18)] bg-[rgba(255,79,216,0.06)] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--neon-muted)]">
+                          {job && post.jobStatus ? (
+                            <span className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-[var(--neon-dim)]">
                               {formatJobStatus(post.jobStatus)}
                             </span>
-                          )}
+                          ) : null}
+                          {hot ? (
+                            <span className="inline-flex items-center gap-1 text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-[var(--neon-pink)]">
+                              <Flame className="w-3 h-3" />
+                              Hot Signal
+                            </span>
+                          ) : null}
                         </div>
 
-                        <h2 className="mt-4 text-2xl font-semibold tracking-[-0.04em] text-[var(--neon-text)] transition-colors group-hover:text-[var(--neon-cyan)]">
+                        <h2 className="mt-3 text-2xl font-semibold tracking-[-0.04em] text-[var(--neon-text)] transition-colors group-hover:text-[var(--neon-cyan)] md:text-3xl">
                           {post.title}
                         </h2>
                         <p className="mt-3 max-w-3xl text-sm leading-7 text-[var(--neon-muted)] line-clamp-2 md:text-base">
@@ -297,24 +284,24 @@ export function BrowseProblems() {
                             <Clock className="w-3.5 h-3.5" />
                             <span>{formatTimeAgo(post.createdAt)}</span>
                           </div>
-                          {job && post.deadline && (
+                          {job && post.deadline ? (
                             <div className="flex items-center gap-1.5 text-[var(--neon-lime)]">
                               <Briefcase className="w-3.5 h-3.5" />
                               <span>Deadline {new Date(post.deadline).toLocaleDateString()}</span>
                             </div>
-                          )}
+                          ) : null}
                         </div>
                       </div>
 
-                      <div className="lg:min-w-[180px] lg:text-right">
-                        <p className="font-mono-alt text-[0.68rem] font-semibold uppercase tracking-[0.26em] text-[var(--neon-dim)]">
+                      <div className="lg:text-right">
+                        <p className="font-mono-alt text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-[var(--neon-dim)]">
                           {job ? "Budget" : "Bounty"}
                         </p>
                         <p className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-[var(--neon-cyan)]">
                           {formatBudget(post)}
                         </p>
                         <div className="mt-6 inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-[0.18em] text-[var(--neon-cyan)] transition-all group-hover:gap-2">
-                          View Brief
+                          Open Brief
                           <ArrowRight className="w-3.5 h-3.5" />
                         </div>
                       </div>

@@ -5,6 +5,17 @@ import { Button } from "./ui/button";
 import { Navbar } from "./navbar";
 
 const TYPEWRITER_PHRASES = ["solve it.", "ship it.", "scope it.", "finish it."];
+const CITY_TOWERS = [
+  { width: "9%", height: "34%", glow: "cyan", offset: "0%" },
+  { width: "10%", height: "48%", glow: "pink", offset: "9%" },
+  { width: "7%", height: "26%", glow: "cyan", offset: "20%" },
+  { width: "11%", height: "58%", glow: "lime", offset: "28%" },
+  { width: "9%", height: "40%", glow: "cyan", offset: "42%" },
+  { width: "13%", height: "72%", glow: "pink", offset: "52%" },
+  { width: "8%", height: "52%", glow: "cyan", offset: "67%" },
+  { width: "12%", height: "44%", glow: "lime", offset: "76%" },
+  { width: "8%", height: "30%", glow: "pink", offset: "90%" },
+];
 
 const ENTRY_POINTS = [
   {
@@ -86,16 +97,33 @@ export function LandingPage() {
         <section className="neon-landing-hero relative isolate overflow-hidden border-b border-[color:var(--neon-line)]">
           <div className="neon-grid absolute inset-0" aria-hidden="true" />
 
-          <div className="landing-signal-plane" aria-hidden="true">
-            <div className="landing-signal-ring" />
-            <div className="landing-signal-ring landing-signal-ring--inner" />
-            <div className="landing-signal-ring landing-signal-ring--pulse" />
-            <div className="landing-signal-beam" />
-            <div className="landing-signal-core" />
-            <div className="landing-signal-copy landing-signal-copy--top">BOUNTY BOARD</div>
-            <div className="landing-signal-copy landing-signal-copy--left">PROBLEM HUNTERS</div>
-            <div className="landing-signal-copy landing-signal-copy--right">SOLUTION SEEKERS</div>
-            <div className="landing-signal-copy landing-signal-copy--bottom">TASKS // REQUESTS // PROBLEMS</div>
+          <div className="landing-cityscape" aria-hidden="true">
+            <div className="landing-cityscape__rain" />
+            <div className="landing-cityscape__glow landing-cityscape__glow--cyan" />
+            <div className="landing-cityscape__glow landing-cityscape__glow--pink" />
+            <div className="landing-cityscape__haze" />
+            <div className="landing-cityscape__billboard">
+              <span>REQUEST</span>
+              <span>BUILD</span>
+              <span>BOUNTY</span>
+            </div>
+            <div className="landing-cityscape__skyline">
+              {CITY_TOWERS.map((tower) => (
+                <div
+                  key={`${tower.offset}-${tower.height}`}
+                  className={`landing-cityscape__tower landing-cityscape__tower--${tower.glow}`}
+                  style={{
+                    left: tower.offset,
+                    width: tower.width,
+                    height: tower.height,
+                  }}
+                >
+                  <span className="landing-cityscape__windows" />
+                </div>
+              ))}
+            </div>
+            <div className="landing-cityscape__street" />
+            <div className="landing-cityscape__street-glow" />
           </div>
 
           <div className="relative z-10 mx-auto flex min-h-[calc(100svh-73px)] max-w-7xl items-center px-5 py-16 sm:px-8 lg:px-10">

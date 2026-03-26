@@ -214,16 +214,27 @@ export function BuilderDashboard() {
       <Navbar />
 
       <div className="mx-auto max-w-7xl px-4 py-12">
-        <section className="neon-panel relative overflow-hidden rounded-[1.75rem] p-8 md:p-10 mb-8">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,79,216,0.16),transparent_30%),radial-gradient(circle_at_bottom_left,rgba(89,243,255,0.12),transparent_26%)]" />
+        <section className="neon-panel neon-command-hero relative overflow-hidden rounded-[1.75rem] p-8 md:p-10 mb-8">
+          <div className="neon-command-hero__scene" aria-hidden="true">
+            <div className="neon-command-hero__scan" />
+            <div className="neon-command-hero__frame neon-command-hero__frame--one" />
+            <div className="neon-command-hero__frame neon-command-hero__frame--two" />
+            <div className="neon-command-hero__beam" />
+          </div>
           <div className="relative z-10 grid gap-8 lg:grid-cols-[minmax(0,1.15fr)_minmax(280px,0.85fr)]">
             <div className="max-w-3xl">
               <p className="neon-kicker">Command Deck</p>
-              <h1 className="font-cyber text-4xl uppercase tracking-[0.12em] text-[var(--neon-text)] md:text-5xl">
-                {displayName}
+              <p className="font-cyber text-sm uppercase tracking-[0.24em] text-[var(--neon-pink)]">
+                Problem Hunt
+              </p>
+              <h1 className="mt-3 font-cyber text-4xl uppercase tracking-[0.12em] text-[var(--neon-text)] md:text-5xl">
+                Command Deck
               </h1>
               <p className="mt-4 max-w-2xl text-base leading-8 text-[var(--neon-muted)] md:text-lg">
                 {identityCopy}
+              </p>
+              <p className="mt-4 text-sm uppercase tracking-[0.2em] text-[var(--neon-dim)]">
+                Operator: {displayName}
               </p>
 
               <div className="mt-6 flex flex-wrap gap-2">
