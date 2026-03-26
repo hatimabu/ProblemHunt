@@ -1,286 +1,271 @@
-import { useEffect, useState } from "react";
 import { Link } from "react-router";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, CheckCircle2, ChevronRight } from "lucide-react";
 import { Button } from "./ui/button";
 import { Navbar } from "./navbar";
 
-const TYPEWRITER_PHRASES = ["solve it.", "ship it.", "scope it.", "finish it."];
-const CITY_TOWERS = [
-  { width: "9%", height: "34%", glow: "cyan", offset: "0%" },
-  { width: "10%", height: "48%", glow: "pink", offset: "9%" },
-  { width: "7%", height: "26%", glow: "cyan", offset: "20%" },
-  { width: "11%", height: "58%", glow: "lime", offset: "28%" },
-  { width: "9%", height: "40%", glow: "cyan", offset: "42%" },
-  { width: "13%", height: "72%", glow: "pink", offset: "52%" },
-  { width: "8%", height: "52%", glow: "cyan", offset: "67%" },
-  { width: "12%", height: "44%", glow: "lime", offset: "76%" },
-  { width: "8%", height: "30%", glow: "pink", offset: "90%" },
+const HERO_TICKETS = [
+  { label: "Infrastructure", title: "Tighten deploy preview time before Friday.", meta: "3.2 SOL bounty" },
+  { label: "AI/ML", title: "Clean retrieval quality on our support agent.", meta: "$1,200 offer" },
+  { label: "Finance", title: "Rebuild reconciliation workflow for month-end.", meta: "Contract brief" },
+  { label: "Web3", title: "Ship wallet-based payout flow without support debt.", meta: "6.5 SOL bounty" },
+  { label: "Trading", title: "Fix signal latency in our market scanner.", meta: "$800 offer" },
+  { label: "Governance", title: "Translate forum chaos into an executable spec.", meta: "Open brief" },
 ];
 
-const ENTRY_POINTS = [
+const AUDIENCES = [
   {
-    label: "Problem Hunters",
-    description: "Bring the pain point, the blocker, or the backlog item that keeps surviving every sprint review.",
+    title: "For founders and operators",
+    copy: "Put the real blocker on the board, set the reward, and stop carrying the task from sprint to sprint.",
   },
   {
-    label: "Solution Seekers",
-    description: "Builders can hunt for briefs with budget, signal, and enough context to move fast without guessing.",
+    title: "For builders",
+    copy: "Find briefs with enough context to price properly, reply with a plan, and get paid for doing the work.",
   },
   {
-    label: "People Who Need It Done",
-    description: "Not every post is a startup idea. Sometimes it is a task, a tool, or a technical rescue mission with a bounty attached.",
+    title: "For teams in the middle",
+    copy: "Use one marketplace for one-off technical rescues, scoped implementation, and open-ended problem solving.",
   },
 ];
 
-const FLOW_STEPS = [
+const FLOW = [
   {
     step: "01",
-    title: "Post the brief",
-    description: "Describe the problem, task, or request. Set the bounty and define what done actually means.",
+    title: "Post what actually needs to move",
+    copy: "Describe the problem, the scope, or the deliverable and attach a bounty that makes the work worth taking.",
   },
   {
     step: "02",
-    title: "Let builders hunt",
-    description: "Solution seekers respond with approach, timing, and proof that they can clear the work.",
+    title: "Review the builders who show up",
+    copy: "Compare bids, timelines, experience, and links. Pick the person who sounds ready to ship instead of guess.",
   },
   {
     step: "03",
-    title: "Fund the finish",
-    description: "Choose the right response, track progress, and release the reward when the work ships.",
+    title: "Track it through to payout",
+    copy: "Accepted work, direct tips, and wallet-based payment all live in the same flow once the build starts moving.",
   },
 ];
 
-function useTypewriter(phrases: string[], speed = 95, pause = 1800) {
-  const [display, setDisplay] = useState("");
-  const [phraseIdx, setPhraseIdx] = useState(0);
-  const [charIdx, setCharIdx] = useState(0);
-  const [deleting, setDeleting] = useState(false);
-
-  useEffect(() => {
-    const current = phrases[phraseIdx];
-    if (!deleting && charIdx <= current.length) {
-      const timeout = setTimeout(() => setCharIdx((count) => count + 1), speed);
-      return () => clearTimeout(timeout);
-    }
-
-    if (!deleting && charIdx > current.length) {
-      const timeout = setTimeout(() => setDeleting(true), pause);
-      return () => clearTimeout(timeout);
-    }
-
-    if (deleting && charIdx > 0) {
-      const timeout = setTimeout(() => setCharIdx((count) => count - 1), speed / 2);
-      return () => clearTimeout(timeout);
-    }
-
-    if (deleting && charIdx === 0) {
-      setDeleting(false);
-      setPhraseIdx((index) => (index + 1) % phrases.length);
-    }
-  }, [charIdx, deleting, pause, phraseIdx, phrases, speed]);
-
-  useEffect(() => {
-    setDisplay(phrases[phraseIdx].slice(0, charIdx));
-  }, [charIdx, phraseIdx, phrases]);
-
-  return display;
-}
+const SIGNALS = [
+  { type: "Paid task", title: "Refactor our Supabase auth recovery flow", budget: "2.4 SOL", detail: "Identity, session repair, rollout notes" },
+  { type: "Problem brief", title: "Need a saner dashboard for proposal review", budget: "$650", detail: "Design system cleanup, better scanning" },
+  { type: "Paid task", title: "Automate stale issue triage in GitHub", budget: "$900", detail: "Actions, labels, notification rules" },
+];
 
 export function LandingPage() {
-  const typewriter = useTypewriter(TYPEWRITER_PHRASES);
-
   return (
-    <div className="neon-page landing-page min-h-screen text-[var(--neon-text)]">
+    <div className="board-app">
       <Navbar />
 
       <main>
-        <section className="neon-landing-hero relative isolate overflow-hidden border-b border-[color:var(--neon-line)]">
-          <div className="neon-grid absolute inset-0" aria-hidden="true" />
-
-          <div className="landing-cityscape" aria-hidden="true">
-            <div className="landing-cityscape__rain" />
-            <div className="landing-cityscape__glow landing-cityscape__glow--cyan" />
-            <div className="landing-cityscape__glow landing-cityscape__glow--pink" />
-            <div className="landing-cityscape__haze" />
-            <div className="landing-cityscape__billboard">
-              <span>REQUEST</span>
-              <span>BUILD</span>
-              <span>BOUNTY</span>
-            </div>
-            <div className="landing-cityscape__skyline">
-              {CITY_TOWERS.map((tower) => (
-                <div
-                  key={`${tower.offset}-${tower.height}`}
-                  className={`landing-cityscape__tower landing-cityscape__tower--${tower.glow}`}
-                  style={{
-                    left: tower.offset,
-                    width: tower.width,
-                    height: tower.height,
-                  }}
-                >
-                  <span className="landing-cityscape__windows" />
-                </div>
-              ))}
-            </div>
-            <div className="landing-cityscape__street" />
-            <div className="landing-cityscape__street-glow" />
-          </div>
-
-          <div className="relative z-10 mx-auto flex min-h-[calc(100svh-73px)] max-w-7xl items-center px-5 py-16 sm:px-8 lg:px-10">
+        <section className="board-hero">
+          <div className="board-container board-hero__grid">
             <div className="max-w-3xl">
-              <p className="landing-wordmark font-cyber fade-in">Problem Hunt</p>
-
-              <h1 className="max-w-2xl text-4xl font-semibold leading-[0.92] tracking-[-0.05em] md:text-6xl fade-in stagger-1">
-                For people who need something done and builders who want the bounty.
+              <p className="board-kicker fade-in">Problem Hunt</p>
+              <h1 className="board-display fade-in stagger-1">
+                Put the work on the board.
               </h1>
-
-              <p className="mt-6 max-w-xl text-lg leading-8 text-[var(--neon-muted)] fade-in stagger-2 md:text-xl">
-                Post a stubborn problem, a scoped dev task, or a straight-up request. Problem hunters and solution seekers meet on one neon board to{" "}
-                <span className="font-cyber text-[var(--neon-cyan)] typewriter-cursor">{typewriter}</span>
+              <h2 className="board-title mt-5 fade-in stagger-2">
+                Find a builder who can actually close it.
+              </h2>
+              <p className="board-copy mt-6 fade-in stagger-3">
+                Problem Hunt is a bounty marketplace for technical work that keeps getting delayed. Post a brief, price the ask, review serious responses, and move from backlog to shipped without losing the thread.
               </p>
 
-              <div className="mt-10 flex flex-col gap-4 sm:flex-row fade-in stagger-3">
+              <div className="mt-8 flex flex-col gap-4 sm:flex-row fade-in stagger-4">
                 <Link to="/browse">
-                  <Button
-                    size="lg"
-                    className="h-14 rounded-none border border-[color:rgba(89,243,255,0.4)] bg-[rgba(7,14,32,0.92)] px-8 text-[0.88rem] font-semibold uppercase tracking-[0.22em] text-[var(--neon-cyan)] shadow-[0_0_24px_rgba(89,243,255,0.12)] hover:bg-[rgba(89,243,255,0.12)]"
-                  >
-                    Enter The Board
-                    <ArrowRight className="w-4 h-4" />
+                  <Button className="h-12 rounded-none border border-[color:rgba(15,118,110,0.24)] bg-[var(--board-accent)] px-6 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-white hover:bg-[color:#0d625c]">
+                    Browse live work
+                    <ArrowRight className="h-4 w-4" />
                   </Button>
                 </Link>
-
                 <Link to="/post">
                   <Button
-                    size="lg"
                     variant="outline"
-                    className="h-14 rounded-none border-[color:rgba(255,79,216,0.34)] bg-[rgba(10,15,38,0.72)] px-8 text-[0.88rem] font-semibold uppercase tracking-[0.22em] text-[var(--neon-text)] hover:bg-[rgba(255,79,216,0.1)]"
+                    className="h-12 rounded-none border-[color:var(--board-line-strong)] bg-white/56 px-6 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-[var(--board-ink)] hover:bg-white"
                   >
-                    Post A Bounty
+                    Post a brief
                   </Button>
                 </Link>
+              </div>
+
+              <div className="mt-10 grid gap-5 border-t border-[color:var(--board-line)] pt-6 sm:grid-cols-3 fade-in stagger-5">
+                <div className="board-stat">
+                  <div className="board-stat__value">One</div>
+                  <div className="board-stat__label">Place for briefs, tasks, and bounties</div>
+                </div>
+                <div className="board-stat">
+                  <div className="board-stat__value">Direct</div>
+                  <div className="board-stat__label">Wallet-aware payout flow</div>
+                </div>
+                <div className="board-stat">
+                  <div className="board-stat__value">Clear</div>
+                  <div className="board-stat__label">Signals, bids, and ownership</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="board-hero__poster fade-in stagger-2">
+              <div className="board-ticker" aria-hidden="true">
+                <div className="board-ticker__lane">
+                  {[...HERO_TICKETS, ...HERO_TICKETS].map((ticket, index) => (
+                    <div key={`${ticket.title}-${index}`} className="board-ticket">
+                      <p className="board-ticket__label">{ticket.label}</p>
+                      <p className="board-ticket__title">{ticket.title}</p>
+                      <p className="board-ticket__meta">{ticket.meta}</p>
+                    </div>
+                  ))}
+                </div>
+                <div className="board-ticker__lane board-ticker__lane--reverse">
+                  {[...HERO_TICKETS.slice().reverse(), ...HERO_TICKETS.slice().reverse()].map((ticket, index) => (
+                    <div key={`${ticket.meta}-${index}`} className="board-ticket">
+                      <p className="board-ticket__label">{ticket.label}</p>
+                      <p className="board-ticket__title">{ticket.title}</p>
+                      <p className="board-ticket__meta">{ticket.meta}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
         </section>
 
-        <section className="border-b border-[color:var(--neon-line)]">
-          <div className="mx-auto max-w-6xl px-5 py-20 sm:px-8 lg:px-10">
+        <section className="board-section">
+          <div className="board-container">
             <div className="max-w-2xl">
-              <p className="neon-kicker">Who Shows Up</p>
-              <h2 className="text-3xl font-semibold leading-none tracking-[-0.05em] md:text-5xl">
-                One board, three reasons to use it.
-              </h2>
-              <p className="mt-4 text-base leading-7 text-[var(--neon-muted)] md:text-lg">
-                Problem Hunt is not just for startup wishlists. It is also for teams, founders, and operators who need real work cleared by someone who can ship.
-              </p>
+              <p className="board-kicker">Who It Serves</p>
+              <h2 className="board-title mt-3">Built for people with work in front of them, not just ideas about work.</h2>
             </div>
 
-            <div className="mt-14 grid gap-8 md:grid-cols-3">
-              {ENTRY_POINTS.map((entry) => (
-                <div key={entry.label} className="border-t border-[color:var(--neon-line)] pt-6">
-                  <p className="font-cyber text-sm uppercase tracking-[0.28em] text-[var(--neon-pink)]">
-                    {entry.label}
-                  </p>
-                  <p className="mt-4 text-base leading-8 text-[var(--neon-muted)]">
-                    {entry.description}
-                  </p>
+            <div className="mt-12 grid gap-8 lg:grid-cols-3">
+              {AUDIENCES.map((item, index) => (
+                <div key={item.title} className={`border-t border-[color:var(--board-line)] pt-6 fade-in stagger-${Math.min(index + 1, 5)}`}>
+                  <h3 className="board-subtitle text-[1.65rem]">{item.title}</h3>
+                  <p className="board-copy mt-4 text-base">{item.copy}</p>
                 </div>
               ))}
             </div>
           </div>
         </section>
 
-        <section className="border-b border-[color:var(--neon-line)]">
-          <div className="mx-auto max-w-6xl px-5 py-20 sm:px-8 lg:px-10">
-            <div className="max-w-2xl">
-              <p className="neon-kicker">How It Works</p>
-              <h2 className="text-3xl font-semibold leading-none tracking-[-0.05em] md:text-5xl">
-                Problems, tasks, and requests all move through the same bounty loop.
-              </h2>
+        <section className="board-section">
+          <div className="board-container grid gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(280px,0.8fr)]">
+            <div>
+              <p className="board-kicker">How It Moves</p>
+              <h2 className="board-title mt-3">One loop from post to payout.</h2>
+
+              <div className="mt-10">
+                {FLOW.map((item, index) => (
+                  <div key={item.step} className={`board-row fade-in stagger-${Math.min(index + 1, 5)}`}>
+                    <div className="grid gap-4 md:grid-cols-[100px_minmax(0,1fr)]">
+                      <p className="board-eyebrow">{item.step}</p>
+                      <div>
+                        <h3 className="board-subtitle text-[1.8rem]">{item.title}</h3>
+                        <p className="board-copy mt-3 text-base">{item.copy}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
 
-            <div className="mt-14 grid gap-8 md:grid-cols-3">
-              {FLOW_STEPS.map((item) => (
-                <div key={item.step} className="neon-panel p-6">
-                  <p className="font-cyber text-sm uppercase tracking-[0.28em] text-[var(--neon-cyan)]">
-                    {item.step}
-                  </p>
-                  <h3 className="mt-5 text-2xl font-semibold tracking-[-0.04em] text-[var(--neon-text)]">
-                    {item.title}
-                  </h3>
-                  <p className="mt-3 text-sm leading-7 text-[var(--neon-muted)] md:text-base">
-                    {item.description}
-                  </p>
+            <aside className="board-panel board-panel--soft p-6 md:p-8">
+              <p className="board-kicker">What Good Looks Like</p>
+              <div className="mt-6 space-y-5">
+                {[
+                  "Enough context to price the work properly",
+                  "A clear deadline or decision window",
+                  "Builder responses that sound operational, not speculative",
+                  "One place to track accepted work and payment",
+                ].map((item) => (
+                  <div key={item} className="flex items-start gap-3">
+                    <CheckCircle2 className="mt-1 h-4 w-4 text-[var(--board-accent)]" />
+                    <p className="text-sm leading-7 text-[var(--board-muted)]">{item}</p>
+                  </div>
+                ))}
+              </div>
+            </aside>
+          </div>
+        </section>
+
+        <section className="board-section">
+          <div className="board-container">
+            <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+              <div className="max-w-2xl">
+                <p className="board-kicker">Live Signal</p>
+                <h2 className="board-title mt-3">The marketplace should scan like a board, not a dashboard mosaic.</h2>
+              </div>
+              <Link
+                to="/browse"
+                className="inline-flex items-center gap-2 font-mono-alt text-[0.74rem] font-semibold uppercase tracking-[0.18em] text-[var(--board-accent)]"
+              >
+                Open marketplace
+                <ChevronRight className="h-4 w-4" />
+              </Link>
+            </div>
+
+            <div className="mt-10 border-t border-[color:var(--board-line)]">
+              {SIGNALS.map((signal) => (
+                <div key={signal.title} className="board-row">
+                  <div className="grid gap-5 md:grid-cols-[160px_minmax(0,1fr)_140px] md:items-start">
+                    <div className="board-eyebrow">{signal.type}</div>
+                    <div>
+                      <h3 className="board-subtitle text-[1.9rem]">{signal.title}</h3>
+                      <p className="mt-3 text-sm leading-7 text-[var(--board-muted)]">{signal.detail}</p>
+                    </div>
+                    <div className="md:text-right">
+                      <p className="board-eyebrow">Budget</p>
+                      <p className="mt-2 font-display text-2xl font-semibold tracking-[-0.05em] text-[var(--board-ink)]">
+                        {signal.budget}
+                      </p>
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>
           </div>
         </section>
 
-        <section>
-          <div className="mx-auto max-w-6xl px-5 py-20 sm:px-8 lg:px-10">
-            <div className="neon-panel overflow-hidden p-8 md:p-10">
-              <p className="neon-kicker">Ready To Hunt</p>
-              <h2 className="max-w-2xl text-3xl font-semibold leading-none tracking-[-0.05em] md:text-5xl">
-                Put the work on the board and let the right builder lock on.
-              </h2>
-              <p className="mt-5 max-w-2xl text-base leading-8 text-[var(--neon-muted)] md:text-lg">
-                Start with a hard problem, a one-off dev task, or the thing your team keeps delaying. The board is built for bounty-backed work that needs an owner.
-              </p>
+        <section className="board-section">
+          <div className="board-container board-panel p-8 md:p-10">
+            <p className="board-kicker">Ready</p>
+            <h2 className="board-title mt-3 max-w-3xl">If the task keeps surviving the sprint, it probably belongs on the board.</h2>
+            <p className="board-copy mt-5">
+              Start with the thing your team keeps pushing forward, the workflow nobody owns, or the scoped implementation that needs a real builder behind it.
+            </p>
 
-              <div className="mt-8 flex flex-col gap-4 sm:flex-row">
-                <Link to="/post">
-                  <Button
-                    size="lg"
-                    className="h-14 rounded-none border border-[color:rgba(255,79,216,0.38)] bg-[rgba(255,79,216,0.12)] px-8 text-[0.88rem] font-semibold uppercase tracking-[0.22em] text-[var(--neon-text)] hover:bg-[rgba(255,79,216,0.18)]"
-                  >
-                    Post The Brief
-                  </Button>
-                </Link>
-                <Link to="/browse">
-                  <Button
-                    size="lg"
-                    variant="outline"
-                    className="h-14 rounded-none border-[color:rgba(89,243,255,0.34)] bg-transparent px-8 text-[0.88rem] font-semibold uppercase tracking-[0.22em] text-[var(--neon-cyan)] hover:bg-[rgba(89,243,255,0.1)]"
-                  >
-                    Browse The Market
-                  </Button>
-                </Link>
-              </div>
+            <div className="mt-8 flex flex-col gap-4 sm:flex-row">
+              <Link to="/post">
+                <Button className="h-12 rounded-none border border-[color:rgba(15,118,110,0.24)] bg-[var(--board-accent)] px-6 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-white hover:bg-[color:#0d625c]">
+                  Post a brief
+                </Button>
+              </Link>
+              <Link to="/browse">
+                <Button
+                  variant="outline"
+                  className="h-12 rounded-none border-[color:var(--board-line-strong)] bg-white/56 px-6 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-[var(--board-ink)] hover:bg-white"
+                >
+                  Browse builders
+                </Button>
+              </Link>
             </div>
           </div>
         </section>
       </main>
 
-      <footer className="border-t border-[color:var(--neon-line)]">
-        <div className="mx-auto max-w-6xl px-5 py-10 sm:px-8 lg:px-10">
-          <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-            <div>
-              <p className="font-cyber text-2xl tracking-[0.2em] uppercase text-[var(--neon-text)]">
-                Problem Hunt
-              </p>
-              <p className="mt-2 max-w-md text-sm leading-6 text-[var(--neon-muted)]">
-                A cyberpunk bounty board for problems, tasks, and technical requests that need a real owner.
-              </p>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-5 text-sm text-[var(--neon-muted)]">
-              <Link to="/browse" className="transition-colors hover:text-[var(--neon-cyan)]">
-                Browse
-              </Link>
-              <Link to="/leaderboard" className="transition-colors hover:text-[var(--neon-cyan)]">
-                Leaderboard
-              </Link>
-              <Link to="/post" className="transition-colors hover:text-[var(--neon-cyan)]">
-                Post Brief
-              </Link>
-            </div>
+      <footer className="border-t border-[color:var(--board-line)]">
+        <div className="board-container flex flex-col gap-5 py-8 md:flex-row md:items-center md:justify-between">
+          <div>
+            <p className="board-eyebrow">Problem Hunt</p>
+            <p className="mt-2 text-sm text-[var(--board-muted)]">
+              A clearer market for technical work, scoped tasks, and bounty-backed problem solving.
+            </p>
           </div>
 
-          <p className="mt-8 text-xs uppercase tracking-[0.24em] text-[var(--neon-dim)]">
-            Built with Supabase and Azure. © 2026 Problem Hunt.
-          </p>
+          <div className="flex flex-wrap gap-4 text-sm text-[var(--board-muted)]">
+            <Link to="/browse" className="hover:text-[var(--board-accent)]">Browse</Link>
+            <Link to="/leaderboard" className="hover:text-[var(--board-accent)]">Leaderboard</Link>
+            <Link to="/dashboard" className="hover:text-[var(--board-accent)]">Dashboard</Link>
+          </div>
         </div>
       </footer>
     </div>

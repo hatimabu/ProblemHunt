@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router";
-import { Mail, Lock, User, Briefcase } from "lucide-react";
+import { useNavigate } from "react-router";
+import { Briefcase, Lock, Mail, User } from "lucide-react";
 import { Navbar } from "./navbar";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -11,7 +11,7 @@ import { useAuth } from "../contexts/AuthContext";
 export function AuthPage() {
   const navigate = useNavigate();
   const { login, signup } = useAuth();
-  
+
   const [signupData, setSignupData] = useState({
     username: "",
     fullName: "",
@@ -19,18 +19,16 @@ export function AuthPage() {
     password: "",
     userType: "builder" as "problem_poster" | "builder",
   });
-
   const [loginData, setLoginData] = useState({
     email: "",
     password: "",
   });
-
   const [signupError, setSignupError] = useState("");
   const [loginError, setLoginError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSignup = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSignup = async (event: React.FormEvent) => {
+    event.preventDefault();
     setSignupError("");
     setIsSubmitting(true);
 
@@ -42,37 +40,24 @@ export function AuthPage() {
         signupData.password,
         signupData.userType
       );
-      // Redirect to dashboard if builder, otherwise to browse
-      if (signupData.userType === 'builder') {
-        navigate('/dashboard');
-      } else {
-        navigate('/browse');
-      }
+
+      navigate(signupData.userType === "builder" ? "/dashboard" : "/browse");
     } catch (error: any) {
-      console.error("Signup failed:", error);
       setSignupError(error.message || "Signup failed. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleLogin = async (event: React.FormEvent) => {
+    event.preventDefault();
     setLoginError("");
     setIsSubmitting(true);
 
     try {
       await login(loginData.email, loginData.password);
-      // After login, redirect to dashboard
-      console.log('Login successful, navigating to dashboard');
-      navigate('/dashboard');
+      navigate("/dashboard");
     } catch (error: any) {
-      console.error("Login failed:", error);
-      console.error("Error details:", {
-        message: error.message,
-        name: error.name,
-        stack: error.stack
-      });
       setLoginError(error.message || "Login failed. Please check your credentials.");
     } finally {
       setIsSubmitting(false);
@@ -80,243 +65,210 @@ export function AuthPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] text-gray-100">
+    <div className="board-app">
       <Navbar />
 
-      {/* Auth Content */}
-      <div className="container mx-auto px-4 py-12">
-        <div className="max-w-md mx-auto">
-          {/* Hero Text */}
-          <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold mb-3 bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">
-              Welcome to Problem Hunt
-            </h1>
-            <p className="text-gray-400">
-              Join the marketplace for decentralized problem solving
-            </p>
+      <main className="board-container py-8 md:py-10">
+        <section className="board-auth-shell">
+          <div className="flex flex-col justify-between border-b border-[color:var(--board-line)] pb-8 md:border-b-0 md:border-r md:pb-0 md:pr-8">
+            <div>
+              <p className="board-kicker">Access</p>
+              <h1 className="board-title mt-3">Join the board, post work, or claim it.</h1>
+              <p className="board-copy mt-5">
+                Problem Hunt is built for operators who need something shipped and builders who want a clean path from response to payout.
+              </p>
+            </div>
+
+            <div className="mt-10 space-y-6">
+              {[
+                "Post a brief with enough detail for someone to price the work properly.",
+                "Track accepted proposals and wallet-based payment in one flow.",
+                "Build a profile that looks serious when a requester opens your bid.",
+              ].map((item) => (
+                <div key={item} className="border-t border-[color:var(--board-line)] pt-4">
+                  <p className="text-sm leading-7 text-[var(--board-muted)]">{item}</p>
+                </div>
+              ))}
+            </div>
           </div>
 
-          {/* Auth Tabs */}
-          <div className="relative">
-            <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/5 to-blue-500/5 rounded-2xl blur-xl" />
-            <div className="relative bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-2xl p-8">
-              <Tabs defaultValue="login" className="space-y-6">
-                <TabsList className="grid w-full grid-cols-2 bg-gray-800/50 p-1">
-                  <TabsTrigger
-                    value="login"
-                    className="data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-400 text-gray-400"
+          <div className="board-panel p-6 md:p-8">
+            <Tabs defaultValue="login" className="space-y-6">
+              <TabsList className="board-tabs grid h-auto w-full grid-cols-2 rounded-none p-1">
+                <TabsTrigger value="login">Login</TabsTrigger>
+                <TabsTrigger value="signup">Sign up</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="login">
+                <form onSubmit={handleLogin} className="space-y-5">
+                  <div>
+                    <Label htmlFor="login-email" className="mb-2 block text-sm text-[var(--board-ink)]">
+                      <Mail className="mr-2 inline h-4 w-4 text-[var(--board-accent)]" />
+                      Email
+                    </Label>
+                    <Input
+                      id="login-email"
+                      type="email"
+                      placeholder="you@company.com"
+                      value={loginData.email}
+                      onChange={(event) => setLoginData({ ...loginData, email: event.target.value })}
+                      className="board-field rounded-none"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="login-password" className="mb-2 block text-sm text-[var(--board-ink)]">
+                      <Lock className="mr-2 inline h-4 w-4 text-[var(--board-accent)]" />
+                      Password
+                    </Label>
+                    <Input
+                      id="login-password"
+                      type="password"
+                      placeholder="••••••••"
+                      value={loginData.password}
+                      onChange={(event) => setLoginData({ ...loginData, password: event.target.value })}
+                      className="board-field rounded-none"
+                      required
+                    />
+                  </div>
+
+                  {loginError ? (
+                    <div className="border border-[color:rgba(178,103,55,0.2)] bg-[rgba(178,103,55,0.08)] px-4 py-3 text-sm text-[var(--board-rust)]">
+                      {loginError}
+                    </div>
+                  ) : null}
+
+                  <Button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="h-12 w-full rounded-none border border-[color:rgba(15,118,110,0.24)] bg-[var(--board-accent)] text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-white hover:bg-[color:#0d625c]"
                   >
-                    Login
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="signup"
-                    className="data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-400 text-gray-400"
-                  >
-                    Sign Up
-                  </TabsTrigger>
-                </TabsList>
+                    {isSubmitting ? "Logging in..." : "Login"}
+                  </Button>
+                </form>
+              </TabsContent>
 
-                {/* Login Form */}
-                <TabsContent value="login">
-                  <form onSubmit={handleLogin} className="space-y-4">
-                    <div>
-                      <Label htmlFor="login-email" className="text-white mb-2 block">
-                        <Mail className="w-4 h-4 inline mr-2" />
-                        Email
-                      </Label>
-                      <Input
-                        id="login-email"
-                        type="email"
-                        placeholder="your@email.com"
-                        value={loginData.email}
-                        onChange={(e) => setLoginData({ ...loginData, email: e.target.value })}
-                        className="bg-gray-800/50 border-gray-700 focus:border-cyan-500/50 text-white placeholder:text-gray-500"
-                        required
-                      />
-                    </div>
+              <TabsContent value="signup">
+                <form onSubmit={handleSignup} className="space-y-5">
+                  <div>
+                    <Label htmlFor="signup-username" className="mb-2 block text-sm text-[var(--board-ink)]">
+                      <User className="mr-2 inline h-4 w-4 text-[var(--board-accent)]" />
+                      Username
+                    </Label>
+                    <Input
+                      id="signup-username"
+                      type="text"
+                      placeholder="builder_handle"
+                      value={signupData.username}
+                      onChange={(event) => setSignupData({ ...signupData, username: event.target.value })}
+                      className="board-field rounded-none"
+                      minLength={3}
+                      maxLength={30}
+                      required
+                    />
+                  </div>
 
-                    <div>
-                      <Label htmlFor="login-password" className="text-white mb-2 block">
-                        <Lock className="w-4 h-4 inline mr-2" />
-                        Password
-                      </Label>
-                      <Input
-                        id="login-password"
-                        type="password"
-                        placeholder="••••••••"
-                        value={loginData.password}
-                        onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
-                        className="bg-gray-800/50 border-gray-700 focus:border-cyan-500/50 text-white placeholder:text-gray-500"
-                        required
-                      />
-                    </div>
+                  <div>
+                    <Label htmlFor="signup-fullname" className="mb-2 block text-sm text-[var(--board-ink)]">
+                      <User className="mr-2 inline h-4 w-4 text-[var(--board-accent)]" />
+                      Full name
+                    </Label>
+                    <Input
+                      id="signup-fullname"
+                      type="text"
+                      placeholder="Jane Doe"
+                      value={signupData.fullName}
+                      onChange={(event) => setSignupData({ ...signupData, fullName: event.target.value })}
+                      className="board-field rounded-none"
+                    />
+                  </div>
 
-                    {loginError && (
-                      <div className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg p-3">
-                        {loginError}
-                      </div>
-                    )}
+                  <div>
+                    <Label htmlFor="signup-email" className="mb-2 block text-sm text-[var(--board-ink)]">
+                      <Mail className="mr-2 inline h-4 w-4 text-[var(--board-accent)]" />
+                      Email
+                    </Label>
+                    <Input
+                      id="signup-email"
+                      type="email"
+                      placeholder="you@company.com"
+                      value={signupData.email}
+                      onChange={(event) => setSignupData({ ...signupData, email: event.target.value })}
+                      className="board-field rounded-none"
+                      required
+                    />
+                  </div>
 
-                    <Button
-                      type="submit"
-                      disabled={isSubmitting}
-                      className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white border-0 disabled:opacity-50"
-                    >
-                      {isSubmitting ? "Logging in..." : "Login"}
-                    </Button>
+                  <div>
+                    <Label htmlFor="signup-password" className="mb-2 block text-sm text-[var(--board-ink)]">
+                      <Lock className="mr-2 inline h-4 w-4 text-[var(--board-accent)]" />
+                      Password
+                    </Label>
+                    <Input
+                      id="signup-password"
+                      type="password"
+                      placeholder="Minimum 6 characters"
+                      value={signupData.password}
+                      onChange={(event) => setSignupData({ ...signupData, password: event.target.value })}
+                      className="board-field rounded-none"
+                      minLength={6}
+                      required
+                    />
+                  </div>
 
-                    <div className="text-center">
-                      <a href="#" className="text-sm text-cyan-400 hover:text-cyan-300">
-                        Forgot password?
-                      </a>
-                    </div>
-                  </form>
-                </TabsContent>
-
-                {/* Signup Form */}
-                <TabsContent value="signup">
-                  <form onSubmit={handleSignup} className="space-y-4">
-                    <div>
-                      <Label htmlFor="signup-username" className="text-white mb-2 block">
-                        <User className="w-4 h-4 inline mr-2" />
-                        Username
-                      </Label>
-                      <Input
-                        id="signup-username"
-                        type="text"
-                        placeholder="crypto_builder"
-                        value={signupData.username}
-                        onChange={(e) => setSignupData({ ...signupData, username: e.target.value })}
-                        className="bg-gray-800/50 border-gray-700 focus:border-cyan-500/50 text-white placeholder:text-gray-500"
-                        minLength={3}
-                        maxLength={30}
-                        required
-                      />
-                      <p className="text-xs text-gray-500 mt-1">3-30 characters, will be publicly visible</p>
-                    </div>
-
-                    <div>
-                      <Label htmlFor="signup-fullname" className="text-white mb-2 block">
-                        <User className="w-4 h-4 inline mr-2" />
-                        Full Name
-                      </Label>
-                      <Input
-                        id="signup-fullname"
-                        type="text"
-                        placeholder="John Doe"
-                        value={signupData.fullName}
-                        onChange={(e) => setSignupData({ ...signupData, fullName: e.target.value })}
-                        className="bg-gray-800/50 border-gray-700 focus:border-cyan-500/50 text-white placeholder:text-gray-500"
-                      />
-                    </div>
-
-                    <div>
-                      <Label htmlFor="signup-email" className="text-white mb-2 block">
-                        <Mail className="w-4 h-4 inline mr-2" />
-                        Email
-                      </Label>
-                      <Input
-                        id="signup-email"
-                        type="email"
-                        placeholder="your@email.com"
-                        value={signupData.email}
-                        onChange={(e) => setSignupData({ ...signupData, email: e.target.value })}
-                        className="bg-gray-800/50 border-gray-700 focus:border-cyan-500/50 text-white placeholder:text-gray-500"
-                        required
-                      />
-                    </div>
-
-                    <div>
-                      <Label htmlFor="signup-password" className="text-white mb-2 block">
-                        <Lock className="w-4 h-4 inline mr-2" />
-                        Password
-                      </Label>
-                      <Input
-                        id="signup-password"
-                        type="password"
-                        placeholder="••••••••"
-                        value={signupData.password}
-                        onChange={(e) => setSignupData({ ...signupData, password: e.target.value })}
-                        className="bg-gray-800/50 border-gray-700 focus:border-cyan-500/50 text-white placeholder:text-gray-500"
-                        minLength={6}
-                        required
-                      />
-                      <p className="text-xs text-gray-500 mt-1">Minimum 6 characters</p>
-                    </div>
-
-                    <div>
-                      <p className="text-white mb-2 block font-medium">
-                        <Briefcase className="w-4 h-4 inline mr-2" />
-                        I want to...
-                      </p>
-                      <div className="grid grid-cols-2 gap-3">
-                        <button
-                          type="button"
-                          onClick={() => setSignupData({ ...signupData, userType: "builder" })}
-                          className={`p-4 rounded-lg border transition-all ${
-                            signupData.userType === "builder"
-                              ? "bg-cyan-500/20 border-cyan-500/50 text-cyan-400"
-                              : "bg-gray-800/30 border-gray-700 text-gray-400 hover:border-gray-600"
-                          }`}
-                        >
-                          <div className="font-medium mb-1">Build</div>
-                          <div className="text-xs opacity-80">Solve problems</div>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setSignupData({ ...signupData, userType: "problem_poster" })}
-                          className={`p-4 rounded-lg border transition-all ${
-                            signupData.userType === "problem_poster"
-                              ? "bg-blue-500/20 border-blue-500/50 text-blue-400"
-                              : "bg-gray-800/30 border-gray-700 text-gray-400 hover:border-gray-600"
-                          }`}
-                        >
-                          <div className="font-medium mb-1">Post</div>
-                          <div className="text-xs opacity-80">Find solutions</div>
-                        </button>
-                      </div>
-                    </div>
-
-                    {signupError && (
-                      <div className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg p-3">
-                        {signupError}
-                      </div>
-                    )}
-
-                    <Button
-                      type="submit"
-                      disabled={isSubmitting}
-                      className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white border-0 disabled:opacity-50"
-                    >
-                      {isSubmitting ? "Creating Account..." : "Create Account"}
-                    </Button>
-
-                    <p className="text-xs text-gray-500 text-center">
-                      By signing up, you agree to our Terms of Service and Privacy Policy
+                  <div>
+                    <p className="mb-2 text-sm text-[var(--board-ink)]">
+                      <Briefcase className="mr-2 inline h-4 w-4 text-[var(--board-accent)]" />
+                      I want to...
                     </p>
-                  </form>
-                </TabsContent>
-              </Tabs>
-            </div>
-          </div>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <button
+                        type="button"
+                        onClick={() => setSignupData({ ...signupData, userType: "builder" })}
+                        className={`border px-4 py-4 text-left transition-colors ${
+                          signupData.userType === "builder"
+                            ? "border-[color:rgba(15,118,110,0.24)] bg-[rgba(15,118,110,0.08)]"
+                            : "border-[color:var(--board-line)] bg-white/40"
+                        }`}
+                      >
+                        <p className="font-display text-lg font-semibold tracking-[-0.04em] text-[var(--board-ink)]">Build</p>
+                        <p className="mt-1 text-sm text-[var(--board-muted)]">Respond to briefs and take on work.</p>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setSignupData({ ...signupData, userType: "problem_poster" })}
+                        className={`border px-4 py-4 text-left transition-colors ${
+                          signupData.userType === "problem_poster"
+                            ? "border-[color:rgba(15,118,110,0.24)] bg-[rgba(15,118,110,0.08)]"
+                            : "border-[color:var(--board-line)] bg-white/40"
+                        }`}
+                      >
+                        <p className="font-display text-lg font-semibold tracking-[-0.04em] text-[var(--board-ink)]">Post</p>
+                        <p className="mt-1 text-sm text-[var(--board-muted)]">Publish work and review builders.</p>
+                      </button>
+                    </div>
+                  </div>
 
-          {/* Features */}
-          <div className="mt-12 grid grid-cols-2 gap-4">
-            <div className="bg-gray-900/30 border border-gray-800 rounded-xl p-4">
-              <div className="text-cyan-400 font-medium mb-1">For Builders</div>
-              <div className="text-sm text-gray-400">
-                Find problems to solve, post progress, earn tips & bounties
-              </div>
-            </div>
-            <div className="bg-gray-900/30 border border-gray-800 rounded-xl p-4">
-              <div className="text-blue-400 font-medium mb-1">For Posters</div>
-              <div className="text-sm text-gray-400">
-                Post problems, track progress, tip builders, pay for solutions
-              </div>
-            </div>
+                  {signupError ? (
+                    <div className="border border-[color:rgba(178,103,55,0.2)] bg-[rgba(178,103,55,0.08)] px-4 py-3 text-sm text-[var(--board-rust)]">
+                      {signupError}
+                    </div>
+                  ) : null}
+
+                  <Button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="h-12 w-full rounded-none border border-[color:rgba(15,118,110,0.24)] bg-[var(--board-accent)] text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-white hover:bg-[color:#0d625c]"
+                  >
+                    {isSubmitting ? "Creating account..." : "Create account"}
+                  </Button>
+                </form>
+              </TabsContent>
+            </Tabs>
           </div>
-        </div>
-      </div>
+        </section>
+      </main>
     </div>
   );
 }

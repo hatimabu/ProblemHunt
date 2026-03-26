@@ -1,11 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Link, useParams } from "react-router";
-import { ArrowUp, Briefcase, Calendar, ExternalLink, Loader2, Send, Wallet } from "lucide-react";
+import { ArrowUp, Calendar, ExternalLink, Loader2, Send, Wallet } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Textarea } from "../components/ui/textarea";
 import { Label } from "../components/ui/label";
-import { Badge } from "../components/ui/badge";
 import { Navbar } from "./navbar";
 import { useAuth } from "../contexts/AuthContext";
 import { supabase } from "../../../lib/supabaseClient";
@@ -25,24 +24,15 @@ import {
 import { connectSolanaWallet, sendSolTransfer } from "../../lib/solana-payments";
 import { getUserSolanaWallet, syncUserSolanaWallet } from "../../lib/wallets";
 
-const EMPTY_PROPOSAL_FORM = {
-  title: "",
-  description: "",
-  briefSolution: "",
-  timeline: "",
-  estimatedDelivery: "",
-  cost: "",
-  proposedPriceSol: "",
-  projectUrl: "",
-  expertise: "",
-};
+const EMPTY_PROPOSAL_FORM = { title: "", description: "", briefSolution: "", timeline: "", estimatedDelivery: "", cost: "", proposedPriceSol: "", projectUrl: "", expertise: "" };
+const EMPTY_TIP_FORM = { amount: "", chain: "solana", txHash: "", message: "" };
+const primaryBtn = "h-11 rounded-none border border-[color:rgba(15,118,110,0.24)] bg-[var(--board-accent)] px-5 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-white hover:bg-[color:#0d625c]";
+const secondaryBtn = "h-11 rounded-none border-[color:var(--board-line-strong)] bg-white/56 px-5 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-[var(--board-ink)] hover:bg-white";
+const field = "board-field rounded-none";
 
-const EMPTY_TIP_FORM = {
-  amount: "",
-  chain: "solana",
-  txHash: "",
-  message: "",
-};
+function MetaPill({ children, tone = "default" }: { children: ReactNode; tone?: "default" | "accent" | "rust" }) {
+  return <span className={`board-pill ${tone === "accent" ? "board-pill--accent" : tone === "rust" ? "board-pill--rust" : ""}`}>{children}</span>;
+}
 
 export function ProblemDetail() {
   const { id } = useParams();
@@ -63,12 +53,8 @@ export function ProblemDetail() {
 
   const isJob = isJobPost(problem);
   const isOwner = !!user && !!problem && user.id === problem.authorId;
-  const acceptedProposal = useMemo(
-    () => proposals.find((proposal) => proposal.id === problem?.acceptedProposalId) || null,
-    [problem, proposals]
-  );
+  const acceptedProposal = useMemo(() => proposals.find((proposal) => proposal.id === problem?.acceptedProposalId) || null, [problem, proposals]);
   const isAcceptedBuilder = !!user && !!acceptedProposal && acceptedProposal.builderId === user.id;
-
   const getToken = async () => (await supabase.auth.getSession()).data.session?.access_token;
 
   const fetchData = async () => {
@@ -76,13 +62,12 @@ export function ProblemDetail() {
     try {
       setLoading(true);
       const token = await getToken();
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
       const [problemResponse, proposalsResponse] = await Promise.all([
-        fetch(API_ENDPOINTS.PROBLEM_BY_ID(id), { headers: { Authorization: `Bearer ${token}` } }),
-        fetch(API_ENDPOINTS.PROPOSALS(id), { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(API_ENDPOINTS.PROBLEM_BY_ID(id), { headers }),
+        fetch(API_ENDPOINTS.PROPOSALS(id), { headers }),
       ]);
-      if (!problemResponse.ok || !proposalsResponse.ok) {
-        throw new Error("Failed to load post details");
-      }
+      if (!problemResponse.ok || !proposalsResponse.ok) throw new Error("Failed to load post details");
       const problemData = await problemResponse.json();
       const proposalData = await proposalsResponse.json();
       setProblem(problemData);
@@ -94,16 +79,8 @@ export function ProblemDetail() {
     }
   };
 
-  useEffect(() => {
-    fetchData();
-  }, [id]);
-
-  useEffect(() => {
-    const loadWallet = async () => {
-      setMySolanaWallet(user ? await getUserSolanaWallet(user.id) : null);
-    };
-    loadWallet();
-  }, [user]);
+  useEffect(() => { fetchData(); }, [id]);
+  useEffect(() => { const loadWallet = async () => setMySolanaWallet(user ? await getUserSolanaWallet(user.id) : null); loadWallet(); }, [user]);
 
   const handleProposalSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -182,15 +159,9 @@ export function ProblemDetail() {
     try {
       setUpvotePending(true);
       const token = await getToken();
-      let response = await fetch(API_ENDPOINTS.UPVOTE_PROBLEM(id), {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      let response = await fetch(API_ENDPOINTS.UPVOTE_PROBLEM(id), { method: "POST", headers: { Authorization: `Bearer ${token}` } });
       if (response.status === 409) {
-        response = await fetch(API_ENDPOINTS.REMOVE_UPVOTE(id), {
-          method: "DELETE",
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        response = await fetch(API_ENDPOINTS.REMOVE_UPVOTE(id), { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
       }
       if (!response.ok) throw new Error(await response.text());
       await fetchData();
@@ -219,133 +190,158 @@ export function ProblemDetail() {
     setStatusMessage(`Payment recorded: ${transfer.signature}`);
   };
 
-  if (loading) {
-    return <div className="min-h-screen bg-[#0a0a0f] text-gray-100"><Navbar /><div className="container mx-auto px-4 py-16 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-cyan-400" /></div></div>;
-  }
-  if (error || !problem) {
-    return <div className="min-h-screen bg-[#0a0a0f] text-gray-100"><Navbar /><div className="container mx-auto px-4 py-16"><div className="max-w-2xl mx-auto bg-red-500/10 border border-red-500/30 rounded-2xl p-6 text-red-300">{error || "Post not found"}</div></div></div>;
-  }
+  if (loading) return <div className="board-app"><Navbar /><div className="board-container flex justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-[var(--board-accent)]" /></div></div>;
+  if (error || !problem) return <div className="board-app"><Navbar /><div className="board-container py-16"><div className="border border-[color:rgba(178,103,55,0.2)] bg-[rgba(178,103,55,0.08)] px-6 py-5 text-[var(--board-rust)]">{error || "Post not found"}</div></div></div>;
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] text-gray-100">
+    <div className="board-app">
       <Navbar />
-      <div className="container mx-auto px-4 py-10">
-        <div className="max-w-6xl mx-auto grid lg:grid-cols-[1.8fr_1fr] gap-8">
-          <div className="space-y-6">
-            <div className="bg-gray-900/50 border border-gray-800 rounded-2xl p-6">
-              <div className="flex flex-wrap items-center gap-2 mb-4">
-                <Badge className="bg-gray-800 text-gray-300 border-gray-700">{problem.category}</Badge>
-                {isJob && <Badge className="bg-amber-500/20 text-amber-300 border-amber-500/30"><Briefcase className="w-3 h-3 mr-1" />JOB</Badge>}
-                {isJob && problem.jobStatus && <Badge className="bg-cyan-500/20 text-cyan-300 border-cyan-500/30">{formatJobStatus(problem.jobStatus)}</Badge>}
-              </div>
-              <h1 className="text-3xl md:text-4xl font-bold text-white mb-3">{problem.title}</h1>
-              <p className="text-gray-300 leading-7 whitespace-pre-wrap">{problem.description}</p>
-              <div className="flex flex-wrap gap-4 text-sm text-gray-400 mt-5">
-                <span>Posted by {problem.author || "Anonymous"}</span>
-                <span>{formatTimeAgo(problem.createdAt)}</span>
-                <span>{problem.proposals} proposals</span>
-                <span>{problem.upvotes} upvotes</span>
-              </div>
-              {statusMessage && <div className="mt-6 bg-cyan-500/10 border border-cyan-500/20 rounded-xl p-3 text-sm text-cyan-200">{statusMessage}</div>}
+      <main className="board-container py-8 md:py-10">
+        <section className="grid gap-8 border-b border-[color:var(--board-line)] pb-10 lg:grid-cols-[minmax(0,1fr)_300px]">
+          <div>
+            <div className="flex flex-wrap gap-2">
+              <MetaPill>{problem.category}</MetaPill>
+              {isJob ? <MetaPill tone="accent">Paid task</MetaPill> : <MetaPill>Problem brief</MetaPill>}
+              {isJob && problem.jobStatus ? <MetaPill tone="rust">{formatJobStatus(problem.jobStatus)}</MetaPill> : null}
             </div>
-
-            <div className="bg-gray-900/50 border border-gray-800 rounded-2xl p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-2xl font-semibold text-white">Proposals</h2>
-                {user && <Button onClick={() => setShowProposalForm((open) => !open)} className="bg-gradient-to-r from-cyan-500 to-blue-600 text-white border-0"><Send className="w-4 h-4 mr-2" />{showProposalForm ? "Hide Form" : "Submit Proposal"}</Button>}
-              </div>
-
-              {showProposalForm && (
-                <form onSubmit={handleProposalSubmit} className="space-y-4 rounded-2xl border border-gray-800 bg-gray-950/40 p-5 mb-5">
-                  {isJob && !mySolanaWallet && <div className="rounded-xl border border-yellow-500/30 bg-yellow-500/10 p-3 text-sm text-yellow-200">Add a Solana wallet in your dashboard before taking on jobs so the poster can pay you directly.</div>}
-                  <div><Label className="mb-2 block">Title</Label><Input value={proposalForm.title} onChange={(e) => setProposalForm({ ...proposalForm, title: e.target.value })} className="bg-gray-800 border-gray-700 text-white" required /></div>
-                  <div><Label className="mb-2 block">Proposal</Label><Textarea value={proposalForm.description} onChange={(e) => setProposalForm({ ...proposalForm, description: e.target.value })} className="bg-gray-800 border-gray-700 text-white min-h-[120px]" required /></div>
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div><Label className="mb-2 block">Brief Solution</Label><Input value={proposalForm.briefSolution} onChange={(e) => setProposalForm({ ...proposalForm, briefSolution: e.target.value })} className="bg-gray-800 border-gray-700 text-white" /></div>
-                    <div><Label className="mb-2 block">{isJob ? "Estimated Delivery" : "Timeline"}</Label><Input value={isJob ? proposalForm.estimatedDelivery : proposalForm.timeline} onChange={(e) => setProposalForm({ ...proposalForm, [isJob ? "estimatedDelivery" : "timeline"]: e.target.value })} className="bg-gray-800 border-gray-700 text-white" required={isJob} /></div>
-                  </div>
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div><Label className="mb-2 block">{isJob ? "Proposed Price (SOL)" : "Cost"}</Label><Input type={isJob ? "number" : "text"} step={isJob ? "0.000001" : undefined} value={isJob ? proposalForm.proposedPriceSol : proposalForm.cost} onChange={(e) => setProposalForm({ ...proposalForm, [isJob ? "proposedPriceSol" : "cost"]: e.target.value })} className="bg-gray-800 border-gray-700 text-white" required={isJob} /></div>
-                    <div><Label className="mb-2 block">Project URL</Label><Input value={proposalForm.projectUrl} onChange={(e) => setProposalForm({ ...proposalForm, projectUrl: e.target.value })} className="bg-gray-800 border-gray-700 text-white" /></div>
-                  </div>
-                  <div><Label className="mb-2 block">Skills / Expertise</Label><Input value={proposalForm.expertise} onChange={(e) => setProposalForm({ ...proposalForm, expertise: e.target.value })} placeholder="Terraform, AWS, Kubernetes" className="bg-gray-800 border-gray-700 text-white" /></div>
-                  <Button type="submit" disabled={submittingProposal} className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 text-white border-0">{submittingProposal ? "Submitting..." : "Submit Proposal"}</Button>
-                </form>
-              )}
-
-              <div className="space-y-4">
-                {proposals.length === 0 ? <div className="text-gray-400 text-sm rounded-xl border border-dashed border-gray-700 p-6">No proposals yet. Be the first builder to respond.</div> : proposals.map((proposal) => (
-                  <div key={proposal.id} className="rounded-2xl border border-gray-800 bg-gray-950/40 p-5">
-                    <div className="flex flex-col md:flex-row justify-between gap-4">
-                      <div className="flex-1">
-                        <div className="flex flex-wrap items-center gap-2 mb-2">
-                          <h3 className="text-lg font-semibold text-white">{proposal.builderName}</h3>
-                          <Badge className={proposal.status === "accepted" ? "bg-green-500/20 text-green-300 border-green-500/30" : proposal.status === "rejected" ? "bg-red-500/20 text-red-300 border-red-500/30" : "bg-gray-800 text-gray-300 border-gray-700"}>{proposal.status || "pending"}</Badge>
-                        </div>
-                        <p className="text-gray-300 whitespace-pre-wrap">{proposal.briefSolution || proposal.description}</p>
-                        <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-400 mt-3">
-                          {proposal.proposedPriceSol ? <span className="text-cyan-300">{formatSol(proposal.proposedPriceSol)} SOL</span> : proposal.cost ? <span>{proposal.cost}</span> : null}
-                          {proposal.estimatedDelivery && <span>{proposal.estimatedDelivery}</span>}
-                          {proposal.tipTotal ? <span>{formatSol(proposal.tipTotal)} tipped</span> : null}
-                          {proposal.builderWalletAddress && <span className="text-emerald-300">Wallet {shortWallet(proposal.builderWalletAddress)}</span>}
-                        </div>
-                        {proposal.projectUrl && <a href={proposal.projectUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-sm text-cyan-300 hover:text-cyan-200 mt-3">View project <ExternalLink className="w-3.5 h-3.5" /></a>}
-                      </div>
-                      <div className="flex flex-col items-start md:items-end gap-2">
-                        <Button variant="outline" onClick={() => { setSelectedTipProposal(proposal); setTipForm(EMPTY_TIP_FORM); }} className="border-gray-700 text-white hover:bg-gray-800">Tip Builder</Button>
-                        {isJob && isOwner && problem.jobStatus === "open" && <Button onClick={() => runAction("accept", async () => { const token = await getToken(); const response = await fetch(API_ENDPOINTS.ACCEPT_PROPOSAL(id!, proposal.id), { method: "POST", headers: { Authorization: `Bearer ${token}` } }); if (!response.ok) throw new Error(await response.text()); setStatusMessage("Proposal accepted."); })} disabled={actionPending === "accept"} className="bg-gradient-to-r from-cyan-500 to-blue-600 text-white border-0">{actionPending === "accept" ? "Accepting..." : "Accept Proposal"}</Button>}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+            <h1 className="board-title mt-5">{problem.title}</h1>
+            <p className="mt-5 max-w-4xl whitespace-pre-wrap text-base leading-8 text-[var(--board-muted)]">{problem.description}</p>
+            <div className="mt-6 flex flex-wrap gap-x-5 gap-y-2 text-sm text-[var(--board-soft)]">
+              <span>Posted by {problem.author || "Anonymous"}</span>
+              <span>{formatTimeAgo(problem.createdAt)}</span>
+              <span>{problem.proposals} proposals</span>
+              <span>{problem.upvotes} upvotes</span>
             </div>
+            {statusMessage ? <div className="mt-6 border border-[color:rgba(15,118,110,0.18)] bg-[rgba(15,118,110,0.08)] px-4 py-3 text-sm text-[var(--board-accent)]">{statusMessage}</div> : null}
           </div>
+          <aside className="space-y-5">
+            <div className="board-stat"><div className="board-stat__value">{formatBudget(problem)}</div><div className="board-stat__label">{isJob ? "Budget" : "Bounty"}</div></div>
+            {problem.deadline ? <div className="board-stat"><div className="board-stat__value">{new Date(problem.deadline).toLocaleDateString()}</div><div className="board-stat__label">Deadline</div></div> : null}
+            {isJob && problem.jobType ? <div className="board-stat"><div className="board-stat__value">{problem.jobType}</div><div className="board-stat__label">Job type</div></div> : null}
+          </aside>
+        </section>
 
-          <div className="space-y-6">
-            <div className="bg-gray-900/50 border border-gray-800 rounded-2xl p-6">
-              <h2 className="text-xl font-semibold text-white mb-4">Post Summary</h2>
-              <div className="space-y-3 text-sm text-gray-300">
-                <div className="flex items-center justify-between"><span>{isJob ? "Budget" : "Bounty"}</span><span className="font-semibold text-cyan-300">{formatBudget(problem)}</span></div>
-                {problem.deadline && <div className="flex items-center justify-between"><span className="inline-flex items-center gap-2"><Calendar className="w-4 h-4" />Deadline</span><span>{new Date(problem.deadline).toLocaleDateString()}</span></div>}
-                {isJob && problem.jobType && <div className="flex items-center justify-between"><span>Job type</span><span>{problem.jobType}</span></div>}
-                {acceptedProposal?.builderWalletAddress && <div className="flex items-center justify-between"><span>Accepted wallet</span><span>{shortWallet(acceptedProposal.builderWalletAddress)}</span></div>}
-              </div>
-              <div className="mt-6 space-y-3">
-                <Button variant="outline" onClick={handleUpvote} disabled={upvotePending} className="w-full border-gray-700 text-white hover:bg-gray-800"><ArrowUp className="w-4 h-4 mr-2" />{upvotePending ? "Updating..." : "Upvote"}</Button>
-                {isJob && isAcceptedBuilder && problem.jobStatus === "in_progress" && <Button onClick={() => runAction("complete", async () => { const token = await getToken(); const response = await fetch(API_ENDPOINTS.MARK_JOB_COMPLETE(id!), { method: "POST", headers: { Authorization: `Bearer ${token}` } }); if (!response.ok) throw new Error(await response.text()); setStatusMessage("Job marked complete."); })} disabled={actionPending === "complete"} className="w-full bg-gradient-to-r from-emerald-500 to-green-600 text-white border-0">{actionPending === "complete" ? "Marking..." : "Mark as Complete"}</Button>}
-                {isJob && isOwner && problem.jobStatus === "completed" && <Button onClick={() => runAction("pay", handlePayBuilder)} disabled={actionPending === "pay"} className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 text-white border-0"><Wallet className="w-4 h-4 mr-2" />{actionPending === "pay" ? "Paying..." : "Pay Builder"}</Button>}
-                <Link to="/browse" className="block"><Button variant="outline" className="w-full border-gray-700 text-white hover:bg-gray-800">Back to Browse</Button></Link>
-              </div>
-            </div>
-
-            {selectedTipProposal && (
-              <form onSubmit={handleTipSubmit} className="bg-gray-900/50 border border-gray-800 rounded-2xl p-6 space-y-4">
-                <h2 className="text-xl font-semibold text-white">Tip {selectedTipProposal.builderName}</h2>
-                <div><Label className="mb-2 block">Amount</Label><Input type="number" min="0" step="0.000001" value={tipForm.amount} onChange={(e) => setTipForm({ ...tipForm, amount: e.target.value })} className="bg-gray-800 border-gray-700 text-white" required /></div>
-                <div><Label className="mb-2 block">Chain</Label><select value={tipForm.chain} onChange={(e) => setTipForm({ ...tipForm, chain: e.target.value as typeof tipForm.chain })} className="w-full rounded-md border border-gray-700 bg-gray-800 px-3 py-2 text-white"><option value="solana">Solana</option><option value="ethereum">Ethereum</option><option value="polygon">Polygon</option><option value="arbitrum">Arbitrum</option></select></div>
-                <div><Label className="mb-2 block">Transaction Hash</Label><Input value={tipForm.txHash} onChange={(e) => setTipForm({ ...tipForm, txHash: e.target.value })} className="bg-gray-800 border-gray-700 text-white" required /></div>
-                <div><Label className="mb-2 block">Message</Label><Textarea value={tipForm.message} onChange={(e) => setTipForm({ ...tipForm, message: e.target.value })} className="bg-gray-800 border-gray-700 text-white" /></div>
-                <div className="rounded-xl border border-gray-800 bg-gray-950/40 p-3 text-sm text-gray-400">Send the tip directly first, then paste the transaction hash here so it is stored with the proposal.</div>
-                <div className="flex gap-3"><Button type="submit" className="flex-1 bg-gradient-to-r from-cyan-500 to-blue-600 text-white border-0">Record Tip</Button><Button type="button" variant="outline" onClick={() => setSelectedTipProposal(null)} className="flex-1 border-gray-700 text-white hover:bg-gray-800">Cancel</Button></div>
-              </form>
-            )}
-
-            {isJob && (
-              <div className="bg-gray-900/50 border border-gray-800 rounded-2xl p-6">
-                <h2 className="text-xl font-semibold text-white mb-3">SOL Payment Flow</h2>
-                <div className="space-y-2 text-sm text-gray-400">
-                  <p>1. Owner accepts one proposal.</p>
-                  <p>2. Builder marks the job complete.</p>
-                  <p>3. Owner pays directly from Phantom or Solflare.</p>
-                  <p>4. The tx hash is saved and the job is marked paid.</p>
+        <section className="board-section px-0">
+          <div className="grid gap-8 lg:grid-cols-[minmax(0,1.55fr)_320px]">
+            <div>
+              <div className="flex flex-col gap-4 border-b border-[color:var(--board-line)] pb-5 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="board-kicker">Proposals</p>
+                  <h2 className="board-subtitle mt-3">Builders responding to this brief.</h2>
                 </div>
-                {mySolanaWallet && <div className="mt-4 rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-3 text-sm text-emerald-200">Your Solana wallet: {shortWallet(mySolanaWallet)}</div>}
+                {user ? <Button onClick={() => setShowProposalForm((open) => !open)} className={primaryBtn}><Send className="mr-2 h-4 w-4" />{showProposalForm ? "Hide form" : "Submit proposal"}</Button> : null}
               </div>
-            )}
+
+              {showProposalForm ? (
+                <form onSubmit={handleProposalSubmit} className="board-panel mt-6 p-6 md:p-8">
+                  {isJob && !mySolanaWallet ? <div className="mb-5 border border-[color:rgba(191,147,81,0.24)] bg-[rgba(191,147,81,0.08)] px-4 py-3 text-sm text-[#8c6229]">Add a Solana wallet in your dashboard before taking on jobs so the requester can pay you directly.</div> : null}
+                  <div className="grid gap-5">
+                    <div><Label className="mb-2 block text-sm text-[var(--board-ink)]">Title</Label><Input value={proposalForm.title} onChange={(event) => setProposalForm({ ...proposalForm, title: event.target.value })} className={field} required /></div>
+                    <div><Label className="mb-2 block text-sm text-[var(--board-ink)]">Proposal</Label><Textarea value={proposalForm.description} onChange={(event) => setProposalForm({ ...proposalForm, description: event.target.value })} className="board-field min-h-[140px] rounded-none" required /></div>
+                    <div className="grid gap-5 md:grid-cols-2">
+                      <div><Label className="mb-2 block text-sm text-[var(--board-ink)]">Brief solution</Label><Input value={proposalForm.briefSolution} onChange={(event) => setProposalForm({ ...proposalForm, briefSolution: event.target.value })} className={field} /></div>
+                      <div><Label className="mb-2 block text-sm text-[var(--board-ink)]">{isJob ? "Estimated delivery" : "Timeline"}</Label><Input value={isJob ? proposalForm.estimatedDelivery : proposalForm.timeline} onChange={(event) => setProposalForm({ ...proposalForm, [isJob ? "estimatedDelivery" : "timeline"]: event.target.value })} className={field} required={isJob} /></div>
+                    </div>
+                    <div className="grid gap-5 md:grid-cols-2">
+                      <div><Label className="mb-2 block text-sm text-[var(--board-ink)]">{isJob ? "Proposed price (SOL)" : "Cost"}</Label><Input type={isJob ? "number" : "text"} step={isJob ? "0.000001" : undefined} value={isJob ? proposalForm.proposedPriceSol : proposalForm.cost} onChange={(event) => setProposalForm({ ...proposalForm, [isJob ? "proposedPriceSol" : "cost"]: event.target.value })} className={field} required={isJob} /></div>
+                      <div><Label className="mb-2 block text-sm text-[var(--board-ink)]">Project URL</Label><Input value={proposalForm.projectUrl} onChange={(event) => setProposalForm({ ...proposalForm, projectUrl: event.target.value })} className={field} /></div>
+                    </div>
+                    <div><Label className="mb-2 block text-sm text-[var(--board-ink)]">Skills / expertise</Label><Input value={proposalForm.expertise} onChange={(event) => setProposalForm({ ...proposalForm, expertise: event.target.value })} placeholder="Terraform, AWS, Kubernetes" className={field} /></div>
+                    <Button type="submit" disabled={submittingProposal} className={primaryBtn}>{submittingProposal ? "Submitting..." : "Submit proposal"}</Button>
+                  </div>
+                </form>
+              ) : null}
+
+              <div className="mt-6 border-t border-[color:var(--board-line)]">
+                {proposals.length === 0 ? (
+                  <div className="board-empty"><h3 className="board-subtitle">No proposals yet.</h3><p>Be the first builder to respond to this brief.</p></div>
+                ) : (
+                  proposals.map((proposal) => (
+                    <article key={proposal.id} className="board-row">
+                      <div className="grid gap-5 md:grid-cols-[minmax(0,1fr)_180px] md:items-start">
+                        <div>
+                          <div className="flex flex-wrap gap-2">
+                            <MetaPill>{proposal.builderName}</MetaPill>
+                            <MetaPill tone={proposal.status === "accepted" ? "accent" : proposal.status === "rejected" ? "rust" : "default"}>{proposal.status || "pending"}</MetaPill>
+                          </div>
+                          <p className="mt-4 whitespace-pre-wrap text-base leading-8 text-[var(--board-ink)]">{proposal.briefSolution || proposal.description}</p>
+                          <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-sm text-[var(--board-muted)]">
+                            {proposal.proposedPriceSol ? <span>{formatSol(proposal.proposedPriceSol)} SOL</span> : proposal.cost ? <span>{proposal.cost}</span> : null}
+                            {proposal.estimatedDelivery ? <span>{proposal.estimatedDelivery}</span> : null}
+                            {proposal.tipTotal ? <span>{formatSol(proposal.tipTotal)} tipped</span> : null}
+                            {proposal.builderWalletAddress ? <span>Wallet {shortWallet(proposal.builderWalletAddress)}</span> : null}
+                          </div>
+                          {proposal.projectUrl ? <a href={proposal.projectUrl} target="_blank" rel="noreferrer" className="mt-3 inline-flex items-center gap-1.5 text-sm text-[var(--board-accent)]">View project<ExternalLink className="h-3.5 w-3.5" /></a> : null}
+                        </div>
+                        <div className="flex flex-col gap-3 md:items-end">
+                          <Button variant="outline" onClick={() => { setSelectedTipProposal(proposal); setTipForm(EMPTY_TIP_FORM); }} className={secondaryBtn}>Tip builder</Button>
+                          {isJob && isOwner && problem.jobStatus === "open" ? <Button onClick={() => runAction("accept", async () => {
+                            const token = await getToken();
+                            const response = await fetch(API_ENDPOINTS.ACCEPT_PROPOSAL(id!, proposal.id), { method: "POST", headers: { Authorization: `Bearer ${token}` } });
+                            if (!response.ok) throw new Error(await response.text());
+                            setStatusMessage("Proposal accepted.");
+                          })} disabled={actionPending === "accept"} className={primaryBtn}>{actionPending === "accept" ? "Accepting..." : "Accept proposal"}</Button> : null}
+                        </div>
+                      </div>
+                    </article>
+                  ))
+                )}
+              </div>
+            </div>
+            <aside className="space-y-6">
+              <section className="board-panel p-6">
+                <p className="board-kicker">Summary</p>
+                <div className="mt-5 space-y-4 text-sm text-[var(--board-muted)]">
+                  <div className="flex items-center justify-between gap-3 border-b border-[color:var(--board-line)] pb-3"><span>{isJob ? "Budget" : "Bounty"}</span><span className="font-semibold text-[var(--board-ink)]">{formatBudget(problem)}</span></div>
+                  {problem.deadline ? <div className="flex items-center justify-between gap-3 border-b border-[color:var(--board-line)] pb-3"><span className="inline-flex items-center gap-2"><Calendar className="h-4 w-4" />Deadline</span><span className="text-[var(--board-ink)]">{new Date(problem.deadline).toLocaleDateString()}</span></div> : null}
+                  {isJob && problem.jobType ? <div className="flex items-center justify-between gap-3 border-b border-[color:var(--board-line)] pb-3"><span>Job type</span><span className="text-[var(--board-ink)]">{problem.jobType}</span></div> : null}
+                  {acceptedProposal?.builderWalletAddress ? <div className="flex items-center justify-between gap-3"><span>Accepted wallet</span><span className="text-[var(--board-ink)]">{shortWallet(acceptedProposal.builderWalletAddress)}</span></div> : null}
+                </div>
+              </section>
+
+              <section className="space-y-3">
+                <Button variant="outline" onClick={handleUpvote} disabled={upvotePending} className={`w-full ${secondaryBtn}`}><ArrowUp className="mr-2 h-4 w-4" />{upvotePending ? "Updating..." : "Upvote"}</Button>
+                {isJob && isAcceptedBuilder && problem.jobStatus === "in_progress" ? <Button onClick={() => runAction("complete", async () => {
+                  const token = await getToken();
+                  const response = await fetch(API_ENDPOINTS.MARK_JOB_COMPLETE(id!), { method: "POST", headers: { Authorization: `Bearer ${token}` } });
+                  if (!response.ok) throw new Error(await response.text());
+                  setStatusMessage("Job marked complete.");
+                })} disabled={actionPending === "complete"} className={`w-full ${primaryBtn}`}>{actionPending === "complete" ? "Marking..." : "Mark complete"}</Button> : null}
+                {isJob && isOwner && problem.jobStatus === "completed" ? <Button onClick={() => runAction("pay", handlePayBuilder)} disabled={actionPending === "pay"} className={`w-full ${primaryBtn}`}><Wallet className="mr-2 h-4 w-4" />{actionPending === "pay" ? "Paying..." : "Pay builder"}</Button> : null}
+                <Link to="/browse" className="block"><Button variant="outline" className={`w-full ${secondaryBtn}`}>Back to browse</Button></Link>
+              </section>
+
+              {selectedTipProposal ? (
+                <form onSubmit={handleTipSubmit} className="board-panel p-6">
+                  <p className="board-kicker">Tip builder</p>
+                  <h3 className="mt-3 font-display text-2xl font-semibold tracking-[-0.05em] text-[var(--board-ink)]">{selectedTipProposal.builderName}</h3>
+                  <div className="mt-5 space-y-4">
+                    <div><Label className="mb-2 block text-sm text-[var(--board-ink)]">Amount</Label><Input type="number" min="0" step="0.000001" value={tipForm.amount} onChange={(event) => setTipForm({ ...tipForm, amount: event.target.value })} className={field} required /></div>
+                    <div><Label className="mb-2 block text-sm text-[var(--board-ink)]">Chain</Label><select value={tipForm.chain} onChange={(event) => setTipForm({ ...tipForm, chain: event.target.value as typeof tipForm.chain })} className="board-field h-12 w-full rounded-none px-3"><option value="solana">Solana</option><option value="ethereum">Ethereum</option><option value="polygon">Polygon</option><option value="arbitrum">Arbitrum</option></select></div>
+                    <div><Label className="mb-2 block text-sm text-[var(--board-ink)]">Transaction hash</Label><Input value={tipForm.txHash} onChange={(event) => setTipForm({ ...tipForm, txHash: event.target.value })} className={field} required /></div>
+                    <div><Label className="mb-2 block text-sm text-[var(--board-ink)]">Message</Label><Textarea value={tipForm.message} onChange={(event) => setTipForm({ ...tipForm, message: event.target.value })} className="board-field min-h-[110px] rounded-none" /></div>
+                  </div>
+                  <div className="mt-5 border border-[color:var(--board-line)] bg-white/42 px-4 py-3 text-sm text-[var(--board-muted)]">Send the tip directly first, then paste the transaction hash here so the payment is attached to the proposal.</div>
+                  <div className="mt-5 flex gap-3"><Button type="submit" className={`flex-1 ${primaryBtn}`}>Record tip</Button><Button type="button" variant="outline" onClick={() => setSelectedTipProposal(null)} className={`flex-1 ${secondaryBtn}`}>Cancel</Button></div>
+                </form>
+              ) : null}
+
+              {isJob ? (
+                <section className="board-panel p-6">
+                  <p className="board-kicker">Payment flow</p>
+                  <div className="mt-5 space-y-3 text-sm leading-7 text-[var(--board-muted)]">
+                    <p>1. Owner accepts one proposal.</p>
+                    <p>2. Builder marks the job complete.</p>
+                    <p>3. Owner pays directly from Phantom or Solflare.</p>
+                    <p>4. The transaction hash is recorded and the job is marked paid.</p>
+                  </div>
+                  {mySolanaWallet ? <div className="mt-5 border border-[color:rgba(15,118,110,0.18)] bg-[rgba(15,118,110,0.08)] px-4 py-3 text-sm text-[var(--board-accent)]">Your Solana wallet: {shortWallet(mySolanaWallet)}</div> : null}
+                </section>
+              ) : null}
+            </aside>
           </div>
-        </div>
-      </div>
+        </section>
+      </main>
     </div>
   );
 }

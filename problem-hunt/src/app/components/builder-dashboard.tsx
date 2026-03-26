@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Link } from "react-router";
-import { Bell, Briefcase, CheckCircle, Coins, Edit2, Loader2, Save, User, Wallet } from "lucide-react";
+import { Bell, Briefcase, CheckCircle2, Edit2, Loader2, Save, User, Wallet } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { supabase } from "../../../lib/supabaseClient";
 import { API_ENDPOINTS } from "../../lib/api-config";
@@ -24,28 +24,21 @@ interface ProfileData {
   wallet_address?: string | null;
 }
 
-function SignalTag({
+function MetaPill({
   children,
-  tone = "cyan",
+  tone = "default",
 }: {
   children: ReactNode;
-  tone?: "cyan" | "pink" | "lime" | "neutral";
+  tone?: "default" | "accent" | "rust";
 }) {
-  const tones = {
-    cyan: "border-[color:rgba(89,243,255,0.18)] bg-[rgba(89,243,255,0.06)] text-[var(--neon-cyan)]",
-    pink: "border-[color:rgba(255,79,216,0.18)] bg-[rgba(255,79,216,0.06)] text-[var(--neon-text)]",
-    lime: "border-[color:rgba(217,255,87,0.18)] bg-[rgba(217,255,87,0.06)] text-[var(--neon-lime)]",
-    neutral: "border-[color:rgba(255,255,255,0.1)] bg-[rgba(255,255,255,0.04)] text-[var(--neon-muted)]",
-  };
-
   return (
-    <span className={`rounded-none border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] ${tones[tone]}`}>
+    <span className={`board-pill ${tone === "accent" ? "board-pill--accent" : tone === "rust" ? "board-pill--rust" : ""}`}>
       {children}
     </span>
   );
 }
 
-function EmptyTabState({
+function EmptyState({
   title,
   description,
   ctaHref,
@@ -57,16 +50,12 @@ function EmptyTabState({
   ctaLabel?: string;
 }) {
   return (
-    <div className="neon-panel rounded-[1.5rem] px-6 py-14 text-center">
-      <h3 className="text-2xl font-semibold tracking-[-0.03em] text-[var(--neon-text)]">
-        {title}
-      </h3>
-      <p className="mx-auto mt-3 max-w-xl text-sm leading-7 text-[var(--neon-muted)] md:text-base">
-        {description}
-      </p>
+    <div className="board-empty border-t border-[color:var(--board-line)]">
+      <h2 className="board-subtitle">{title}</h2>
+      <p>{description}</p>
       {ctaHref && ctaLabel ? (
         <Link to={ctaHref} className="inline-flex">
-          <Button className="mt-7 rounded-none border border-[color:rgba(89,243,255,0.34)] bg-[rgba(9,14,31,0.88)] text-[var(--neon-cyan)] hover:bg-[rgba(89,243,255,0.1)]">
+          <Button className="mt-6 h-11 rounded-none border border-[color:rgba(15,118,110,0.24)] bg-[var(--board-accent)] px-5 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-white hover:bg-[color:#0d625c]">
             {ctaLabel}
           </Button>
         </Link>
@@ -101,9 +90,9 @@ export function BuilderDashboard() {
   const dashboardStats = useMemo(
     () => [
       { label: "Reputation", value: String(profile?.reputation_score || 0) },
-      { label: "Open Briefs", value: String(posts.length) },
-      { label: "Live Bids", value: String(proposals.length) },
-      { label: "Accepted Bounties", value: String(activeJobs.length) },
+      { label: "Open briefs", value: String(posts.length) },
+      { label: "Live bids", value: String(proposals.length) },
+      { label: "Accepted work", value: String(activeJobs.length) },
     ],
     [activeJobs.length, posts.length, profile?.reputation_score, proposals.length]
   );
@@ -194,149 +183,127 @@ export function BuilderDashboard() {
 
   if (loading) {
     return (
-      <div className="neon-page min-h-screen text-[var(--neon-text)]">
+      <div className="board-app">
         <Navbar />
-        <div className="mx-auto flex max-w-7xl justify-center px-4 py-20">
-          <Loader2 className="w-8 h-8 animate-spin text-[var(--neon-cyan)]" />
+        <div className="board-container flex justify-center py-20">
+          <Loader2 className="h-8 w-8 animate-spin text-[var(--board-accent)]" />
         </div>
       </div>
     );
   }
 
   const displayName = profile?.full_name || profile?.username || user?.username || "Builder";
-  const identityLabel = profile?.user_type === "builder" ? "Solution Seeker" : "Requester";
+  const identityLabel = profile?.user_type === "builder" ? "Builder" : "Requester";
   const identityCopy = profile?.user_type === "builder"
-    ? "Track the briefs you are chasing, the bounties you have locked, and the wallets that should get paid."
-    : "Track the work you have posted, the builders responding, and the signals coming back from the board.";
+    ? "Track the briefs you are chasing, the work you have landed, and the wallets that should get paid."
+    : "Track the work you posted, the builders replying, and the signals coming back from the board.";
 
   return (
-    <div className="neon-page min-h-screen text-[var(--neon-text)]">
+    <div className="board-app">
       <Navbar />
 
-      <div className="mx-auto max-w-7xl px-4 py-12">
-        <section className="neon-panel neon-command-hero relative overflow-hidden rounded-[1.75rem] p-8 md:p-10 mb-8">
-          <div className="neon-command-hero__scene" aria-hidden="true">
-            <div className="neon-command-hero__scan" />
-            <div className="neon-command-hero__frame neon-command-hero__frame--one" />
-            <div className="neon-command-hero__frame neon-command-hero__frame--two" />
-            <div className="neon-command-hero__beam" />
-          </div>
-          <div className="relative z-10 grid gap-8 lg:grid-cols-[minmax(0,1.15fr)_minmax(280px,0.85fr)]">
-            <div className="max-w-3xl">
-              <p className="neon-kicker">Command Deck</p>
-              <p className="font-cyber text-sm uppercase tracking-[0.24em] text-[var(--neon-pink)]">
-                Problem Hunt
-              </p>
-              <h1 className="mt-3 font-cyber text-4xl uppercase tracking-[0.12em] text-[var(--neon-text)] md:text-5xl">
-                Command Deck
-              </h1>
-              <p className="mt-4 max-w-2xl text-base leading-8 text-[var(--neon-muted)] md:text-lg">
-                {identityCopy}
-              </p>
-              <p className="mt-4 text-sm uppercase tracking-[0.2em] text-[var(--neon-dim)]">
-                Operator: {displayName}
-              </p>
+      <main className="board-container py-8 md:py-10">
+        <section className="grid gap-8 border-b border-[color:var(--board-line)] pb-10 lg:grid-cols-[minmax(0,1fr)_320px]">
+          <div>
+            <p className="board-kicker">Dashboard</p>
+            <h1 className="board-title mt-3">{displayName}</h1>
+            <p className="board-copy mt-5">{identityCopy}</p>
 
-              <div className="mt-6 flex flex-wrap gap-2">
-                <SignalTag tone="cyan">{identityLabel}</SignalTag>
-                <SignalTag tone="neutral">{walletCount} wallet{walletCount === 1 ? "" : "s"} linked</SignalTag>
-                <SignalTag tone="pink">{unreadSignals} unread signal{unreadSignals === 1 ? "" : "s"}</SignalTag>
-                {profile?.wallet_address ? <SignalTag tone="lime">Primary {shortWallet(profile.wallet_address)}</SignalTag> : null}
-              </div>
+            <div className="mt-6 flex flex-wrap gap-2">
+              <MetaPill tone="accent">{identityLabel}</MetaPill>
+              <MetaPill>{walletCount} wallet{walletCount === 1 ? "" : "s"} linked</MetaPill>
+              <MetaPill tone="rust">{unreadSignals} unread signal{unreadSignals === 1 ? "" : "s"}</MetaPill>
+              {profile?.wallet_address ? <MetaPill>Primary {shortWallet(profile.wallet_address)}</MetaPill> : null}
+            </div>
 
-              <div className="mt-8 flex flex-col gap-4 sm:flex-row">
+            <div className="mt-8 flex flex-col gap-4 sm:flex-row">
+              <Button
+                onClick={() => setWalletModalOpen(true)}
+                className="h-11 rounded-none border border-[color:rgba(15,118,110,0.24)] bg-[var(--board-accent)] px-5 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-white hover:bg-[color:#0d625c]"
+              >
+                <Wallet className="mr-2 h-4 w-4" />
+                Manage wallets
+              </Button>
+              <Link to="/post">
                 <Button
-                  onClick={() => setWalletModalOpen(true)}
-                  className="rounded-none border border-[color:rgba(89,243,255,0.34)] bg-[rgba(9,14,31,0.88)] text-[var(--neon-cyan)] hover:bg-[rgba(89,243,255,0.1)]"
+                  variant="outline"
+                  className="h-11 rounded-none border-[color:var(--board-line-strong)] bg-white/56 px-5 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-[var(--board-ink)] hover:bg-white"
                 >
-                  <Wallet className="w-4 h-4 mr-2" />
-                  Manage Wallets
+                  Post a brief
                 </Button>
-                <Link to="/post">
-                  <Button
-                    variant="outline"
-                    className="rounded-none border-[color:rgba(255,79,216,0.32)] bg-[rgba(255,79,216,0.08)] text-[var(--neon-text)] hover:bg-[rgba(255,79,216,0.14)]"
-                  >
-                    Post A Brief
-                  </Button>
-                </Link>
-              </div>
+              </Link>
             </div>
+          </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              {dashboardStats.map((stat) => (
-                <div key={stat.label} className="border border-[color:var(--neon-line)] bg-[rgba(6,10,24,0.7)] px-4 py-5">
-                  <p className="font-mono-alt text-[0.68rem] uppercase tracking-[0.26em] text-[var(--neon-dim)]">
-                    {stat.label}
-                  </p>
-                  <p className="mt-3 text-3xl font-semibold tracking-[-0.04em] text-[var(--neon-cyan)]">
-                    {stat.value}
-                  </p>
-                </div>
-              ))}
-            </div>
+          <div className="board-stat-grid">
+            {dashboardStats.map((stat) => (
+              <div key={stat.label} className="board-stat">
+                <div className="board-stat__value">{stat.value}</div>
+                <div className="board-stat__label">{stat.label}</div>
+              </div>
+            ))}
           </div>
         </section>
 
-        <Tabs defaultValue="identity" className="space-y-6">
-          <TabsList className="neon-panel grid h-auto w-full gap-2 rounded-[1.5rem] border border-[color:var(--neon-line)] p-2 md:grid-cols-5">
-            <TabsTrigger value="identity" className="rounded-none border border-transparent font-cyber text-[0.7rem] uppercase tracking-[0.16em] text-[var(--neon-dim)] data-[state=active]:border-[color:rgba(89,243,255,0.24)] data-[state=active]:bg-[rgba(89,243,255,0.08)] data-[state=active]:text-[var(--neon-cyan)]">
-              <User className="w-4 h-4 mr-2" />
+        <Tabs defaultValue="identity" className="board-section px-0">
+          <TabsList className="board-tabs grid h-auto w-full rounded-none p-1 md:grid-cols-5">
+            <TabsTrigger value="identity">
+              <User className="h-4 w-4" />
               Identity
             </TabsTrigger>
-            <TabsTrigger value="briefs" className="rounded-none border border-transparent font-cyber text-[0.7rem] uppercase tracking-[0.16em] text-[var(--neon-dim)] data-[state=active]:border-[color:rgba(89,243,255,0.24)] data-[state=active]:bg-[rgba(89,243,255,0.08)] data-[state=active]:text-[var(--neon-cyan)]">
-              <Briefcase className="w-4 h-4 mr-2" />
-              My Briefs
+            <TabsTrigger value="briefs">
+              <Briefcase className="h-4 w-4" />
+              My briefs
             </TabsTrigger>
-            <TabsTrigger value="bids" className="rounded-none border border-transparent font-cyber text-[0.7rem] uppercase tracking-[0.16em] text-[var(--neon-dim)] data-[state=active]:border-[color:rgba(89,243,255,0.24)] data-[state=active]:bg-[rgba(89,243,255,0.08)] data-[state=active]:text-[var(--neon-cyan)]">
-              <Coins className="w-4 h-4 mr-2" />
-              My Bids
+            <TabsTrigger value="bids">
+              <Edit2 className="h-4 w-4" />
+              My bids
             </TabsTrigger>
-            <TabsTrigger value="bounties" className="rounded-none border border-transparent font-cyber text-[0.7rem] uppercase tracking-[0.16em] text-[var(--neon-dim)] data-[state=active]:border-[color:rgba(89,243,255,0.24)] data-[state=active]:bg-[rgba(89,243,255,0.08)] data-[state=active]:text-[var(--neon-cyan)]">
-              <CheckCircle className="w-4 h-4 mr-2" />
-              Live Bounties
+            <TabsTrigger value="bounties">
+              <CheckCircle2 className="h-4 w-4" />
+              Accepted work
             </TabsTrigger>
-            <TabsTrigger value="signals" className="rounded-none border border-transparent font-cyber text-[0.7rem] uppercase tracking-[0.16em] text-[var(--neon-dim)] data-[state=active]:border-[color:rgba(89,243,255,0.24)] data-[state=active]:bg-[rgba(89,243,255,0.08)] data-[state=active]:text-[var(--neon-cyan)]">
-              <Bell className="w-4 h-4 mr-2" />
+            <TabsTrigger value="signals">
+              <Bell className="h-4 w-4" />
               Signals
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="identity">
-            <div className="neon-panel rounded-[1.5rem] p-6 md:p-8">
-              <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
+          <TabsContent value="identity" className="mt-6">
+            <div className="board-panel p-6 md:p-8">
+              <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_280px]">
                 <div className="space-y-5">
                   {editingProfile ? (
                     <>
                       <div>
-                        <Label className="mb-2 block text-[var(--neon-text)]">Full Name</Label>
+                        <Label className="mb-2 block text-sm text-[var(--board-ink)]">Full name</Label>
                         <Input
                           value={profileForm.full_name}
                           onChange={(event) => setProfileForm({ ...profileForm, full_name: event.target.value })}
-                          className="rounded-none border-[color:var(--neon-line)] bg-[rgba(6,10,24,0.78)] text-[var(--neon-text)]"
+                          className="board-field rounded-none"
                         />
                       </div>
                       <div>
-                        <Label className="mb-2 block text-[var(--neon-text)]">Bio</Label>
+                        <Label className="mb-2 block text-sm text-[var(--board-ink)]">Bio</Label>
                         <Textarea
                           value={profileForm.bio}
                           onChange={(event) => setProfileForm({ ...profileForm, bio: event.target.value })}
-                          className="min-h-[140px] rounded-none border-[color:var(--neon-line)] bg-[rgba(6,10,24,0.78)] text-[var(--neon-text)]"
+                          className="board-field min-h-[160px] rounded-none"
                         />
                       </div>
                       <div className="flex flex-col gap-3 sm:flex-row">
                         <Button
                           onClick={handleSaveProfile}
                           disabled={savingProfile}
-                          className="rounded-none border border-[color:rgba(89,243,255,0.34)] bg-[rgba(9,14,31,0.88)] text-[var(--neon-cyan)] hover:bg-[rgba(89,243,255,0.1)]"
+                          className="h-11 rounded-none border border-[color:rgba(15,118,110,0.24)] bg-[var(--board-accent)] px-5 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-white hover:bg-[color:#0d625c]"
                         >
-                          <Save className="w-4 h-4 mr-2" />
-                          {savingProfile ? "Saving..." : "Save Identity"}
+                          <Save className="mr-2 h-4 w-4" />
+                          {savingProfile ? "Saving..." : "Save profile"}
                         </Button>
                         <Button
                           variant="outline"
                           onClick={() => setEditingProfile(false)}
-                          className="rounded-none border-[color:rgba(255,255,255,0.14)] bg-transparent text-[var(--neon-text)] hover:bg-[rgba(255,255,255,0.05)]"
+                          className="h-11 rounded-none border-[color:var(--board-line-strong)] bg-white/56 px-5 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-[var(--board-ink)] hover:bg-white"
                         >
                           Cancel
                         </Button>
@@ -346,58 +313,56 @@ export function BuilderDashboard() {
                     <>
                       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                         <div>
-                          <p className="neon-kicker">Identity</p>
-                          <h2 className="text-2xl font-semibold tracking-[-0.04em] text-[var(--neon-text)]">
-                            Keep your operator profile current
-                          </h2>
-                          <p className="mt-2 text-sm leading-7 text-[var(--neon-muted)] md:text-base">
-                            Builders and requesters both look sharper with a clear bio and a payout path that is ready when the work lands.
+                          <p className="board-kicker">Identity</p>
+                          <h2 className="board-subtitle mt-3">Keep your operator profile current.</h2>
+                          <p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--board-muted)] md:text-base">
+                            A clean bio and a ready payout path make your dashboard easier to trust from both sides of the marketplace.
                           </p>
                         </div>
                         <Button
                           variant="outline"
                           onClick={() => setEditingProfile(true)}
-                          className="rounded-none border-[color:rgba(255,255,255,0.14)] bg-transparent text-[var(--neon-text)] hover:bg-[rgba(255,255,255,0.05)]"
+                          className="h-11 rounded-none border-[color:var(--board-line-strong)] bg-white/56 px-5 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-[var(--board-ink)] hover:bg-white"
                         >
-                          <Edit2 className="w-4 h-4 mr-2" />
+                          <Edit2 className="mr-2 h-4 w-4" />
                           Edit
                         </Button>
                       </div>
 
-                      <div className="grid gap-5 md:grid-cols-2">
+                      <div className="grid gap-5 border-t border-[color:var(--board-line)] pt-5 md:grid-cols-2">
                         <div>
-                          <p className="font-mono-alt text-[0.68rem] uppercase tracking-[0.24em] text-[var(--neon-dim)]">Username</p>
-                          <p className="mt-2 text-base text-[var(--neon-text)]">{profile?.username}</p>
+                          <p className="board-eyebrow">Username</p>
+                          <p className="mt-2 text-base text-[var(--board-ink)]">{profile?.username}</p>
                         </div>
                         <div>
-                          <p className="font-mono-alt text-[0.68rem] uppercase tracking-[0.24em] text-[var(--neon-dim)]">Full Name</p>
-                          <p className="mt-2 text-base text-[var(--neon-text)]">{profile?.full_name || "Not set"}</p>
+                          <p className="board-eyebrow">Full name</p>
+                          <p className="mt-2 text-base text-[var(--board-ink)]">{profile?.full_name || "Not set"}</p>
                         </div>
                         <div className="md:col-span-2">
-                          <p className="font-mono-alt text-[0.68rem] uppercase tracking-[0.24em] text-[var(--neon-dim)]">Bio</p>
-                          <p className="mt-2 text-base leading-8 text-[var(--neon-muted)]">{profile?.bio || "No bio yet"}</p>
+                          <p className="board-eyebrow">Bio</p>
+                          <p className="mt-2 text-base leading-8 text-[var(--board-muted)]">{profile?.bio || "No bio yet."}</p>
                         </div>
                       </div>
                     </>
                   )}
                 </div>
 
-                <aside className="border-t border-[color:var(--neon-line)] pt-6 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0">
-                  <p className="neon-kicker">Payout Path</p>
-                  <div className="space-y-4 text-sm leading-7 text-[var(--neon-muted)]">
+                <aside className="border-t border-[color:var(--board-line)] pt-6 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0">
+                  <p className="board-kicker">Payout path</p>
+                  <div className="mt-5 space-y-4">
                     <div>
-                      <p className="font-mono-alt text-[0.68rem] uppercase tracking-[0.24em] text-[var(--neon-dim)]">Primary Wallet</p>
-                      <p className="mt-2 text-[var(--neon-text)]">
+                      <p className="board-eyebrow">Primary wallet</p>
+                      <p className="mt-2 text-sm text-[var(--board-ink)]">
                         {profile?.wallet_address ? shortWallet(profile.wallet_address) : "No wallet linked yet"}
                       </p>
                     </div>
                     <div>
-                      <p className="font-mono-alt text-[0.68rem] uppercase tracking-[0.24em] text-[var(--neon-dim)]">Linked Wallets</p>
-                      <p className="mt-2 text-[var(--neon-text)]">{walletCount}</p>
+                      <p className="board-eyebrow">Linked wallets</p>
+                      <p className="mt-2 text-sm text-[var(--board-ink)]">{walletCount}</p>
                     </div>
                     <div>
-                      <p className="font-mono-alt text-[0.68rem] uppercase tracking-[0.24em] text-[var(--neon-dim)]">Unread Signals</p>
-                      <p className="mt-2 text-[var(--neon-text)]">{unreadSignals}</p>
+                      <p className="board-eyebrow">Unread signals</p>
+                      <p className="mt-2 text-sm text-[var(--board-ink)]">{unreadSignals}</p>
                     </div>
                   </div>
                 </aside>
@@ -405,183 +370,175 @@ export function BuilderDashboard() {
             </div>
           </TabsContent>
 
-          <TabsContent value="briefs">
-            <div className="space-y-4">
-              {posts.length === 0 ? (
-                <EmptyTabState
-                  title="No briefs on your board yet"
-                  description="Post a problem, task, or request and the command deck will start tracking bids, budget, and movement."
-                  ctaHref="/post"
-                  ctaLabel="Post A Brief"
-                />
-              ) : (
-                posts.map((post) => (
-                  <article key={post.id} className="neon-panel rounded-[1.5rem] p-5 md:p-6">
-                    <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                      <div className="min-w-0">
+          <TabsContent value="briefs" className="mt-6">
+            {posts.length === 0 ? (
+              <EmptyState
+                title="No briefs on your board yet."
+                description="Post a problem, task, or request and your dashboard will start tracking bids, budget, and movement."
+                ctaHref="/post"
+                ctaLabel="Post a brief"
+              />
+            ) : (
+              <div className="border-t border-[color:var(--board-line)]">
+                {posts.map((post) => (
+                  <article key={post.id} className="board-row">
+                    <div className="grid gap-5 md:grid-cols-[minmax(0,1fr)_180px] md:items-start">
+                      <div>
                         <div className="flex flex-wrap gap-2">
-                          <SignalTag tone="neutral">{post.type === "job" ? "Paid Task" : "Problem Brief"}</SignalTag>
-                          {post.type === "job" && post.jobStatus ? <SignalTag tone="cyan">{formatJobStatus(post.jobStatus)}</SignalTag> : null}
+                          <MetaPill>{post.type === "job" ? "Paid task" : "Problem brief"}</MetaPill>
+                          {post.type === "job" && post.jobStatus ? <MetaPill tone="accent">{formatJobStatus(post.jobStatus)}</MetaPill> : null}
                         </div>
-                        <Link to={`/problem/${post.id}`} className="mt-4 block text-xl font-semibold tracking-[-0.03em] text-[var(--neon-text)] transition-colors hover:text-[var(--neon-cyan)]">
+                        <Link to={`/problem/${post.id}`} className="mt-4 block font-display text-3xl font-semibold tracking-[-0.05em] text-[var(--board-ink)]">
                           {post.title}
                         </Link>
-                        <p className="mt-2 max-w-3xl text-sm leading-7 text-[var(--neon-muted)] md:text-base">
+                        <p className="mt-3 max-w-3xl text-sm leading-7 text-[var(--board-muted)] md:text-base">
                           {post.description}
                         </p>
                       </div>
 
-                      <div className="text-left md:min-w-[180px] md:text-right">
-                        <p className="font-mono-alt text-[0.68rem] uppercase tracking-[0.24em] text-[var(--neon-dim)]">
-                          {post.type === "job" ? "Budget" : "Bounty"}
-                        </p>
-                        <p className="mt-2 text-2xl font-semibold text-[var(--neon-cyan)]">
+                      <div className="md:text-right">
+                        <p className="board-eyebrow">{post.type === "job" ? "Budget" : "Bounty"}</p>
+                        <p className="mt-2 font-display text-3xl font-semibold tracking-[-0.06em] text-[var(--board-ink)]">
                           {formatBudget(post)}
                         </p>
-                        <p className="mt-2 text-sm text-[var(--neon-dim)]">
+                        <p className="mt-3 text-sm text-[var(--board-muted)]">
                           {post.proposals} bid{post.proposals === 1 ? "" : "s"}
                         </p>
                       </div>
                     </div>
                   </article>
-                ))
-              )}
-            </div>
+                ))}
+              </div>
+            )}
           </TabsContent>
 
-          <TabsContent value="bids">
-            <div className="space-y-4">
-              {proposals.length === 0 ? (
-                <EmptyTabState
-                  title="No bids submitted yet"
-                  description="Browse the board, find a brief worth chasing, and your active bids will appear here."
-                  ctaHref="/browse"
-                  ctaLabel="Browse The Board"
-                />
-              ) : (
-                proposals.map((proposal) => (
-                  <article key={proposal.id} className="neon-panel rounded-[1.5rem] p-5 md:p-6">
-                    <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                      <div className="min-w-0">
+          <TabsContent value="bids" className="mt-6">
+            {proposals.length === 0 ? (
+              <EmptyState
+                title="No bids submitted yet."
+                description="Browse the marketplace, reply to a strong brief, and your active bids will appear here."
+                ctaHref="/browse"
+                ctaLabel="Browse the board"
+              />
+            ) : (
+              <div className="border-t border-[color:var(--board-line)]">
+                {proposals.map((proposal) => (
+                  <article key={proposal.id} className="board-row">
+                    <div className="grid gap-5 md:grid-cols-[minmax(0,1fr)_180px] md:items-start">
+                      <div>
                         <div className="flex flex-wrap gap-2">
-                          <SignalTag tone="neutral">{proposal.problemType === "job" ? "Paid Task" : "Problem Brief"}</SignalTag>
-                          <SignalTag tone="pink">{proposal.status || "pending"}</SignalTag>
-                          {proposal.jobStatus ? <SignalTag tone="cyan">{formatJobStatus(proposal.jobStatus)}</SignalTag> : null}
+                          <MetaPill>{proposal.problemType === "job" ? "Paid task" : "Problem brief"}</MetaPill>
+                          <MetaPill tone="rust">{proposal.status || "pending"}</MetaPill>
+                          {proposal.jobStatus ? <MetaPill tone="accent">{formatJobStatus(proposal.jobStatus)}</MetaPill> : null}
                         </div>
-                        <Link to={`/problem/${proposal.problemId}`} className="mt-4 block text-xl font-semibold tracking-[-0.03em] text-[var(--neon-text)] transition-colors hover:text-[var(--neon-cyan)]">
-                          {proposal.problemTitle || "Untitled Brief"}
+                        <Link to={`/problem/${proposal.problemId}`} className="mt-4 block font-display text-3xl font-semibold tracking-[-0.05em] text-[var(--board-ink)]">
+                          {proposal.problemTitle || "Untitled brief"}
                         </Link>
-                        <p className="mt-2 max-w-3xl text-sm leading-7 text-[var(--neon-muted)] md:text-base">
+                        <p className="mt-3 max-w-3xl text-sm leading-7 text-[var(--board-muted)] md:text-base">
                           {proposal.briefSolution || proposal.description}
                         </p>
                       </div>
 
-                      <div className="text-left md:min-w-[180px] md:text-right">
+                      <div className="md:text-right">
                         {proposal.proposedPriceSol ? (
-                          <p className="text-2xl font-semibold text-[var(--neon-cyan)]">
+                          <p className="font-display text-3xl font-semibold tracking-[-0.06em] text-[var(--board-ink)]">
                             {formatSol(proposal.proposedPriceSol)} SOL
                           </p>
                         ) : proposal.cost ? (
-                          <p className="text-base text-[var(--neon-text)]">{proposal.cost}</p>
+                          <p className="text-base text-[var(--board-ink)]">{proposal.cost}</p>
                         ) : null}
                         {proposal.tipTotal ? (
-                          <p className="mt-2 text-sm text-[var(--neon-lime)]">
+                          <p className="mt-3 text-sm text-[var(--board-accent)]">
                             {formatSol(proposal.tipTotal)} tipped
                           </p>
                         ) : null}
                       </div>
                     </div>
                   </article>
-                ))
-              )}
-            </div>
+                ))}
+              </div>
+            )}
           </TabsContent>
 
-          <TabsContent value="bounties">
-            <div className="space-y-4">
-              {activeJobs.length === 0 ? (
-                <EmptyTabState
-                  title="No accepted bounty work yet"
-                  description="When one of your bids gets selected, the active payout path will appear here so you can track it to completion."
-                />
-              ) : (
-                activeJobs.map((job) => (
-                  <article key={job.id} className="neon-panel rounded-[1.5rem] p-5 md:p-6">
-                    <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                      <div className="min-w-0">
-                        <SignalTag tone="cyan">{formatJobStatus(job.jobStatus)}</SignalTag>
-                        <Link to={`/problem/${job.problemId}`} className="mt-4 block text-xl font-semibold tracking-[-0.03em] text-[var(--neon-text)] transition-colors hover:text-[var(--neon-cyan)]">
-                          {job.problemTitle || "Untitled Task"}
+          <TabsContent value="bounties" className="mt-6">
+            {activeJobs.length === 0 ? (
+              <EmptyState
+                title="No accepted work yet."
+                description="When a requester selects one of your bids, the active payout path will show up here."
+              />
+            ) : (
+              <div className="border-t border-[color:var(--board-line)]">
+                {activeJobs.map((job) => (
+                  <article key={job.id} className="board-row">
+                    <div className="grid gap-5 md:grid-cols-[minmax(0,1fr)_180px] md:items-start">
+                      <div>
+                        <MetaPill tone="accent">{formatJobStatus(job.jobStatus)}</MetaPill>
+                        <Link to={`/problem/${job.problemId}`} className="mt-4 block font-display text-3xl font-semibold tracking-[-0.05em] text-[var(--board-ink)]">
+                          {job.problemTitle || "Untitled task"}
                         </Link>
-                        <p className="mt-2 text-sm leading-7 text-[var(--neon-muted)] md:text-base">
+                        <p className="mt-3 text-sm leading-7 text-[var(--board-muted)] md:text-base">
                           {job.estimatedDelivery || job.timeline || "Timeline pending"}
                         </p>
                       </div>
 
-                      <div className="text-left md:min-w-[180px] md:text-right">
+                      <div className="md:text-right">
                         {job.proposedPriceSol ? (
-                          <p className="text-2xl font-semibold text-[var(--neon-cyan)]">
+                          <p className="font-display text-3xl font-semibold tracking-[-0.06em] text-[var(--board-ink)]">
                             {formatSol(job.proposedPriceSol)} SOL
                           </p>
                         ) : null}
-                        <Link to={`/problem/${job.problemId}`} className="mt-4 inline-flex text-sm font-semibold uppercase tracking-[0.16em] text-[var(--neon-cyan)] hover:text-[var(--neon-text)]">
-                          Open Brief
-                        </Link>
                       </div>
                     </div>
                   </article>
-                ))
-              )}
-            </div>
+                ))}
+              </div>
+            )}
           </TabsContent>
 
-          <TabsContent value="signals">
-            <div className="space-y-4">
-              {notifications.length === 0 ? (
-                <EmptyTabState
-                  title="No signals yet"
-                  description="Replies, activity, and updates from the board will collect here once your briefs or bids start moving."
-                />
-              ) : (
-                notifications.map((notification) => (
-                  <article key={notification.id} className="neon-panel rounded-[1.5rem] p-5 md:p-6">
-                    <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+          <TabsContent value="signals" className="mt-6">
+            {notifications.length === 0 ? (
+              <EmptyState
+                title="No signals yet."
+                description="Replies, updates, and movement from the board will collect here once your briefs or bids start moving."
+              />
+            ) : (
+              <div className="border-t border-[color:var(--board-line)]">
+                {notifications.map((notification) => (
+                  <article key={notification.id} className="board-row">
+                    <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_120px] md:items-start">
                       <div>
                         <div className="flex flex-wrap gap-2">
-                          <SignalTag tone={notification.is_read ? "neutral" : "pink"}>
+                          <MetaPill tone={notification.is_read ? "default" : "rust"}>
                             {notification.is_read ? "Read" : "Unread"}
-                          </SignalTag>
+                          </MetaPill>
                         </div>
-                        <p className="mt-4 text-base leading-8 text-[var(--neon-text)]">
-                          {notification.message}
-                        </p>
-                        <p className="mt-2 text-sm text-[var(--neon-dim)]">
+                        <p className="mt-4 text-base leading-8 text-[var(--board-ink)]">{notification.message}</p>
+                        <p className="mt-2 text-sm text-[var(--board-muted)]">
                           {new Date(notification.created_at).toLocaleString()}
                         </p>
                       </div>
                       {notification.link ? (
                         <Link
                           to={notification.link}
-                          className="text-sm font-semibold uppercase tracking-[0.16em] text-[var(--neon-cyan)] hover:text-[var(--neon-text)]"
+                          className="font-mono-alt text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-[var(--board-accent)] md:text-right"
                         >
                           Open
                         </Link>
                       ) : null}
                     </div>
                   </article>
-                ))
-              )}
-            </div>
+                ))}
+              </div>
+            )}
           </TabsContent>
         </Tabs>
-      </div>
+      </main>
 
       <Dialog open={walletModalOpen} onOpenChange={setWalletModalOpen}>
-        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto rounded-none border-[color:var(--neon-line)] bg-[rgba(8,12,28,0.98)] text-[var(--neon-text)]">
+        <DialogContent className="max-h-[85vh] max-w-2xl overflow-y-auto rounded-none border-[color:var(--board-line-strong)] bg-[var(--board-paper)] text-[var(--board-ink)]">
           <DialogHeader>
-            <DialogTitle className="font-cyber text-xl uppercase tracking-[0.14em] text-[var(--neon-text)] flex items-center gap-2">
-              <Wallet className="w-5 h-5 text-[var(--neon-cyan)]" />
-              Manage Wallets
+            <DialogTitle className="font-display text-2xl font-semibold tracking-[-0.05em] text-[var(--board-ink)]">
+              Manage wallets
             </DialogTitle>
           </DialogHeader>
           <LinkWallet onWalletsChange={setWalletCount} />

@@ -1,17 +1,11 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router";
-import { Briefcase, Calendar, Coins, FileText, Lightbulb, Tag } from "lucide-react";
+import { Briefcase, Calendar, Coins, FileText, Tag } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Textarea } from "../components/ui/textarea";
 import { Label } from "../components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import { useAuth } from "../contexts/AuthContext";
 import { supabase } from "../../../lib/supabaseClient";
 import { API_ENDPOINTS } from "../../lib/api-config";
@@ -20,7 +14,7 @@ import { splitListInput } from "../../lib/marketplace";
 
 const CATEGORIES = ["AI/ML", "Web3", "Finance", "Governance", "Trading", "Infrastructure"];
 const JOB_TYPES = [
-  { value: "one-time", label: "One-Time" },
+  { value: "one-time", label: "One-time" },
   { value: "contract", label: "Contract" },
   { value: "ongoing", label: "Ongoing" },
 ];
@@ -45,8 +39,8 @@ export function PostProblem() {
 
   const isJob = formData.type === "job";
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
 
     if (isLoading || !user) {
       setError("Please wait for authentication to complete before posting.");
@@ -113,277 +107,269 @@ export function PostProblem() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] text-gray-100">
+    <div className="board-app">
       <Navbar />
 
-      <div className="container mx-auto px-4 py-12">
-        <div className="max-w-3xl mx-auto">
-          <div className="mb-8">
-            <h1 className="text-4xl font-bold mb-3 bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">
-              Post a Brief, Task, or Bounty
-            </h1>
-            <p className="text-gray-400 text-lg">
-              Use problem posts for open-ended asks, or paid tasks when you already know the work and want a builder to take it over.
+      <main className="board-container py-8 md:py-10">
+        <section className="grid gap-8 border-b border-[color:var(--board-line)] pb-10 lg:grid-cols-[minmax(0,1fr)_320px]">
+          <div>
+            <p className="board-kicker">New Listing</p>
+            <h1 className="board-title mt-3">Post a brief, a scoped task, or a bounty.</h1>
+            <p className="board-copy mt-5">
+              Keep the title sharp, write the scope like someone will price it, and make the payout path obvious before builders respond.
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {error && (
-              <div className="bg-red-500/10 border border-red-500/50 text-red-400 px-4 py-3 rounded-lg">
-                {error}
-              </div>
-            )}
+          <aside className="space-y-5">
+            <div className="board-stat">
+              <div className="board-stat__value">{isJob ? "Job" : "Brief"}</div>
+              <div className="board-stat__label">Current listing type</div>
+            </div>
+            <div className="board-stat">
+              <div className="board-stat__value">{isJob ? "SOL" : "Flexible"}</div>
+              <div className="board-stat__label">Primary payout mode</div>
+            </div>
+            <div className="board-stat">
+              <div className="board-stat__value">Clear</div>
+              <div className="board-stat__label">Scope beats hype here</div>
+            </div>
+          </aside>
+        </section>
 
-            <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/5 to-blue-500/5 rounded-2xl blur-xl" />
-              <div className="relative bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-2xl p-6">
-                <Label className="text-white mb-3 block">Post Type</Label>
-                <div className="grid grid-cols-2 gap-3">
+        <form onSubmit={handleSubmit} className="board-section px-0">
+          {error ? (
+            <div className="mb-6 border border-[color:rgba(178,103,55,0.2)] bg-[rgba(178,103,55,0.08)] px-4 py-3 text-sm text-[var(--board-rust)]">
+              {error}
+            </div>
+          ) : null}
+
+          <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
+            <div className="space-y-8">
+              <section className="board-panel p-6 md:p-8">
+                <p className="board-kicker">Type</p>
+                <div className="mt-5 grid gap-4 md:grid-cols-2">
                   {[
                     {
                       value: "problem",
-                      title: "Open Brief",
-                      description: "A problem, request, or technical ask that needs a smart solution.",
-                      icon: Lightbulb,
+                      title: "Problem brief",
+                      copy: "Use this when you want ideas, approaches, or broad technical help around a blocker.",
                     },
                     {
                       value: "job",
-                      title: "Paid Task",
-                      description: "Scoped builder work with proposal acceptance and direct SOL payout.",
-                      icon: Briefcase,
+                      title: "Paid task",
+                      copy: "Use this when the work is scoped enough to accept one builder and pay them directly.",
                     },
-                  ].map((option) => {
-                    const Icon = option.icon;
-                    const active = formData.type === option.value;
-                    return (
-                      <button
-                        key={option.value}
-                        type="button"
-                        onClick={() => setFormData((current) => ({ ...current, type: option.value }))}
-                        className={`rounded-xl border p-4 text-left transition-colors ${
-                          active
-                            ? "border-cyan-500/60 bg-cyan-500/10"
-                            : "border-gray-700 bg-gray-800/40 hover:border-gray-600"
-                        }`}
-                      >
-                        <div className="flex items-center gap-2 text-white font-semibold mb-1">
-                          <Icon className="w-4 h-4" />
-                          {option.title}
-                        </div>
-                        <p className="text-sm text-gray-400">{option.description}</p>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-
-            <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/5 to-blue-500/5 rounded-2xl blur-xl" />
-              <div className="relative bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-2xl p-6">
-                <Label htmlFor="title" className="text-white mb-2 block">
-                  {isJob ? "Task Title *" : "Brief Title *"}
-                </Label>
-                <Input
-                  id="title"
-                  placeholder={
-                    isJob
-                      ? "e.g., Harden our Kubernetes deployment pipeline"
-                      : "e.g., Need a better Terraform drift detection workflow"
-                  }
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  className="bg-gray-800/50 border-gray-700 focus:border-cyan-500/50 text-white placeholder:text-gray-500"
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-indigo-500/5 rounded-2xl blur-xl" />
-              <div className="relative bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-2xl p-6">
-                <Label htmlFor="description" className="text-white mb-2 block">
-                  <FileText className="w-4 h-4 inline mr-2" />
-                  {isJob ? "Task Scope *" : "Brief Description *"}
-                </Label>
-                <Textarea
-                  id="description"
-                  placeholder={
-                    isJob
-                      ? "Describe the deliverable, constraints, and what success looks like..."
-                      : "Describe the problem, request, or blocker you want someone to solve..."
-                  }
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="bg-gray-800/50 border-gray-700 focus:border-cyan-500/50 text-white placeholder:text-gray-500 min-h-[150px]"
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/5 to-purple-500/5 rounded-2xl blur-xl" />
-              <div className="relative bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-2xl p-6">
-                <Label htmlFor="requirements" className="text-white mb-2 block">
-                  Requirements
-                </Label>
-                <Textarea
-                  id="requirements"
-                  placeholder="List the key requirements, one per line"
-                  value={formData.requirements}
-                  onChange={(e) => setFormData({ ...formData, requirements: e.target.value })}
-                  className="bg-gray-800/50 border-gray-700 focus:border-cyan-500/50 text-white placeholder:text-gray-500 min-h-[120px]"
-                />
-              </div>
-            </div>
-
-            <div className={`grid gap-6 ${isJob ? "md:grid-cols-2" : "md:grid-cols-3"}`}>
-              <div className="relative">
-                <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/5 to-blue-500/5 rounded-2xl blur-xl" />
-                <div className="relative bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-2xl p-6">
-                  <Label htmlFor="category" className="text-white mb-2 block">
-                    <Tag className="w-4 h-4 inline mr-2" />
-                    Category *
-                  </Label>
-                  <Select
-                    value={formData.category}
-                    onValueChange={(value) => setFormData({ ...formData, category: value })}
-                    required
-                  >
-                    <SelectTrigger className="bg-gray-800/50 border-gray-700 focus:border-cyan-500/50 text-white">
-                      <SelectValue placeholder="Select a category" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-gray-800 border-gray-700 text-white">
-                      {CATEGORIES.map((category) => (
-                        <SelectItem key={category} value={category} className="hover:bg-gray-700">
-                          {category}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="relative">
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-indigo-500/5 rounded-2xl blur-xl" />
-                <div className="relative bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-2xl p-6">
-                  <Label htmlFor={isJob ? "budgetSol" : "budget"} className="text-white mb-2 block">
-                    <Coins className="w-4 h-4 inline mr-2" />
-                    {isJob ? "Budget (SOL) *" : "Bounty *"}
-                  </Label>
-                  <Input
-                    id={isJob ? "budgetSol" : "budget"}
-                    type={isJob ? "number" : "text"}
-                    step={isJob ? "0.000001" : undefined}
-                    placeholder={isJob ? "3.5" : "$500 / 1 SOL / tip-friendly"}
-                    value={isJob ? formData.budgetSol : formData.budget}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        [isJob ? "budgetSol" : "budget"]: e.target.value,
-                      })
-                    }
-                    className="bg-gray-800/50 border-gray-700 focus:border-cyan-500/50 text-white placeholder:text-gray-500"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="relative">
-                <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 to-pink-500/5 rounded-2xl blur-xl" />
-                <div className="relative bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-2xl p-6">
-                  <Label htmlFor="deadline" className="text-white mb-2 block">
-                    <Calendar className="w-4 h-4 inline mr-2" />
-                    Deadline {isJob ? "*" : ""}
-                  </Label>
-                  <Input
-                    id="deadline"
-                    type="date"
-                    value={formData.deadline}
-                    onChange={(e) => setFormData({ ...formData, deadline: e.target.value })}
-                    className="bg-gray-800/50 border-gray-700 focus:border-cyan-500/50 text-white"
-                    required={isJob}
-                  />
-                </div>
-              </div>
-            </div>
-
-            {isJob && (
-              <div className="grid md:grid-cols-2 gap-6">
-                <div className="relative">
-                  <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/5 to-blue-500/5 rounded-2xl blur-xl" />
-                  <div className="relative bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-2xl p-6">
-                    <Label htmlFor="jobType" className="text-white mb-2 block">
-                      <Briefcase className="w-4 h-4 inline mr-2" />
-                      Job Type *
-                    </Label>
-                    <Select
-                      value={formData.jobType}
-                      onValueChange={(value) => setFormData({ ...formData, jobType: value })}
+                  ].map((option) => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => setFormData((current) => ({ ...current, type: option.value }))}
+                      className={`border px-5 py-5 text-left transition-colors ${
+                        formData.type === option.value
+                          ? "border-[color:rgba(15,118,110,0.24)] bg-[rgba(15,118,110,0.08)]"
+                          : "border-[color:var(--board-line)] bg-white/40"
+                      }`}
                     >
-                      <SelectTrigger className="bg-gray-800/50 border-gray-700 focus:border-cyan-500/50 text-white">
-                        <SelectValue placeholder="Select the engagement type" />
+                      <p className="font-display text-2xl font-semibold tracking-[-0.04em] text-[var(--board-ink)]">
+                        {option.title}
+                      </p>
+                      <p className="mt-2 text-sm leading-7 text-[var(--board-muted)]">{option.copy}</p>
+                    </button>
+                  ))}
+                </div>
+              </section>
+
+              <section className="board-panel p-6 md:p-8">
+                <div className="grid gap-6">
+                  <div>
+                    <Label htmlFor="title" className="mb-2 block text-sm text-[var(--board-ink)]">
+                      <FileText className="mr-2 inline h-4 w-4 text-[var(--board-accent)]" />
+                      {isJob ? "Task title" : "Brief title"}
+                    </Label>
+                    <Input
+                      id="title"
+                      placeholder={isJob ? "Harden our CI deployment workflow" : "Need a better Terraform drift workflow"}
+                      value={formData.title}
+                      onChange={(event) => setFormData({ ...formData, title: event.target.value })}
+                      className="board-field rounded-none"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="description" className="mb-2 block text-sm text-[var(--board-ink)]">
+                      Scope
+                    </Label>
+                    <Textarea
+                      id="description"
+                      placeholder={
+                        isJob
+                          ? "Describe the deliverable, constraints, handoff, and what done means."
+                          : "Describe the problem, why it matters, and what kind of help you want."
+                      }
+                      value={formData.description}
+                      onChange={(event) => setFormData({ ...formData, description: event.target.value })}
+                      className="board-field min-h-[170px] rounded-none"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="requirements" className="mb-2 block text-sm text-[var(--board-ink)]">
+                      Requirements
+                    </Label>
+                    <Textarea
+                      id="requirements"
+                      placeholder="List the must-haves, one per line."
+                      value={formData.requirements}
+                      onChange={(event) => setFormData({ ...formData, requirements: event.target.value })}
+                      className="board-field min-h-[130px] rounded-none"
+                    />
+                  </div>
+                </div>
+              </section>
+
+              <section className="board-panel p-6 md:p-8">
+                <div className={`grid gap-6 ${isJob ? "md:grid-cols-2" : "md:grid-cols-3"}`}>
+                  <div>
+                    <Label htmlFor="category" className="mb-2 block text-sm text-[var(--board-ink)]">
+                      <Tag className="mr-2 inline h-4 w-4 text-[var(--board-accent)]" />
+                      Category
+                    </Label>
+                    <Select value={formData.category} onValueChange={(value) => setFormData({ ...formData, category: value })}>
+                      <SelectTrigger className="board-field rounded-none border-[color:var(--board-line)] bg-white/58 text-[var(--board-ink)]">
+                        <SelectValue placeholder="Select a category" />
                       </SelectTrigger>
-                      <SelectContent className="bg-gray-800 border-gray-700 text-white">
-                        {JOB_TYPES.map((jobType) => (
-                          <SelectItem key={jobType.value} value={jobType.value}>
-                            {jobType.label}
+                      <SelectContent className="rounded-none border-[color:var(--board-line-strong)] bg-[var(--board-paper)] text-[var(--board-ink)]">
+                        {CATEGORIES.map((category) => (
+                          <SelectItem key={category} value={category}>
+                            {category}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
-                </div>
 
-                <div className="relative">
-                  <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/5 to-purple-500/5 rounded-2xl blur-xl" />
-                  <div className="relative bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-2xl p-6">
-                    <Label htmlFor="skillsRequired" className="text-white mb-2 block">
-                      Skills Required
+                  <div>
+                    <Label htmlFor={isJob ? "budgetSol" : "budget"} className="mb-2 block text-sm text-[var(--board-ink)]">
+                      <Coins className="mr-2 inline h-4 w-4 text-[var(--board-accent)]" />
+                      {isJob ? "Budget (SOL)" : "Bounty"}
                     </Label>
                     <Input
-                      id="skillsRequired"
-                      placeholder="Terraform, Kubernetes, GitHub Actions"
-                      value={formData.skillsRequired}
-                      onChange={(e) => setFormData({ ...formData, skillsRequired: e.target.value })}
-                      className="bg-gray-800/50 border-gray-700 focus:border-cyan-500/50 text-white placeholder:text-gray-500"
+                      id={isJob ? "budgetSol" : "budget"}
+                      type={isJob ? "number" : "text"}
+                      step={isJob ? "0.000001" : undefined}
+                      placeholder={isJob ? "3.5" : "$900 / 1.25 SOL / fixed fee"}
+                      value={isJob ? formData.budgetSol : formData.budget}
+                      onChange={(event) =>
+                        setFormData({
+                          ...formData,
+                          [isJob ? "budgetSol" : "budget"]: event.target.value,
+                        })
+                      }
+                      className="board-field rounded-none"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="deadline" className="mb-2 block text-sm text-[var(--board-ink)]">
+                      <Calendar className="mr-2 inline h-4 w-4 text-[var(--board-accent)]" />
+                      Deadline
+                    </Label>
+                    <Input
+                      id="deadline"
+                      type="date"
+                      value={formData.deadline}
+                      onChange={(event) => setFormData({ ...formData, deadline: event.target.value })}
+                      className="board-field rounded-none"
+                      required={isJob}
                     />
                   </div>
                 </div>
-              </div>
-            )}
 
-            <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/10 to-blue-500/10 rounded-2xl blur-xl" />
-              <div className="relative bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-2xl p-6">
-                <div className="mb-4">
-                  <h3 className="font-bold text-white mb-2">What happens next</h3>
-                  <ul className="space-y-1 text-sm text-gray-400">
-                    <li>Problem posts keep the current community proposal and tipping flow.</li>
-                    <li>Job posts let you accept one builder, track completion, and pay them directly in SOL.</li>
-                    <li>Tips stay available on both post types.</li>
-                  </ul>
-                </div>
+                {isJob ? (
+                  <div className="mt-6 grid gap-6 md:grid-cols-2">
+                    <div>
+                      <Label htmlFor="jobType" className="mb-2 block text-sm text-[var(--board-ink)]">
+                        <Briefcase className="mr-2 inline h-4 w-4 text-[var(--board-accent)]" />
+                        Job type
+                      </Label>
+                      <Select value={formData.jobType} onValueChange={(value) => setFormData({ ...formData, jobType: value })}>
+                        <SelectTrigger className="board-field rounded-none border-[color:var(--board-line)] bg-white/58 text-[var(--board-ink)]">
+                          <SelectValue placeholder="Select engagement type" />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-none border-[color:var(--board-line-strong)] bg-[var(--board-paper)] text-[var(--board-ink)]">
+                          {JOB_TYPES.map((jobType) => (
+                            <SelectItem key={jobType.value} value={jobType.value}>
+                              {jobType.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
 
-                <div className="flex gap-4">
-                  <Link to="/browse" className="flex-1">
-                    <Button variant="outline" className="w-full border-gray-700 hover:bg-gray-800 text-white">
-                      Cancel
-                    </Button>
-                  </Link>
-                  <Button
-                    type="submit"
-                    disabled={isSubmitting || isLoading || !user}
-                    className="flex-1 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white border-0 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {isSubmitting ? "Posting..." : isJob ? "Post Job" : "Post Problem"}
-                  </Button>
-                </div>
-              </div>
+                    <div>
+                      <Label htmlFor="skillsRequired" className="mb-2 block text-sm text-[var(--board-ink)]">
+                        Skills required
+                      </Label>
+                      <Input
+                        id="skillsRequired"
+                        placeholder="Terraform, Kubernetes, GitHub Actions"
+                        value={formData.skillsRequired}
+                        onChange={(event) => setFormData({ ...formData, skillsRequired: event.target.value })}
+                        className="board-field rounded-none"
+                      />
+                    </div>
+                  </div>
+                ) : null}
+              </section>
             </div>
-          </form>
-        </div>
-      </div>
+
+            <aside className="space-y-6">
+              <section className="board-panel p-6">
+                <p className="board-kicker">Preview</p>
+                <div className="mt-5 border-t border-[color:var(--board-line)] pt-5">
+                  <p className="board-eyebrow">{formData.category || "Category"}</p>
+                  <h2 className="board-subtitle mt-3 text-[1.8rem]">
+                    {formData.title || "Your listing title will show here"}
+                  </h2>
+                  <p className="mt-3 text-sm leading-7 text-[var(--board-muted)]">
+                    {formData.description || "A strong scope reads like someone can estimate the work after one pass."}
+                  </p>
+                </div>
+              </section>
+
+              <section className="board-panel p-6">
+                <p className="board-kicker">Checklist</p>
+                <div className="mt-5 space-y-4 text-sm leading-7 text-[var(--board-muted)]">
+                  <p>State the deliverable, not just the mood of the project.</p>
+                  <p>Use the requirements section for constraints and non-negotiables.</p>
+                  <p>For jobs, include a real deadline and a payout in SOL.</p>
+                </div>
+              </section>
+
+              <div className="flex flex-col gap-3">
+                <Link to="/browse">
+                  <Button
+                    variant="outline"
+                    className="h-11 w-full rounded-none border-[color:var(--board-line-strong)] bg-white/56 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-[var(--board-ink)] hover:bg-white"
+                  >
+                    Cancel
+                  </Button>
+                </Link>
+                <Button
+                  type="submit"
+                  disabled={isSubmitting || isLoading || !user}
+                  className="h-11 rounded-none border border-[color:rgba(15,118,110,0.24)] bg-[var(--board-accent)] text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-white hover:bg-[color:#0d625c] disabled:opacity-50"
+                >
+                  {isSubmitting ? "Posting..." : isJob ? "Post job" : "Post brief"}
+                </Button>
+              </div>
+            </aside>
+          </div>
+        </form>
+      </main>
     </div>
   );
 }
