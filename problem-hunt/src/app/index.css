@@ -3,20 +3,20 @@
 @import './theme.css';
 
 :root {
-  --board-bg: #eee7da;
-  --board-paper: #f8f4ec;
-  --board-panel: rgba(248, 244, 236, 0.78);
-  --board-panel-strong: rgba(250, 247, 241, 0.92);
-  --board-ink: #172734;
-  --board-muted: rgba(23, 39, 52, 0.7);
-  --board-soft: rgba(23, 39, 52, 0.48);
+  --board-bg: #ffcfb3;
+  --board-paper: #fff2ea;
+  --board-panel: rgba(255, 242, 234, 0.82);
+  --board-panel-strong: rgba(255, 247, 241, 0.94);
+  --board-ink: #111111;
+  --board-muted: rgba(17, 17, 17, 0.78);
+  --board-soft: rgba(17, 17, 17, 0.6);
   --board-line: rgba(23, 39, 52, 0.12);
   --board-line-strong: rgba(23, 39, 52, 0.22);
   --board-accent: #0f766e;
   --board-accent-soft: rgba(15, 118, 110, 0.12);
   --board-rust: #b26737;
   --board-gold: #bf9351;
-  --board-night: #0f1820;
+  --board-night: #13212b;
 }
 
 * {
@@ -31,9 +31,9 @@ html {
 body {
   min-height: 100vh;
   background:
-    radial-gradient(circle at top left, rgba(15, 118, 110, 0.12), transparent 22%),
-    radial-gradient(circle at top right, rgba(191, 147, 81, 0.12), transparent 18%),
-    linear-gradient(180deg, #f9f5ec 0%, #f1eadf 48%, #ece4d7 100%);
+    radial-gradient(circle at top left, rgba(241, 123, 72, 0.2), transparent 22%),
+    radial-gradient(circle at top right, rgba(255, 180, 92, 0.24), transparent 18%),
+    linear-gradient(180deg, #ffd8c5 0%, #f8c39b 48%, #f0ab79 100%);
   color: var(--board-ink);
   font-family: var(--font-body);
 }
