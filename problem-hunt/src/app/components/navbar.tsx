@@ -59,38 +59,38 @@ export function Navbar() {
 
   const palette = isLanding
     ? {
-        header: "border-[color:rgba(19,39,56,0.12)] bg-[rgba(247,241,228,0.72)] backdrop-blur-xl",
-        logoBox: "rounded-none bg-[linear-gradient(135deg,var(--ph-ink),var(--ph-sky))]",
-        logoText: "bg-none text-[var(--ph-ink)]",
-        activeLink: "text-[var(--ph-ink)] bg-white/55",
-        inactiveLink: "text-[rgba(19,39,56,0.74)] hover:text-[var(--ph-ink)] hover:bg-white/45",
-        wallet: "bg-white/45 border-[color:rgba(19,39,56,0.14)] text-[var(--ph-sky)] hover:border-[color:rgba(29,125,179,0.45)]",
-        primaryCta: "rounded-none bg-[var(--ph-ink)] text-[var(--ph-cream)] hover:bg-[var(--ph-sky)]",
-        userButton: "bg-white/45 border-[color:rgba(19,39,56,0.14)] hover:border-[color:rgba(19,39,56,0.24)]",
-        avatar: "rounded-none bg-[linear-gradient(135deg,var(--ph-sky),var(--ph-teal))]",
-        dropdown: "bg-[var(--ph-cream)] border-[color:rgba(19,39,56,0.12)] shadow-2xl shadow-[rgba(19,39,56,0.12)]",
-        dropdownDivider: "border-[color:rgba(19,39,56,0.1)]",
-        dropdownItem: "text-[rgba(19,39,56,0.76)] hover:text-[var(--ph-ink)] hover:bg-white/50",
-        signIn: "rounded-none bg-[var(--ph-sky)] text-white hover:bg-[var(--ph-ink)]",
-        mobileToggle: "text-[rgba(19,39,56,0.62)] hover:text-[var(--ph-ink)] hover:bg-white/45",
-        mobileMenu: "border-[color:rgba(19,39,56,0.12)] bg-[rgba(247,241,228,0.94)]",
+        header: "border-[color:var(--neon-line)] bg-[rgba(5,8,22,0.72)] backdrop-blur-xl",
+        logoBox: "rounded-none border border-[color:rgba(89,243,255,0.28)] bg-[linear-gradient(135deg,rgba(89,243,255,0.18),rgba(255,79,216,0.22))]",
+        logoText: "bg-gradient-to-r from-[var(--neon-cyan)] to-[var(--neon-pink)] bg-clip-text text-transparent",
+        activeLink: "text-[var(--neon-cyan)] bg-[rgba(89,243,255,0.08)]",
+        inactiveLink: "text-[var(--neon-muted)] hover:text-[var(--neon-text)] hover:bg-[rgba(255,255,255,0.04)]",
+        wallet: "bg-[rgba(9,14,31,0.86)] border-[color:var(--neon-line)] text-[var(--neon-cyan)] hover:border-[color:var(--neon-line-strong)]",
+        primaryCta: "rounded-none border border-[color:rgba(89,243,255,0.34)] bg-[rgba(9,14,31,0.88)] text-[var(--neon-cyan)] hover:bg-[rgba(89,243,255,0.1)]",
+        userButton: "bg-[rgba(9,14,31,0.86)] border-[color:var(--neon-line)] hover:border-[color:var(--neon-line-strong)]",
+        avatar: "rounded-none bg-[linear-gradient(135deg,var(--neon-cyan),var(--neon-pink))]",
+        dropdown: "bg-[rgba(8,12,28,0.96)] border-[color:var(--neon-line)] shadow-2xl shadow-[rgba(89,243,255,0.12)]",
+        dropdownDivider: "border-[color:rgba(89,243,255,0.12)]",
+        dropdownItem: "text-[var(--neon-muted)] hover:text-[var(--neon-text)] hover:bg-[rgba(255,255,255,0.04)]",
+        signIn: "rounded-none border border-[color:rgba(255,79,216,0.32)] bg-[rgba(255,79,216,0.12)] text-[var(--neon-text)] hover:bg-[rgba(255,79,216,0.18)]",
+        mobileToggle: "text-[var(--neon-muted)] hover:text-[var(--neon-text)] hover:bg-[rgba(255,255,255,0.05)]",
+        mobileMenu: "border-[color:var(--neon-line)] bg-[rgba(5,8,22,0.96)]",
       }
     : {
-        header: "border-gray-800/50 bg-[#0a0a0f]/80 backdrop-blur-md",
-        logoBox: "rounded-lg bg-gradient-to-br from-cyan-400 to-blue-600",
-        logoText: "bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent",
-        activeLink: "text-cyan-400 bg-cyan-500/10",
-        inactiveLink: "text-gray-300 hover:text-white hover:bg-gray-800/60",
-        wallet: "bg-gray-800/60 border-gray-700/50 text-cyan-400 hover:border-cyan-500/50",
-        primaryCta: "bg-gradient-to-r from-cyan-500 to-blue-600 text-white hover:from-cyan-600 hover:to-blue-700",
-        userButton: "bg-gray-800/60 border-gray-700/50 hover:border-gray-600",
-        avatar: "rounded-full bg-gradient-to-br from-cyan-500 to-blue-600",
-        dropdown: "bg-gray-900 border-gray-700/60 shadow-2xl shadow-black/50",
-        dropdownDivider: "border-gray-800",
-        dropdownItem: "text-gray-300 hover:text-white hover:bg-gray-800/60",
-        signIn: "bg-gradient-to-r from-cyan-500 to-blue-600 text-white hover:from-cyan-600 hover:to-blue-700",
-        mobileToggle: "text-gray-400 hover:text-white hover:bg-gray-800",
-        mobileMenu: "border-gray-800/50 bg-[#0a0a0f]/95",
+        header: "border-[color:var(--neon-line)] bg-[rgba(5,8,22,0.78)] backdrop-blur-xl",
+        logoBox: "rounded-none border border-[color:rgba(89,243,255,0.28)] bg-[linear-gradient(135deg,rgba(89,243,255,0.16),rgba(255,79,216,0.18))]",
+        logoText: "bg-gradient-to-r from-[var(--neon-cyan)] to-[var(--neon-pink)] bg-clip-text text-transparent",
+        activeLink: "text-[var(--neon-cyan)] bg-[rgba(89,243,255,0.08)]",
+        inactiveLink: "text-[var(--neon-muted)] hover:text-[var(--neon-text)] hover:bg-[rgba(255,255,255,0.04)]",
+        wallet: "bg-[rgba(9,14,31,0.88)] border-[color:var(--neon-line)] text-[var(--neon-cyan)] hover:border-[color:var(--neon-line-strong)]",
+        primaryCta: "border border-[color:rgba(89,243,255,0.34)] bg-[rgba(9,14,31,0.88)] text-[var(--neon-cyan)] hover:bg-[rgba(89,243,255,0.1)]",
+        userButton: "bg-[rgba(9,14,31,0.88)] border-[color:var(--neon-line)] hover:border-[color:var(--neon-line-strong)]",
+        avatar: "rounded-none bg-[linear-gradient(135deg,var(--neon-cyan),var(--neon-pink))]",
+        dropdown: "bg-[rgba(8,12,28,0.96)] border-[color:var(--neon-line)] shadow-2xl shadow-[rgba(89,243,255,0.12)]",
+        dropdownDivider: "border-[color:rgba(89,243,255,0.12)]",
+        dropdownItem: "text-[var(--neon-muted)] hover:text-[var(--neon-text)] hover:bg-[rgba(255,255,255,0.04)]",
+        signIn: "border border-[color:rgba(255,79,216,0.32)] bg-[rgba(255,79,216,0.12)] text-[var(--neon-text)] hover:bg-[rgba(255,79,216,0.18)]",
+        mobileToggle: "text-[var(--neon-muted)] hover:text-[var(--neon-text)] hover:bg-[rgba(255,255,255,0.05)]",
+        mobileMenu: "border-[color:var(--neon-line)] bg-[rgba(5,8,22,0.96)]",
       };
 
   return (
@@ -157,16 +157,16 @@ export function Navbar() {
                 <div className={`w-7 h-7 flex items-center justify-center text-white text-xs font-bold ${palette.avatar}`}>
                   {(user.username || user.email || "U").substring(0, 1).toUpperCase()}
                 </div>
-                <ChevronDown className={`w-3.5 h-3.5 ${isLanding ? "text-[rgba(19,39,56,0.5)]" : "text-gray-400"} transition-transform ${dropdownOpen ? "rotate-180" : ""}`} />
+                <ChevronDown className={`w-3.5 h-3.5 ${isLanding ? "text-[var(--neon-dim)]" : "text-[var(--neon-dim)]"} transition-transform ${dropdownOpen ? "rotate-180" : ""}`} />
               </button>
 
               {dropdownOpen && (
                 <div className={`absolute right-0 mt-2 w-52 rounded-xl border overflow-hidden z-50 fade-in ${palette.dropdown}`}>
                   <div className={`px-4 py-3 border-b ${palette.dropdownDivider}`}>
-                    <p className={`text-sm font-semibold truncate ${isLanding ? "text-[var(--ph-ink)]" : "text-white"}`}>
+                    <p className={`text-sm font-semibold truncate ${isLanding ? "text-[var(--neon-text)]" : "text-white"}`}>
                       {user.username || "Builder"}
                     </p>
-                    <p className={`text-xs truncate ${isLanding ? "text-[rgba(19,39,56,0.56)]" : "text-gray-400"}`}>{user.email}</p>
+                    <p className={`text-xs truncate ${isLanding ? "text-[var(--neon-dim)]" : "text-[var(--neon-dim)]"}`}>{user.email}</p>
                   </div>
 
                   <div className="py-1">
@@ -254,7 +254,7 @@ export function Navbar() {
               >
                 {copied ? <Check className="w-3 h-3 text-green-400" /> : <Copy className="w-3 h-3" />}
                 <span>{shortAddress}</span>
-                <span className={`ml-auto ${isLanding ? "text-[rgba(19,39,56,0.42)]" : "text-gray-500"}`}>wallet</span>
+                <span className={`ml-auto ${isLanding ? "text-[var(--neon-dim)]" : "text-[var(--neon-dim)]"}`}>wallet</span>
               </button>
             )}
           </div>

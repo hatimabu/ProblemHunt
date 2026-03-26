@@ -13,6 +13,18 @@
   --ph-teal: #0e8a81;
   --ph-amber: #bc6f23;
   --ph-clay: #a95140;
+  --neon-bg: #050816;
+  --neon-bg-soft: #0a1024;
+  --neon-panel: rgba(10, 16, 36, 0.74);
+  --neon-panel-strong: rgba(10, 14, 30, 0.92);
+  --neon-line: rgba(89, 243, 255, 0.16);
+  --neon-line-strong: rgba(89, 243, 255, 0.34);
+  --neon-text: #eef7ff;
+  --neon-muted: rgba(203, 224, 255, 0.76);
+  --neon-dim: rgba(203, 224, 255, 0.48);
+  --neon-cyan: #59f3ff;
+  --neon-pink: #ff4fd8;
+  --neon-lime: #d9ff57;
 }
 
 /* ============================================================
@@ -265,6 +277,259 @@
 
 .mesh-bg {
   animation: meshMove 20s ease-in-out infinite;
+}
+
+.neon-page {
+  position: relative;
+  background:
+    radial-gradient(circle at top left, rgba(89, 243, 255, 0.14), transparent 22%),
+    radial-gradient(circle at top right, rgba(255, 79, 216, 0.12), transparent 18%),
+    radial-gradient(circle at bottom center, rgba(217, 255, 87, 0.06), transparent 20%),
+    linear-gradient(180deg, #050816 0%, #070b1d 38%, #040611 100%);
+  color: var(--neon-text);
+}
+
+.neon-page::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.22;
+  background-image:
+    linear-gradient(rgba(89, 243, 255, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(89, 243, 255, 0.06) 1px, transparent 1px);
+  background-size: 72px 72px;
+  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.7), transparent 90%);
+}
+
+.neon-panel {
+  position: relative;
+  border: 1px solid var(--neon-line);
+  background:
+    linear-gradient(180deg, rgba(89, 243, 255, 0.03), transparent 34%),
+    var(--neon-panel);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.03),
+    0 0 0 1px rgba(89, 243, 255, 0.03),
+    0 0 28px rgba(89, 243, 255, 0.08);
+  backdrop-filter: blur(14px);
+}
+
+.neon-panel::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(120deg, rgba(255, 79, 216, 0.09), transparent 28%, transparent 72%, rgba(89, 243, 255, 0.06));
+  opacity: 0.6;
+}
+
+.neon-kicker {
+  font-family: var(--font-cyber);
+  font-size: 0.74rem;
+  font-weight: 600;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--neon-cyan);
+  margin-bottom: 1rem;
+}
+
+@keyframes gridDrift {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(-36px, 24px, 0);
+  }
+}
+
+.neon-grid {
+  opacity: 0.5;
+  background:
+    radial-gradient(circle at center, rgba(89, 243, 255, 0.08), transparent 42%),
+    linear-gradient(rgba(89, 243, 255, 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(89, 243, 255, 0.07) 1px, transparent 1px);
+  background-size: 100% 100%, 52px 52px, 52px 52px;
+  animation: gridDrift 16s linear infinite;
+}
+
+.neon-landing-hero::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg, rgba(5, 8, 22, 0.98) 0%, rgba(5, 8, 22, 0.94) 38%, rgba(5, 8, 22, 0.7) 62%, rgba(5, 8, 22, 0.22) 100%);
+  z-index: 1;
+}
+
+.landing-wordmark {
+  font-size: clamp(4.4rem, 13vw, 10rem);
+  font-weight: 700;
+  line-height: 0.84;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--neon-text);
+  text-shadow: 0 0 18px rgba(89, 243, 255, 0.2);
+}
+
+.landing-signal-plane {
+  position: absolute;
+  right: -6vw;
+  top: 12%;
+  width: min(58vw, 760px);
+  aspect-ratio: 1 / 1;
+  z-index: 0;
+  pointer-events: none;
+}
+
+@keyframes neonPulse {
+  0%, 100% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0.55;
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.04);
+    opacity: 0.9;
+  }
+}
+
+@keyframes beamSweep {
+  0% {
+    transform: translate(-12%, -50%) rotate(-10deg);
+    opacity: 0.18;
+  }
+  50% {
+    opacity: 0.45;
+  }
+  100% {
+    transform: translate(12%, -50%) rotate(-10deg);
+    opacity: 0.18;
+  }
+}
+
+.landing-signal-ring,
+.landing-signal-core,
+.landing-signal-beam,
+.landing-signal-copy {
+  position: absolute;
+}
+
+.landing-signal-ring {
+  inset: 8%;
+  border: 1px solid rgba(89, 243, 255, 0.28);
+  border-radius: 999px;
+  box-shadow:
+    0 0 26px rgba(89, 243, 255, 0.16),
+    inset 0 0 18px rgba(89, 243, 255, 0.08);
+}
+
+.landing-signal-ring--inner {
+  inset: 23%;
+  border-color: rgba(255, 79, 216, 0.34);
+  box-shadow:
+    0 0 28px rgba(255, 79, 216, 0.16),
+    inset 0 0 18px rgba(255, 79, 216, 0.08);
+}
+
+.landing-signal-ring--pulse {
+  inset: 34%;
+  border-color: rgba(217, 255, 87, 0.32);
+  animation: neonPulse 4.5s ease-in-out infinite;
+}
+
+.landing-signal-core {
+  left: 50%;
+  top: 50%;
+  width: 18%;
+  aspect-ratio: 1 / 1;
+  border-radius: 999px;
+  transform: translate(-50%, -50%);
+  background:
+    radial-gradient(circle at center, rgba(255, 255, 255, 0.78), rgba(89, 243, 255, 0.84) 34%, rgba(89, 243, 255, 0.08) 70%, transparent 100%);
+  box-shadow: 0 0 42px rgba(89, 243, 255, 0.34);
+}
+
+.landing-signal-beam {
+  left: 14%;
+  top: 50%;
+  width: 72%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(89, 243, 255, 0.76), transparent);
+  transform: translateY(-50%) rotate(-10deg);
+  box-shadow: 0 0 20px rgba(89, 243, 255, 0.24);
+  animation: beamSweep 5.5s linear infinite;
+}
+
+.landing-signal-copy {
+  font-family: var(--font-cyber);
+  font-size: 0.72rem;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: rgba(203, 224, 255, 0.74);
+}
+
+.landing-signal-copy--top {
+  left: 24%;
+  top: 4%;
+}
+
+.landing-signal-copy--left {
+  left: -2%;
+  top: 48%;
+  transform: rotate(-90deg);
+  transform-origin: left top;
+}
+
+.landing-signal-copy--right {
+  right: -6%;
+  top: 46%;
+  transform: rotate(90deg);
+  transform-origin: right top;
+}
+
+.landing-signal-copy--bottom {
+  left: 19%;
+  bottom: 2%;
+}
+
+@media (max-width: 1024px) {
+  .neon-landing-hero::after {
+    background:
+      linear-gradient(180deg, rgba(5, 8, 22, 0.98) 0%, rgba(5, 8, 22, 0.92) 42%, rgba(5, 8, 22, 0.58) 74%, rgba(5, 8, 22, 0.18) 100%);
+  }
+
+  .landing-signal-plane {
+    right: -18vw;
+    top: 34%;
+    width: min(92vw, 720px);
+    opacity: 0.78;
+  }
+}
+
+@media (max-width: 640px) {
+  .landing-wordmark {
+    font-size: clamp(3.6rem, 18vw, 5rem);
+    letter-spacing: 0.12em;
+  }
+
+  .landing-signal-plane {
+    right: -34vw;
+    top: 46%;
+    width: 128vw;
+    opacity: 0.46;
+  }
+
+  .landing-signal-copy {
+    font-size: 0.58rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .neon-grid,
+  .landing-signal-ring--pulse,
+  .landing-signal-beam {
+    animation: none !important;
+  }
 }
 
 .landing-page {

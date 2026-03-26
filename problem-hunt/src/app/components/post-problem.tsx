@@ -120,10 +120,10 @@ export function PostProblem() {
         <div className="max-w-3xl mx-auto">
           <div className="mb-8">
             <h1 className="text-4xl font-bold mb-3 bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">
-              Post a Problem or Job
+              Post a Brief, Task, or Bounty
             </h1>
             <p className="text-gray-400 text-lg">
-              Problems invite community solutions and tips. Jobs add a builder workflow with direct SOL payment.
+              Use problem posts for open-ended asks, or paid tasks when you already know the work and want a builder to take it over.
             </p>
           </div>
 
@@ -142,14 +142,14 @@ export function PostProblem() {
                   {[
                     {
                       value: "problem",
-                      title: "Problem",
-                      description: "Community ideas, proposals, and tips.",
+                      title: "Open Brief",
+                      description: "A problem, request, or technical ask that needs a smart solution.",
                       icon: Lightbulb,
                     },
                     {
                       value: "job",
-                      title: "Job",
-                      description: "Budgeted work with proposal acceptance and direct SOL payout.",
+                      title: "Paid Task",
+                      description: "Scoped builder work with proposal acceptance and direct SOL payout.",
                       icon: Briefcase,
                     },
                   ].map((option) => {
@@ -182,7 +182,7 @@ export function PostProblem() {
               <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/5 to-blue-500/5 rounded-2xl blur-xl" />
               <div className="relative bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-2xl p-6">
                 <Label htmlFor="title" className="text-white mb-2 block">
-                  {isJob ? "Job Title *" : "Problem Title *"}
+                  {isJob ? "Task Title *" : "Brief Title *"}
                 </Label>
                 <Input
                   id="title"
@@ -204,14 +204,14 @@ export function PostProblem() {
               <div className="relative bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-2xl p-6">
                 <Label htmlFor="description" className="text-white mb-2 block">
                   <FileText className="w-4 h-4 inline mr-2" />
-                  {isJob ? "Scope *" : "Problem Description *"}
+                  {isJob ? "Task Scope *" : "Brief Description *"}
                 </Label>
                 <Textarea
                   id="description"
                   placeholder={
                     isJob
                       ? "Describe the deliverable, constraints, and what success looks like..."
-                      : "Describe the problem you want the community to solve..."
+                      : "Describe the problem, request, or blocker you want someone to solve..."
                   }
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}

@@ -12,7 +12,6 @@ import {
 } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
-import { Badge } from "../components/ui/badge";
 import { Navbar } from "./navbar";
 import { supabase } from "../../../lib/supabaseClient";
 import { API_ENDPOINTS } from "../../lib/api-config";
@@ -20,34 +19,34 @@ import { formatBudget, formatJobStatus, formatTimeAgo, isJobPost, type ProblemPo
 
 const CATEGORIES = ["All", "AI/ML", "Web3", "Finance", "Governance", "Trading", "Infrastructure"];
 const TYPE_FILTERS = [
-  { value: "all", label: "All" },
+  { value: "all", label: "All Briefs" },
   { value: "problem", label: "Problems" },
-  { value: "job", label: "Jobs" },
+  { value: "job", label: "Paid Tasks" },
 ];
 const SORT_OPTIONS = [
-  { value: "newest", label: "Newest" },
-  { value: "upvotes", label: "Most Upvoted" },
-  { value: "proposals", label: "Most Proposals" },
-  { value: "budget", label: "Highest Budget" },
+  { value: "newest", label: "Newest Signal" },
+  { value: "upvotes", label: "Most Attention" },
+  { value: "proposals", label: "Most Builder Bids" },
+  { value: "budget", label: "Highest Bounty" },
 ];
 
-const CATEGORY_COLORS: Record<string, string> = {
-  "AI/ML": "bg-purple-500/20 text-purple-300 border-purple-500/30",
-  "Web3": "bg-blue-500/20 text-blue-300 border-blue-500/30",
-  "Finance": "bg-green-500/20 text-green-300 border-green-500/30",
-  "Governance": "bg-orange-500/20 text-orange-300 border-orange-500/30",
-  "Trading": "bg-yellow-500/20 text-yellow-300 border-yellow-500/30",
-  "Infrastructure": "bg-cyan-500/20 text-cyan-300 border-cyan-500/30",
+const CATEGORY_ACCENTS: Record<string, string> = {
+  "AI/ML": "text-[var(--neon-cyan)]",
+  "Web3": "text-[var(--neon-pink)]",
+  "Finance": "text-[var(--neon-lime)]",
+  "Governance": "text-[var(--neon-text)]",
+  "Trading": "text-[var(--neon-pink)]",
+  "Infrastructure": "text-[var(--neon-cyan)]",
 };
 
-function SkeletonCard() {
+function SkeletonRow() {
   return (
-    <div className="bg-gray-900/50 border border-gray-800 rounded-2xl p-6">
-      <div className="skeleton h-6 w-24 rounded-full mb-4" />
-      <div className="skeleton h-7 w-3/4 mb-2 rounded" />
-      <div className="skeleton h-4 w-full mb-1 rounded" />
-      <div className="skeleton h-4 w-5/6 mb-4 rounded" />
-      <div className="skeleton h-4 w-40 rounded" />
+    <div className="neon-panel rounded-[1.25rem] p-6">
+      <div className="skeleton h-4 w-28 rounded-full mb-5" />
+      <div className="skeleton h-8 w-3/4 mb-3 rounded" />
+      <div className="skeleton h-4 w-full mb-2 rounded" />
+      <div className="skeleton h-4 w-5/6 mb-5 rounded" />
+      <div className="skeleton h-4 w-48 rounded" />
     </div>
   );
 }
@@ -68,25 +67,22 @@ export function BrowseProblems() {
         setFilterOpen(false);
       }
     };
+
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
   useEffect(() => {
-    const fetchProblems = async () => {
+    const fetchPosts = async () => {
       try {
         setLoading(true);
         const category = selectedCategory === "All" ? "all" : selectedCategory;
         const { data: sessionData } = await supabase.auth.getSession();
         const token = sessionData.session?.access_token;
+        const headers: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {};
         const response = await fetch(
           `${API_ENDPOINTS.PROBLEMS}?category=${encodeURIComponent(category)}&sortBy=${sortBy}&type=${selectedType}`,
-          {
-            method: "GET",
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
+          { headers }
         );
 
         if (!response.ok) {
@@ -102,13 +98,14 @@ export function BrowseProblems() {
       }
     };
 
-    fetchProblems();
+    fetchPosts();
   }, [selectedCategory, selectedType, sortBy]);
 
   const filteredPosts = useMemo(() => {
     if (!searchQuery) {
       return posts;
     }
+
     const query = searchQuery.toLowerCase();
     return posts.filter((post) => {
       return (
@@ -119,114 +116,124 @@ export function BrowseProblems() {
   }, [posts, searchQuery]);
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] text-gray-100">
+    <div className="neon-page min-h-screen text-[var(--neon-text)]">
       <Navbar />
 
-      <div className="container mx-auto px-4 py-10">
-        <div className="mb-10 fade-in">
-          <h1 className="text-4xl md:text-5xl font-bold mb-3 bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">
-            Browse Problems and Jobs
-          </h1>
-          <p className="text-gray-400">
-            Explore community problem-solving threads and paid DevOps jobs side by side.
-          </p>
-        </div>
+      <div className="mx-auto max-w-7xl px-4 py-10">
+        <section className="neon-panel relative overflow-hidden rounded-[1.75rem] p-8 md:p-10 mb-8">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,79,216,0.18),transparent_32%),radial-gradient(circle_at_bottom_left,rgba(89,243,255,0.14),transparent_28%)]" />
+          <div className="relative z-10 max-w-3xl">
+            <p className="neon-kicker">Marketplace Board</p>
+            <h1 className="font-cyber text-4xl uppercase tracking-[0.12em] text-[var(--neon-text)] md:text-6xl">
+              Browse The Bounty Board
+            </h1>
+            <p className="mt-5 max-w-2xl text-base leading-8 text-[var(--neon-muted)] md:text-lg">
+              Hunt problems, paid tasks, and technical requests from people who want something solved, shipped, or taken off their plate.
+            </p>
+          </div>
+        </section>
 
-        <div className="flex flex-col lg:flex-row gap-3 mb-6 fade-in">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <Input
-              placeholder="Search posts..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 h-11 bg-gray-900/60 border-gray-700/60 focus:border-cyan-500/60 text-white placeholder:text-gray-500 rounded-xl"
-            />
+        <div className="neon-panel rounded-[1.5rem] p-4 md:p-5 mb-5">
+          <div className="flex flex-col gap-3 lg:flex-row">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--neon-dim)]" />
+              <Input
+                placeholder="Search briefs, tasks, bounties..."
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                className="pl-10 h-12 rounded-none border-[color:var(--neon-line)] bg-[rgba(6,10,24,0.78)] text-[var(--neon-text)] placeholder:text-[var(--neon-dim)] focus:border-[color:var(--neon-line-strong)]"
+              />
+            </div>
+
+            <div className="relative" ref={filterRef}>
+              <button
+                onClick={() => setFilterOpen((open) => !open)}
+                className="flex h-12 items-center gap-2 rounded-none border border-[color:var(--neon-line)] bg-[rgba(6,10,24,0.82)] px-4 text-sm font-semibold uppercase tracking-[0.18em] text-[var(--neon-muted)] transition-colors hover:text-[var(--neon-text)]"
+              >
+                <SlidersHorizontal className="w-4 h-4" />
+                {SORT_OPTIONS.find((option) => option.value === sortBy)?.label}
+              </button>
+
+              {filterOpen && (
+                <div className="absolute right-0 z-20 mt-2 w-56 overflow-hidden rounded-[1.1rem] border border-[color:var(--neon-line)] bg-[rgba(7,11,26,0.96)] shadow-[0_0_24px_rgba(89,243,255,0.12)]">
+                  {SORT_OPTIONS.map((option) => (
+                    <button
+                      key={option.value}
+                      onClick={() => {
+                        setSortBy(option.value);
+                        setFilterOpen(false);
+                      }}
+                      className={`w-full px-4 py-3 text-left text-sm transition-colors ${
+                        sortBy === option.value
+                          ? "bg-[rgba(89,243,255,0.08)] text-[var(--neon-cyan)]"
+                          : "text-[var(--neon-muted)] hover:bg-[rgba(255,255,255,0.04)] hover:text-[var(--neon-text)]"
+                      }`}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
-          <div className="relative" ref={filterRef}>
-            <button
-              onClick={() => setFilterOpen((open) => !open)}
-              className="flex items-center gap-2 h-11 px-4 bg-gray-900/60 border border-gray-700/60 hover:border-gray-600 rounded-xl text-sm text-gray-300 hover:text-white transition-colors"
-            >
-              <SlidersHorizontal className="w-4 h-4" />
-              Sort: {SORT_OPTIONS.find((option) => option.value === sortBy)?.label}
-            </button>
-
-            {filterOpen && (
-              <div className="absolute right-0 mt-2 w-48 bg-gray-900 border border-gray-700/60 rounded-xl shadow-xl z-20 overflow-hidden">
-                {SORT_OPTIONS.map((option) => (
-                  <button
-                    key={option.value}
-                    onClick={() => {
-                      setSortBy(option.value);
-                      setFilterOpen(false);
-                    }}
-                    className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${
-                      sortBy === option.value
-                        ? "text-cyan-400 bg-cyan-500/10"
-                        : "text-gray-300 hover:text-white hover:bg-gray-800/60"
-                    }`}
-                  >
-                    {option.label}
-                  </button>
-                ))}
-              </div>
-            )}
+          <div className="mt-4 flex flex-wrap gap-2">
+            {TYPE_FILTERS.map((filter) => (
+              <button
+                key={filter.value}
+                onClick={() => setSelectedType(filter.value)}
+                className={`rounded-none border px-3.5 py-2 text-xs font-semibold uppercase tracking-[0.18em] transition-all ${
+                  selectedType === filter.value
+                    ? "border-[color:rgba(89,243,255,0.38)] bg-[rgba(89,243,255,0.08)] text-[var(--neon-cyan)]"
+                    : "border-[color:rgba(89,243,255,0.14)] bg-[rgba(6,10,24,0.58)] text-[var(--neon-dim)] hover:text-[var(--neon-text)]"
+                }`}
+              >
+                {filter.label}
+              </button>
+            ))}
           </div>
-        </div>
 
-        <div className="flex flex-wrap gap-2 mb-4 fade-in">
-          {TYPE_FILTERS.map((filter) => (
-            <button
-              key={filter.value}
-              onClick={() => setSelectedType(filter.value)}
-              className={`px-3.5 py-1.5 rounded-full text-sm font-medium border transition-all ${
-                selectedType === filter.value
-                  ? "bg-cyan-500/20 border-cyan-500/60 text-cyan-300"
-                  : "border-gray-700/60 text-gray-400 hover:border-gray-600 hover:text-gray-200 bg-gray-900/40"
-              }`}
-            >
-              {filter.label}
-            </button>
-          ))}
-        </div>
-
-        <div className="flex flex-wrap gap-2 mb-8 fade-in">
-          {CATEGORIES.map((category) => (
-            <button
-              key={category}
-              onClick={() => setSelectedCategory(category)}
-              className={`px-3.5 py-1.5 rounded-full text-sm font-medium border transition-all ${
-                selectedCategory === category
-                  ? "bg-cyan-500/20 border-cyan-500/60 text-cyan-300"
-                  : "border-gray-700/60 text-gray-400 hover:border-gray-600 hover:text-gray-200 bg-gray-900/40"
-              }`}
-            >
-              {category}
-            </button>
-          ))}
+          <div className="mt-3 flex flex-wrap gap-2">
+            {CATEGORIES.map((category) => (
+              <button
+                key={category}
+                onClick={() => setSelectedCategory(category)}
+                className={`rounded-none border px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] transition-all ${
+                  selectedCategory === category
+                    ? "border-[color:rgba(255,79,216,0.34)] bg-[rgba(255,79,216,0.08)] text-[var(--neon-text)]"
+                    : "border-[color:rgba(89,243,255,0.12)] bg-[rgba(6,10,24,0.48)] text-[var(--neon-dim)] hover:text-[var(--neon-text)]"
+                }`}
+              >
+                {category}
+              </button>
+            ))}
+          </div>
         </div>
 
         {!loading && (
-          <p className="text-sm text-gray-500 mb-6">
-            {filteredPosts.length} post{filteredPosts.length !== 1 ? "s" : ""} found
+          <p className="mb-6 text-sm text-[var(--neon-dim)]">
+            {filteredPosts.length} signal{filteredPosts.length !== 1 ? "s" : ""} on the board
             {searchQuery && ` for "${searchQuery}"`}
           </p>
         )}
 
         <div className="space-y-4">
           {loading ? (
-            Array.from({ length: 4 }).map((_, index) => <SkeletonCard key={index} />)
+            Array.from({ length: 4 }).map((_, index) => <SkeletonRow key={index} />)
           ) : filteredPosts.length === 0 ? (
-            <div className="text-center py-20 fade-in">
-              <div className="text-6xl mb-4">🔍</div>
-              <h3 className="text-2xl font-bold text-white mb-2">No posts found</h3>
-              <p className="text-gray-400 mb-6">
-                Try a different filter, or create the first post in this slice of the marketplace.
+            <div className="neon-panel rounded-[1.75rem] px-6 py-18 text-center">
+              <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full border border-[color:var(--neon-line)] bg-[rgba(89,243,255,0.08)] text-[var(--neon-cyan)]">
+                <Search className="w-7 h-7" />
+              </div>
+              <h3 className="text-2xl font-semibold tracking-[-0.03em] text-[var(--neon-text)]">
+                No briefs found
+              </h3>
+              <p className="mx-auto mt-3 max-w-xl text-sm leading-7 text-[var(--neon-muted)] md:text-base">
+                Try a different filter, or post the first bounty-backed request in this slice of the market.
               </p>
-              <Link to="/post">
-                <Button className="bg-gradient-to-r from-cyan-500 to-blue-600 text-white border-0">
-                  Create a Post
+              <Link to="/post" className="inline-flex">
+                <Button className="mt-7 rounded-none border border-[color:rgba(89,243,255,0.34)] bg-[rgba(9,14,31,0.88)] text-[var(--neon-cyan)] hover:bg-[rgba(89,243,255,0.1)]">
+                  Post A Brief
                 </Button>
               </Link>
             </div>
@@ -234,48 +241,47 @@ export function BrowseProblems() {
             filteredPosts.map((post) => {
               const hot = post.upvotes >= 5;
               const job = isJobPost(post);
+
               return (
                 <Link key={post.id} to={`/problem/${post.id}`} className="block">
-                  <div className="relative bg-gray-900/50 backdrop-blur-sm border border-gray-800 hover:border-cyan-500/40 rounded-2xl p-6 group">
+                  <article className="neon-panel group relative overflow-hidden rounded-[1.5rem] p-6 transition-transform hover:-translate-y-0.5">
+                    <div className="absolute inset-y-6 left-0 w-px bg-gradient-to-b from-transparent via-[var(--neon-cyan)] to-transparent opacity-75" />
+
                     {hot && (
-                      <div className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
-                        <Flame className="w-2.5 h-2.5" />
-                        HOT
+                      <div className="absolute right-5 top-5 inline-flex items-center gap-1 rounded-none border border-[color:rgba(255,79,216,0.32)] bg-[rgba(255,79,216,0.12)] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--neon-text)]">
+                        <Flame className="w-3 h-3" />
+                        Hot
                       </div>
                     )}
 
-                    <div className="flex flex-col lg:flex-row gap-4">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex flex-wrap items-center gap-2 mb-2">
-                          <Badge
-                            className={`text-xs ${
-                              CATEGORY_COLORS[post.category] ||
-                              "bg-gray-500/20 text-gray-300 border-gray-500/30"
+                    <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span
+                            className={`font-mono-alt text-[0.68rem] font-semibold uppercase tracking-[0.26em] ${
+                              CATEGORY_ACCENTS[post.category] || "text-[var(--neon-cyan)]"
                             }`}
                           >
                             {post.category}
-                          </Badge>
-                          {job && (
-                            <Badge className="text-xs bg-amber-500/20 text-amber-300 border-amber-500/30">
-                              <Briefcase className="w-3 h-3 mr-1" />
-                              JOB
-                            </Badge>
-                          )}
+                          </span>
+                          <span className="rounded-none border border-[color:rgba(89,243,255,0.16)] bg-[rgba(89,243,255,0.06)] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--neon-muted)]">
+                            {job ? "Paid Task" : "Problem Brief"}
+                          </span>
                           {job && post.jobStatus && (
-                            <Badge className="text-xs bg-gray-800 text-gray-300 border-gray-700">
+                            <span className="rounded-none border border-[color:rgba(255,79,216,0.18)] bg-[rgba(255,79,216,0.06)] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--neon-muted)]">
                               {formatJobStatus(post.jobStatus)}
-                            </Badge>
+                            </span>
                           )}
                         </div>
 
-                        <h3 className="text-xl font-bold text-white mb-1.5 group-hover:text-cyan-400 transition-colors line-clamp-2">
+                        <h2 className="mt-4 text-2xl font-semibold tracking-[-0.04em] text-[var(--neon-text)] transition-colors group-hover:text-[var(--neon-cyan)]">
                           {post.title}
-                        </h3>
-                        <p className="text-gray-400 text-sm mb-3 line-clamp-2">
+                        </h2>
+                        <p className="mt-3 max-w-3xl text-sm leading-7 text-[var(--neon-muted)] line-clamp-2 md:text-base">
                           {post.description}
                         </p>
 
-                        <div className="flex flex-wrap gap-x-5 gap-y-1.5 text-sm text-gray-500">
+                        <div className="mt-5 flex flex-wrap gap-x-5 gap-y-2 text-sm text-[var(--neon-dim)]">
                           <div className="flex items-center gap-1.5">
                             <User className="w-3.5 h-3.5" />
                             <span>{post.author || "Anonymous"}</span>
@@ -285,35 +291,35 @@ export function BrowseProblems() {
                             <span>{post.upvotes || 0} upvotes</span>
                           </div>
                           <div className="flex items-center gap-1.5">
-                            <span>{post.proposals || 0} proposals</span>
+                            <span>{post.proposals || 0} bids</span>
                           </div>
                           <div className="flex items-center gap-1.5">
                             <Clock className="w-3.5 h-3.5" />
                             <span>{formatTimeAgo(post.createdAt)}</span>
                           </div>
                           {job && post.deadline && (
-                            <div className="flex items-center gap-1.5 text-amber-300">
+                            <div className="flex items-center gap-1.5 text-[var(--neon-lime)]">
+                              <Briefcase className="w-3.5 h-3.5" />
                               <span>Deadline {new Date(post.deadline).toLocaleDateString()}</span>
                             </div>
                           )}
                         </div>
                       </div>
 
-                      <div className="flex lg:flex-col items-center lg:items-end justify-between gap-3 lg:min-w-[160px]">
-                        <div className="text-right">
-                          <div className="text-xs text-gray-500 mb-0.5">
-                            {job ? "Budget" : "Bounty"}
-                          </div>
-                          <div className="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
-                            {formatBudget(post)}
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-1 text-xs text-cyan-400 group-hover:gap-2 transition-all font-medium">
-                          View <ArrowRight className="w-3.5 h-3.5" />
+                      <div className="lg:min-w-[180px] lg:text-right">
+                        <p className="font-mono-alt text-[0.68rem] font-semibold uppercase tracking-[0.26em] text-[var(--neon-dim)]">
+                          {job ? "Budget" : "Bounty"}
+                        </p>
+                        <p className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-[var(--neon-cyan)]">
+                          {formatBudget(post)}
+                        </p>
+                        <div className="mt-6 inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-[0.18em] text-[var(--neon-cyan)] transition-all group-hover:gap-2">
+                          View Brief
+                          <ArrowRight className="w-3.5 h-3.5" />
                         </div>
                       </div>
                     </div>
-                  </div>
+                  </article>
                 </Link>
               );
             })

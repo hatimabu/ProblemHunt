@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Link } from "react-router";
 import { Bell, Briefcase, CheckCircle, Coins, Edit2, Loader2, Save, User, Wallet } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
@@ -7,7 +7,6 @@ import { API_ENDPOINTS } from "../../lib/api-config";
 import { LinkWallet } from "./LinkWallet";
 import { Navbar } from "./navbar";
 import { Button } from "./ui/button";
-import { Badge } from "./ui/badge";
 import { Textarea } from "./ui/textarea";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
@@ -23,6 +22,57 @@ interface ProfileData {
   user_type: string;
   created_at: string;
   wallet_address?: string | null;
+}
+
+function SignalTag({
+  children,
+  tone = "cyan",
+}: {
+  children: ReactNode;
+  tone?: "cyan" | "pink" | "lime" | "neutral";
+}) {
+  const tones = {
+    cyan: "border-[color:rgba(89,243,255,0.18)] bg-[rgba(89,243,255,0.06)] text-[var(--neon-cyan)]",
+    pink: "border-[color:rgba(255,79,216,0.18)] bg-[rgba(255,79,216,0.06)] text-[var(--neon-text)]",
+    lime: "border-[color:rgba(217,255,87,0.18)] bg-[rgba(217,255,87,0.06)] text-[var(--neon-lime)]",
+    neutral: "border-[color:rgba(255,255,255,0.1)] bg-[rgba(255,255,255,0.04)] text-[var(--neon-muted)]",
+  };
+
+  return (
+    <span className={`rounded-none border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] ${tones[tone]}`}>
+      {children}
+    </span>
+  );
+}
+
+function EmptyTabState({
+  title,
+  description,
+  ctaHref,
+  ctaLabel,
+}: {
+  title: string;
+  description: string;
+  ctaHref?: string;
+  ctaLabel?: string;
+}) {
+  return (
+    <div className="neon-panel rounded-[1.5rem] px-6 py-14 text-center">
+      <h3 className="text-2xl font-semibold tracking-[-0.03em] text-[var(--neon-text)]">
+        {title}
+      </h3>
+      <p className="mx-auto mt-3 max-w-xl text-sm leading-7 text-[var(--neon-muted)] md:text-base">
+        {description}
+      </p>
+      {ctaHref && ctaLabel ? (
+        <Link to={ctaHref} className="inline-flex">
+          <Button className="mt-7 rounded-none border border-[color:rgba(89,243,255,0.34)] bg-[rgba(9,14,31,0.88)] text-[var(--neon-cyan)] hover:bg-[rgba(89,243,255,0.1)]">
+            {ctaLabel}
+          </Button>
+        </Link>
+      ) : null}
+    </div>
+  );
 }
 
 export function BuilderDashboard() {
@@ -43,9 +93,27 @@ export function BuilderDashboard() {
     [proposals]
   );
 
+  const unreadSignals = useMemo(
+    () => notifications.filter((notification) => !notification.is_read).length,
+    [notifications]
+  );
+
+  const dashboardStats = useMemo(
+    () => [
+      { label: "Reputation", value: String(profile?.reputation_score || 0) },
+      { label: "Open Briefs", value: String(posts.length) },
+      { label: "Live Bids", value: String(proposals.length) },
+      { label: "Accepted Bounties", value: String(activeJobs.length) },
+    ],
+    [activeJobs.length, posts.length, profile?.reputation_score, proposals.length]
+  );
+
   useEffect(() => {
     const load = async () => {
-      if (!user) return;
+      if (!user) {
+        return;
+      }
+
       setLoading(true);
       try {
         const [profileResult, walletCountResult, notificationsResult] = await Promise.all([
@@ -69,19 +137,22 @@ export function BuilderDashboard() {
             bio: profileResult.data.bio || "",
           });
         }
+
         setWalletCount(walletCountResult.count || 0);
         setNotifications(notificationsResult.data || []);
 
         const token = (await supabase.auth.getSession()).data.session?.access_token;
+        const headers: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {};
         const [postsResponse, proposalsResponse] = await Promise.all([
-          fetch(`${API_ENDPOINTS.USER_PROBLEMS}?sortBy=newest`, { headers: { Authorization: `Bearer ${token}` } }),
-          fetch(API_ENDPOINTS.USER_PROPOSALS, { headers: { Authorization: `Bearer ${token}` } }),
+          fetch(`${API_ENDPOINTS.USER_PROBLEMS}?sortBy=newest`, { headers }),
+          fetch(API_ENDPOINTS.USER_PROPOSALS, { headers }),
         ]);
 
         if (postsResponse.ok) {
           const postsData = await postsResponse.json();
           setPosts(Array.isArray(postsData.problems) ? postsData.problems : []);
         }
+
         if (proposalsResponse.ok) {
           const proposalsData = await proposalsResponse.json();
           setProposals(Array.isArray(proposalsData.proposals) ? proposalsData.proposals : []);
@@ -95,7 +166,10 @@ export function BuilderDashboard() {
   }, [user]);
 
   const handleSaveProfile = async () => {
-    if (!user) return;
+    if (!user) {
+      return;
+    }
+
     try {
       setSavingProfile(true);
       const { data } = await supabase
@@ -107,9 +181,11 @@ export function BuilderDashboard() {
         .eq("user_id", user.id)
         .select("username, full_name, bio, reputation_score, user_type, created_at, wallet_address")
         .single();
+
       if (data) {
         setProfile(data);
       }
+
       setEditingProfile(false);
     } finally {
       setSavingProfile(false);
@@ -118,181 +194,385 @@ export function BuilderDashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0a0a0f] text-gray-100">
+      <div className="neon-page min-h-screen text-[var(--neon-text)]">
         <Navbar />
-        <div className="container mx-auto px-4 py-16 flex justify-center">
-          <Loader2 className="w-8 h-8 animate-spin text-cyan-400" />
+        <div className="mx-auto flex max-w-7xl justify-center px-4 py-20">
+          <Loader2 className="w-8 h-8 animate-spin text-[var(--neon-cyan)]" />
         </div>
       </div>
     );
   }
 
   const displayName = profile?.full_name || profile?.username || user?.username || "Builder";
+  const identityLabel = profile?.user_type === "builder" ? "Solution Seeker" : "Requester";
+  const identityCopy = profile?.user_type === "builder"
+    ? "Track the briefs you are chasing, the bounties you have locked, and the wallets that should get paid."
+    : "Track the work you have posted, the builders responding, and the signals coming back from the board.";
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] text-gray-100">
+    <div className="neon-page min-h-screen text-[var(--neon-text)]">
       <Navbar />
-      <div className="container mx-auto px-4 py-12">
-        <div className="bg-gray-900/50 border border-gray-800 rounded-2xl p-8 mb-8">
-          <div className="flex flex-col md:flex-row md:items-center gap-6 justify-between">
-            <div>
-              <div className="flex items-center gap-3 mb-2">
-                <h1 className="text-3xl font-bold text-white">{displayName}</h1>
-                <Badge className="bg-cyan-500/20 text-cyan-300 border-cyan-500/30">
-                  {profile?.user_type === "builder" ? "Builder" : "Problem Poster"}
-                </Badge>
-              </div>
-              <div className="flex flex-wrap gap-4 text-sm text-gray-400">
-                <span>{profile?.reputation_score || 0} reputation</span>
-                <span>{walletCount} wallet{walletCount === 1 ? "" : "s"} linked</span>
-                <span>{activeJobs.length} active accepted job{activeJobs.length === 1 ? "" : "s"}</span>
-              </div>
-              {profile?.wallet_address && (
-                <div className="mt-3 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-200 inline-block">
-                  Primary SOL wallet: {shortWallet(profile.wallet_address)}
-                </div>
-              )}
-            </div>
-            <Button onClick={() => setWalletModalOpen(true)} className="bg-gradient-to-r from-cyan-500 to-blue-600 text-white border-0">
-              <Wallet className="w-4 h-4 mr-2" />
-              Manage Wallets
-            </Button>
-          </div>
-        </div>
 
-        <Tabs defaultValue="profile" className="space-y-6">
-          <TabsList className="bg-gray-900/50 border border-gray-800 p-1 flex flex-wrap h-auto">
-            <TabsTrigger value="profile"><User className="w-4 h-4 mr-2" />Profile</TabsTrigger>
-            <TabsTrigger value="posts"><Briefcase className="w-4 h-4 mr-2" />My Posts</TabsTrigger>
-            <TabsTrigger value="proposals"><Coins className="w-4 h-4 mr-2" />My Proposals</TabsTrigger>
-            <TabsTrigger value="active-jobs"><CheckCircle className="w-4 h-4 mr-2" />Active Jobs</TabsTrigger>
-            <TabsTrigger value="notifications"><Bell className="w-4 h-4 mr-2" />Notifications</TabsTrigger>
+      <div className="mx-auto max-w-7xl px-4 py-12">
+        <section className="neon-panel relative overflow-hidden rounded-[1.75rem] p-8 md:p-10 mb-8">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,79,216,0.16),transparent_30%),radial-gradient(circle_at_bottom_left,rgba(89,243,255,0.12),transparent_26%)]" />
+          <div className="relative z-10 grid gap-8 lg:grid-cols-[minmax(0,1.15fr)_minmax(280px,0.85fr)]">
+            <div className="max-w-3xl">
+              <p className="neon-kicker">Command Deck</p>
+              <h1 className="font-cyber text-4xl uppercase tracking-[0.12em] text-[var(--neon-text)] md:text-5xl">
+                {displayName}
+              </h1>
+              <p className="mt-4 max-w-2xl text-base leading-8 text-[var(--neon-muted)] md:text-lg">
+                {identityCopy}
+              </p>
+
+              <div className="mt-6 flex flex-wrap gap-2">
+                <SignalTag tone="cyan">{identityLabel}</SignalTag>
+                <SignalTag tone="neutral">{walletCount} wallet{walletCount === 1 ? "" : "s"} linked</SignalTag>
+                <SignalTag tone="pink">{unreadSignals} unread signal{unreadSignals === 1 ? "" : "s"}</SignalTag>
+                {profile?.wallet_address ? <SignalTag tone="lime">Primary {shortWallet(profile.wallet_address)}</SignalTag> : null}
+              </div>
+
+              <div className="mt-8 flex flex-col gap-4 sm:flex-row">
+                <Button
+                  onClick={() => setWalletModalOpen(true)}
+                  className="rounded-none border border-[color:rgba(89,243,255,0.34)] bg-[rgba(9,14,31,0.88)] text-[var(--neon-cyan)] hover:bg-[rgba(89,243,255,0.1)]"
+                >
+                  <Wallet className="w-4 h-4 mr-2" />
+                  Manage Wallets
+                </Button>
+                <Link to="/post">
+                  <Button
+                    variant="outline"
+                    className="rounded-none border-[color:rgba(255,79,216,0.32)] bg-[rgba(255,79,216,0.08)] text-[var(--neon-text)] hover:bg-[rgba(255,79,216,0.14)]"
+                  >
+                    Post A Brief
+                  </Button>
+                </Link>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              {dashboardStats.map((stat) => (
+                <div key={stat.label} className="border border-[color:var(--neon-line)] bg-[rgba(6,10,24,0.7)] px-4 py-5">
+                  <p className="font-mono-alt text-[0.68rem] uppercase tracking-[0.26em] text-[var(--neon-dim)]">
+                    {stat.label}
+                  </p>
+                  <p className="mt-3 text-3xl font-semibold tracking-[-0.04em] text-[var(--neon-cyan)]">
+                    {stat.value}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <Tabs defaultValue="identity" className="space-y-6">
+          <TabsList className="neon-panel grid h-auto w-full gap-2 rounded-[1.5rem] border border-[color:var(--neon-line)] p-2 md:grid-cols-5">
+            <TabsTrigger value="identity" className="rounded-none border border-transparent font-cyber text-[0.7rem] uppercase tracking-[0.16em] text-[var(--neon-dim)] data-[state=active]:border-[color:rgba(89,243,255,0.24)] data-[state=active]:bg-[rgba(89,243,255,0.08)] data-[state=active]:text-[var(--neon-cyan)]">
+              <User className="w-4 h-4 mr-2" />
+              Identity
+            </TabsTrigger>
+            <TabsTrigger value="briefs" className="rounded-none border border-transparent font-cyber text-[0.7rem] uppercase tracking-[0.16em] text-[var(--neon-dim)] data-[state=active]:border-[color:rgba(89,243,255,0.24)] data-[state=active]:bg-[rgba(89,243,255,0.08)] data-[state=active]:text-[var(--neon-cyan)]">
+              <Briefcase className="w-4 h-4 mr-2" />
+              My Briefs
+            </TabsTrigger>
+            <TabsTrigger value="bids" className="rounded-none border border-transparent font-cyber text-[0.7rem] uppercase tracking-[0.16em] text-[var(--neon-dim)] data-[state=active]:border-[color:rgba(89,243,255,0.24)] data-[state=active]:bg-[rgba(89,243,255,0.08)] data-[state=active]:text-[var(--neon-cyan)]">
+              <Coins className="w-4 h-4 mr-2" />
+              My Bids
+            </TabsTrigger>
+            <TabsTrigger value="bounties" className="rounded-none border border-transparent font-cyber text-[0.7rem] uppercase tracking-[0.16em] text-[var(--neon-dim)] data-[state=active]:border-[color:rgba(89,243,255,0.24)] data-[state=active]:bg-[rgba(89,243,255,0.08)] data-[state=active]:text-[var(--neon-cyan)]">
+              <CheckCircle className="w-4 h-4 mr-2" />
+              Live Bounties
+            </TabsTrigger>
+            <TabsTrigger value="signals" className="rounded-none border border-transparent font-cyber text-[0.7rem] uppercase tracking-[0.16em] text-[var(--neon-dim)] data-[state=active]:border-[color:rgba(89,243,255,0.24)] data-[state=active]:bg-[rgba(89,243,255,0.08)] data-[state=active]:text-[var(--neon-cyan)]">
+              <Bell className="w-4 h-4 mr-2" />
+              Signals
+            </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="profile">
-            <div className="bg-gray-900/50 border border-gray-800 rounded-2xl p-6 space-y-4">
-              {editingProfile ? (
-                <>
-                  <div><Label className="mb-2 block">Full Name</Label><Input value={profileForm.full_name} onChange={(e) => setProfileForm({ ...profileForm, full_name: e.target.value })} className="bg-gray-800 border-gray-700 text-white" /></div>
-                  <div><Label className="mb-2 block">Bio</Label><Textarea value={profileForm.bio} onChange={(e) => setProfileForm({ ...profileForm, bio: e.target.value })} className="bg-gray-800 border-gray-700 text-white min-h-[120px]" /></div>
-                  <div className="flex gap-3"><Button onClick={handleSaveProfile} disabled={savingProfile} className="bg-gradient-to-r from-cyan-500 to-blue-600 text-white border-0"><Save className="w-4 h-4 mr-2" />{savingProfile ? "Saving..." : "Save"}</Button><Button variant="outline" onClick={() => setEditingProfile(false)} className="border-gray-700 text-white hover:bg-gray-800">Cancel</Button></div>
-                </>
-              ) : (
-                <>
-                  <div className="flex justify-between items-start gap-4">
+          <TabsContent value="identity">
+            <div className="neon-panel rounded-[1.5rem] p-6 md:p-8">
+              <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
+                <div className="space-y-5">
+                  {editingProfile ? (
+                    <>
+                      <div>
+                        <Label className="mb-2 block text-[var(--neon-text)]">Full Name</Label>
+                        <Input
+                          value={profileForm.full_name}
+                          onChange={(event) => setProfileForm({ ...profileForm, full_name: event.target.value })}
+                          className="rounded-none border-[color:var(--neon-line)] bg-[rgba(6,10,24,0.78)] text-[var(--neon-text)]"
+                        />
+                      </div>
+                      <div>
+                        <Label className="mb-2 block text-[var(--neon-text)]">Bio</Label>
+                        <Textarea
+                          value={profileForm.bio}
+                          onChange={(event) => setProfileForm({ ...profileForm, bio: event.target.value })}
+                          className="min-h-[140px] rounded-none border-[color:var(--neon-line)] bg-[rgba(6,10,24,0.78)] text-[var(--neon-text)]"
+                        />
+                      </div>
+                      <div className="flex flex-col gap-3 sm:flex-row">
+                        <Button
+                          onClick={handleSaveProfile}
+                          disabled={savingProfile}
+                          className="rounded-none border border-[color:rgba(89,243,255,0.34)] bg-[rgba(9,14,31,0.88)] text-[var(--neon-cyan)] hover:bg-[rgba(89,243,255,0.1)]"
+                        >
+                          <Save className="w-4 h-4 mr-2" />
+                          {savingProfile ? "Saving..." : "Save Identity"}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          onClick={() => setEditingProfile(false)}
+                          className="rounded-none border-[color:rgba(255,255,255,0.14)] bg-transparent text-[var(--neon-text)] hover:bg-[rgba(255,255,255,0.05)]"
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                        <div>
+                          <p className="neon-kicker">Identity</p>
+                          <h2 className="text-2xl font-semibold tracking-[-0.04em] text-[var(--neon-text)]">
+                            Keep your operator profile current
+                          </h2>
+                          <p className="mt-2 text-sm leading-7 text-[var(--neon-muted)] md:text-base">
+                            Builders and requesters both look sharper with a clear bio and a payout path that is ready when the work lands.
+                          </p>
+                        </div>
+                        <Button
+                          variant="outline"
+                          onClick={() => setEditingProfile(true)}
+                          className="rounded-none border-[color:rgba(255,255,255,0.14)] bg-transparent text-[var(--neon-text)] hover:bg-[rgba(255,255,255,0.05)]"
+                        >
+                          <Edit2 className="w-4 h-4 mr-2" />
+                          Edit
+                        </Button>
+                      </div>
+
+                      <div className="grid gap-5 md:grid-cols-2">
+                        <div>
+                          <p className="font-mono-alt text-[0.68rem] uppercase tracking-[0.24em] text-[var(--neon-dim)]">Username</p>
+                          <p className="mt-2 text-base text-[var(--neon-text)]">{profile?.username}</p>
+                        </div>
+                        <div>
+                          <p className="font-mono-alt text-[0.68rem] uppercase tracking-[0.24em] text-[var(--neon-dim)]">Full Name</p>
+                          <p className="mt-2 text-base text-[var(--neon-text)]">{profile?.full_name || "Not set"}</p>
+                        </div>
+                        <div className="md:col-span-2">
+                          <p className="font-mono-alt text-[0.68rem] uppercase tracking-[0.24em] text-[var(--neon-dim)]">Bio</p>
+                          <p className="mt-2 text-base leading-8 text-[var(--neon-muted)]">{profile?.bio || "No bio yet"}</p>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                <aside className="border-t border-[color:var(--neon-line)] pt-6 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0">
+                  <p className="neon-kicker">Payout Path</p>
+                  <div className="space-y-4 text-sm leading-7 text-[var(--neon-muted)]">
                     <div>
-                      <h2 className="text-xl font-semibold text-white mb-1">Profile Details</h2>
-                      <p className="text-gray-400 text-sm">Keep your builder profile and payout wallet up to date.</p>
+                      <p className="font-mono-alt text-[0.68rem] uppercase tracking-[0.24em] text-[var(--neon-dim)]">Primary Wallet</p>
+                      <p className="mt-2 text-[var(--neon-text)]">
+                        {profile?.wallet_address ? shortWallet(profile.wallet_address) : "No wallet linked yet"}
+                      </p>
                     </div>
-                    <Button variant="outline" onClick={() => setEditingProfile(true)} className="border-gray-700 text-white hover:bg-gray-800"><Edit2 className="w-4 h-4 mr-2" />Edit</Button>
+                    <div>
+                      <p className="font-mono-alt text-[0.68rem] uppercase tracking-[0.24em] text-[var(--neon-dim)]">Linked Wallets</p>
+                      <p className="mt-2 text-[var(--neon-text)]">{walletCount}</p>
+                    </div>
+                    <div>
+                      <p className="font-mono-alt text-[0.68rem] uppercase tracking-[0.24em] text-[var(--neon-dim)]">Unread Signals</p>
+                      <p className="mt-2 text-[var(--neon-text)]">{unreadSignals}</p>
+                    </div>
                   </div>
-                  <div className="space-y-3 text-sm text-gray-300">
-                    <div><span className="text-gray-500 block mb-1">Username</span>{profile?.username}</div>
-                    <div><span className="text-gray-500 block mb-1">Full Name</span>{profile?.full_name || "Not set"}</div>
-                    <div><span className="text-gray-500 block mb-1">Bio</span>{profile?.bio || "No bio yet"}</div>
-                    <div><span className="text-gray-500 block mb-1">Primary Solana Wallet</span>{profile?.wallet_address ? shortWallet(profile.wallet_address) : "Not linked"}</div>
-                  </div>
-                </>
+                </aside>
+              </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="briefs">
+            <div className="space-y-4">
+              {posts.length === 0 ? (
+                <EmptyTabState
+                  title="No briefs on your board yet"
+                  description="Post a problem, task, or request and the command deck will start tracking bids, budget, and movement."
+                  ctaHref="/post"
+                  ctaLabel="Post A Brief"
+                />
+              ) : (
+                posts.map((post) => (
+                  <article key={post.id} className="neon-panel rounded-[1.5rem] p-5 md:p-6">
+                    <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap gap-2">
+                          <SignalTag tone="neutral">{post.type === "job" ? "Paid Task" : "Problem Brief"}</SignalTag>
+                          {post.type === "job" && post.jobStatus ? <SignalTag tone="cyan">{formatJobStatus(post.jobStatus)}</SignalTag> : null}
+                        </div>
+                        <Link to={`/problem/${post.id}`} className="mt-4 block text-xl font-semibold tracking-[-0.03em] text-[var(--neon-text)] transition-colors hover:text-[var(--neon-cyan)]">
+                          {post.title}
+                        </Link>
+                        <p className="mt-2 max-w-3xl text-sm leading-7 text-[var(--neon-muted)] md:text-base">
+                          {post.description}
+                        </p>
+                      </div>
+
+                      <div className="text-left md:min-w-[180px] md:text-right">
+                        <p className="font-mono-alt text-[0.68rem] uppercase tracking-[0.24em] text-[var(--neon-dim)]">
+                          {post.type === "job" ? "Budget" : "Bounty"}
+                        </p>
+                        <p className="mt-2 text-2xl font-semibold text-[var(--neon-cyan)]">
+                          {formatBudget(post)}
+                        </p>
+                        <p className="mt-2 text-sm text-[var(--neon-dim)]">
+                          {post.proposals} bid{post.proposals === 1 ? "" : "s"}
+                        </p>
+                      </div>
+                    </div>
+                  </article>
+                ))
               )}
             </div>
           </TabsContent>
 
-          <TabsContent value="posts">
-            <div className="space-y-4">
-              {posts.length === 0 ? (
-                <div className="bg-gray-900/50 border border-gray-800 rounded-2xl p-6 text-gray-400">No posts yet.</div>
-              ) : posts.map((post) => (
-                <div key={post.id} className="bg-gray-900/50 border border-gray-800 rounded-2xl p-5">
-                  <div className="flex flex-col md:flex-row justify-between gap-4">
-                    <div>
-                      <div className="flex flex-wrap gap-2 mb-2">
-                        <Badge className="bg-gray-800 text-gray-300 border-gray-700">{post.type === "job" ? "Job" : "Problem"}</Badge>
-                        {post.type === "job" && post.jobStatus && <Badge className="bg-cyan-500/20 text-cyan-300 border-cyan-500/30">{formatJobStatus(post.jobStatus)}</Badge>}
-                      </div>
-                      <Link to={`/problem/${post.id}`} className="text-lg font-semibold text-white hover:text-cyan-300">{post.title}</Link>
-                      <p className="text-sm text-gray-400 mt-1">{post.description}</p>
-                    </div>
-                    <div className="text-right text-sm text-gray-400">
-                      <div className="text-cyan-300 font-semibold">{formatBudget(post)}</div>
-                      <div>{post.proposals} proposals</div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </TabsContent>
-
-          <TabsContent value="proposals">
+          <TabsContent value="bids">
             <div className="space-y-4">
               {proposals.length === 0 ? (
-                <div className="bg-gray-900/50 border border-gray-800 rounded-2xl p-6 text-gray-400">No proposals submitted yet.</div>
-              ) : proposals.map((proposal) => (
-                <div key={proposal.id} className="bg-gray-900/50 border border-gray-800 rounded-2xl p-5">
-                  <div className="flex flex-col md:flex-row justify-between gap-4">
-                    <div>
-                      <div className="flex flex-wrap gap-2 mb-2">
-                        <Badge className="bg-gray-800 text-gray-300 border-gray-700">{proposal.problemType === "job" ? "Job" : "Problem"}</Badge>
-                        <Badge className="bg-gray-800 text-gray-300 border-gray-700">{proposal.status || "pending"}</Badge>
-                        {proposal.jobStatus && <Badge className="bg-cyan-500/20 text-cyan-300 border-cyan-500/30">{formatJobStatus(proposal.jobStatus)}</Badge>}
+                <EmptyTabState
+                  title="No bids submitted yet"
+                  description="Browse the board, find a brief worth chasing, and your active bids will appear here."
+                  ctaHref="/browse"
+                  ctaLabel="Browse The Board"
+                />
+              ) : (
+                proposals.map((proposal) => (
+                  <article key={proposal.id} className="neon-panel rounded-[1.5rem] p-5 md:p-6">
+                    <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap gap-2">
+                          <SignalTag tone="neutral">{proposal.problemType === "job" ? "Paid Task" : "Problem Brief"}</SignalTag>
+                          <SignalTag tone="pink">{proposal.status || "pending"}</SignalTag>
+                          {proposal.jobStatus ? <SignalTag tone="cyan">{formatJobStatus(proposal.jobStatus)}</SignalTag> : null}
+                        </div>
+                        <Link to={`/problem/${proposal.problemId}`} className="mt-4 block text-xl font-semibold tracking-[-0.03em] text-[var(--neon-text)] transition-colors hover:text-[var(--neon-cyan)]">
+                          {proposal.problemTitle || "Untitled Brief"}
+                        </Link>
+                        <p className="mt-2 max-w-3xl text-sm leading-7 text-[var(--neon-muted)] md:text-base">
+                          {proposal.briefSolution || proposal.description}
+                        </p>
                       </div>
-                      <Link to={`/problem/${proposal.problemId}`} className="text-lg font-semibold text-white hover:text-cyan-300">{proposal.problemTitle || "Untitled Post"}</Link>
-                      <p className="text-sm text-gray-400 mt-1">{proposal.briefSolution || proposal.description}</p>
+
+                      <div className="text-left md:min-w-[180px] md:text-right">
+                        {proposal.proposedPriceSol ? (
+                          <p className="text-2xl font-semibold text-[var(--neon-cyan)]">
+                            {formatSol(proposal.proposedPriceSol)} SOL
+                          </p>
+                        ) : proposal.cost ? (
+                          <p className="text-base text-[var(--neon-text)]">{proposal.cost}</p>
+                        ) : null}
+                        {proposal.tipTotal ? (
+                          <p className="mt-2 text-sm text-[var(--neon-lime)]">
+                            {formatSol(proposal.tipTotal)} tipped
+                          </p>
+                        ) : null}
+                      </div>
                     </div>
-                    <div className="text-right text-sm text-gray-400">
-                      {proposal.proposedPriceSol ? <div className="text-cyan-300 font-semibold">{formatSol(proposal.proposedPriceSol)} SOL</div> : proposal.cost ? <div>{proposal.cost}</div> : null}
-                      {proposal.tipTotal ? <div>{formatSol(proposal.tipTotal)} tipped</div> : null}
-                    </div>
-                  </div>
-                </div>
-              ))}
+                  </article>
+                ))
+              )}
             </div>
           </TabsContent>
 
-          <TabsContent value="active-jobs">
+          <TabsContent value="bounties">
             <div className="space-y-4">
               {activeJobs.length === 0 ? (
-                <div className="bg-gray-900/50 border border-gray-800 rounded-2xl p-6 text-gray-400">No accepted jobs yet.</div>
-              ) : activeJobs.map((job) => (
-                <div key={job.id} className="bg-gray-900/50 border border-gray-800 rounded-2xl p-5">
-                  <div className="flex flex-col md:flex-row justify-between gap-4">
-                    <div>
-                      <Badge className="bg-cyan-500/20 text-cyan-300 border-cyan-500/30 mb-2">{formatJobStatus(job.jobStatus)}</Badge>
-                      <Link to={`/problem/${job.problemId}`} className="text-lg font-semibold text-white hover:text-cyan-300">{job.problemTitle || "Untitled Job"}</Link>
-                      <p className="text-sm text-gray-400 mt-1">{job.estimatedDelivery || job.timeline || "Timeline pending"}</p>
+                <EmptyTabState
+                  title="No accepted bounty work yet"
+                  description="When one of your bids gets selected, the active payout path will appear here so you can track it to completion."
+                />
+              ) : (
+                activeJobs.map((job) => (
+                  <article key={job.id} className="neon-panel rounded-[1.5rem] p-5 md:p-6">
+                    <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                      <div className="min-w-0">
+                        <SignalTag tone="cyan">{formatJobStatus(job.jobStatus)}</SignalTag>
+                        <Link to={`/problem/${job.problemId}`} className="mt-4 block text-xl font-semibold tracking-[-0.03em] text-[var(--neon-text)] transition-colors hover:text-[var(--neon-cyan)]">
+                          {job.problemTitle || "Untitled Task"}
+                        </Link>
+                        <p className="mt-2 text-sm leading-7 text-[var(--neon-muted)] md:text-base">
+                          {job.estimatedDelivery || job.timeline || "Timeline pending"}
+                        </p>
+                      </div>
+
+                      <div className="text-left md:min-w-[180px] md:text-right">
+                        {job.proposedPriceSol ? (
+                          <p className="text-2xl font-semibold text-[var(--neon-cyan)]">
+                            {formatSol(job.proposedPriceSol)} SOL
+                          </p>
+                        ) : null}
+                        <Link to={`/problem/${job.problemId}`} className="mt-4 inline-flex text-sm font-semibold uppercase tracking-[0.16em] text-[var(--neon-cyan)] hover:text-[var(--neon-text)]">
+                          Open Brief
+                        </Link>
+                      </div>
                     </div>
-                    <div className="text-right text-sm text-gray-400">
-                      {job.proposedPriceSol ? <div className="text-cyan-300 font-semibold">{formatSol(job.proposedPriceSol)} SOL</div> : null}
-                      <Link to={`/problem/${job.problemId}`} className="text-cyan-300 hover:text-cyan-200">Open job</Link>
-                    </div>
-                  </div>
-                </div>
-              ))}
+                  </article>
+                ))
+              )}
             </div>
           </TabsContent>
 
-          <TabsContent value="notifications">
+          <TabsContent value="signals">
             <div className="space-y-4">
               {notifications.length === 0 ? (
-                <div className="bg-gray-900/50 border border-gray-800 rounded-2xl p-6 text-gray-400">No notifications yet.</div>
-              ) : notifications.map((notification) => (
-                <div key={notification.id} className="bg-gray-900/50 border border-gray-800 rounded-2xl p-5">
-                  <div className="flex justify-between gap-4">
-                    <div>
-                      <p className="text-white">{notification.message}</p>
-                      <p className="text-sm text-gray-500 mt-1">{new Date(notification.created_at).toLocaleString()}</p>
+                <EmptyTabState
+                  title="No signals yet"
+                  description="Replies, activity, and updates from the board will collect here once your briefs or bids start moving."
+                />
+              ) : (
+                notifications.map((notification) => (
+                  <article key={notification.id} className="neon-panel rounded-[1.5rem] p-5 md:p-6">
+                    <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                      <div>
+                        <div className="flex flex-wrap gap-2">
+                          <SignalTag tone={notification.is_read ? "neutral" : "pink"}>
+                            {notification.is_read ? "Read" : "Unread"}
+                          </SignalTag>
+                        </div>
+                        <p className="mt-4 text-base leading-8 text-[var(--neon-text)]">
+                          {notification.message}
+                        </p>
+                        <p className="mt-2 text-sm text-[var(--neon-dim)]">
+                          {new Date(notification.created_at).toLocaleString()}
+                        </p>
+                      </div>
+                      {notification.link ? (
+                        <Link
+                          to={notification.link}
+                          className="text-sm font-semibold uppercase tracking-[0.16em] text-[var(--neon-cyan)] hover:text-[var(--neon-text)]"
+                        >
+                          Open
+                        </Link>
+                      ) : null}
                     </div>
-                    {notification.link ? <Link to={notification.link} className="text-cyan-300 hover:text-cyan-200 text-sm">Open</Link> : null}
-                  </div>
-                </div>
-              ))}
+                  </article>
+                ))
+              )}
             </div>
           </TabsContent>
         </Tabs>
       </div>
 
       <Dialog open={walletModalOpen} onOpenChange={setWalletModalOpen}>
-        <DialogContent className="bg-gray-900 border border-gray-800 text-white max-w-2xl max-h-[85vh] overflow-y-auto">
-          <DialogHeader><DialogTitle className="text-xl font-bold text-white flex items-center gap-2"><Wallet className="w-5 h-5 text-cyan-400" />Manage Wallets</DialogTitle></DialogHeader>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto rounded-none border-[color:var(--neon-line)] bg-[rgba(8,12,28,0.98)] text-[var(--neon-text)]">
+          <DialogHeader>
+            <DialogTitle className="font-cyber text-xl uppercase tracking-[0.14em] text-[var(--neon-text)] flex items-center gap-2">
+              <Wallet className="w-5 h-5 text-[var(--neon-cyan)]" />
+              Manage Wallets
+            </DialogTitle>
+          </DialogHeader>
           <LinkWallet onWalletsChange={setWalletCount} />
         </DialogContent>
       </Dialog>
