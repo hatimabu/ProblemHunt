@@ -25,40 +25,45 @@ export async function getUserSolanaWallet(userId: string): Promise<string | null
 }
 
 export async function syncUserSolanaWallet(userId: string, address: string): Promise<void> {
-  await supabase
-    .from("profiles")
-    .update({ wallet_address: address })
-    .eq("user_id", userId);
+  const trimmed = address.trim();
 
-  const { data: existing } = await supabase
+  // For local UX and payouts:
+  // - ensure only ONE solana wallet row is_primary=true
+  // - ensure profiles.wallet_address matches that primary (python API checks profile first)
+  await supabase.from("profiles").update({ wallet_address: trimmed }).eq("user_id", userId);
+
+  // Clear any existing primaries first (avoids the unique index conflict)
+  await supabase
     .from("wallets")
-    .select("id")
+    .update({ is_primary: false })
+    .eq("user_id", userId)
+    .eq("chain", "solana");
+
+  // If the exact address exists already for this user, just promote it.
+  const { data: updated, error: updateErr } = await supabase
+    .from("wallets")
+    .update({ address: trimmed, is_primary: true })
     .eq("user_id", userId)
     .eq("chain", "solana")
-    .maybeSingle();
+    .eq("address", trimmed)
+    .select("id");
 
-  if (existing?.id) {
-    await supabase
-      .from("wallets")
-      .update({
-        address,
-        is_primary: true,
-      })
-      .eq("id", existing.id);
-    return;
-  }
+  if (updateErr) throw updateErr;
+  const alreadyHadRow = Array.isArray(updated) ? updated.length > 0 : !!updated;
+  if (alreadyHadRow) return;
 
+  // Otherwise insert the wallet and mark it as primary.
   await supabase.from("wallets").insert({
     user_id: userId,
     chain: "solana",
-    address,
+    address: trimmed,
     is_primary: true,
   });
 }
 
 export async function clearUserSolanaWallet(userId: string): Promise<void> {
-  await supabase
-    .from("profiles")
-    .update({ wallet_address: null })
-    .eq("user_id", userId);
+  // Clear both profile + wallet primaries to prevent the UI/navbar from getting stuck
+  // with an out-of-date primary reference.
+  await supabase.from("profiles").update({ wallet_address: null }).eq("user_id", userId);
+  await supabase.from("wallets").update({ is_primary: false }).eq("user_id", userId).eq("chain", "solana");
 }

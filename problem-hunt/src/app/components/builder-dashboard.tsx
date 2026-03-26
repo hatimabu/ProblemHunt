@@ -535,7 +535,7 @@ export function BuilderDashboard() {
       </main>
 
       <Dialog open={walletModalOpen} onOpenChange={setWalletModalOpen}>
-        <DialogContent className="max-h-[85vh] max-w-2xl overflow-y-auto rounded-none border-[color:var(--board-line-strong)] bg-[var(--board-paper)] text-[var(--board-ink)]">
+        <DialogContent className="h-[85vh] max-w-2xl overflow-y-auto rounded-none border-[color:var(--board-line-strong)] bg-[var(--board-paper)] text-[var(--board-ink)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <DialogHeader>
             <DialogTitle className="font-display text-2xl font-semibold tracking-[-0.05em] text-[var(--board-ink)]">
               Manage wallets

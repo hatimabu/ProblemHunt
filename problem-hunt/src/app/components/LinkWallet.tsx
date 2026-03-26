@@ -113,6 +113,7 @@ export function LinkWallet({ onWalletsChange }: LinkWalletProps) {
   const [validationError, setValidationError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [primarizingId, setPrimarizingId] = useState<string | null>(null);
   const [flashSuccess, setFlashSuccess] = useState<ChainType | null>(null);
   const [globalError, setGlobalError] = useState("");
 
@@ -149,10 +150,43 @@ export function LinkWallet({ onWalletsChange }: LinkWalletProps) {
     }
   };
 
-  const walletForChain = (chain: ChainType) =>
-    wallets.find((w) => w.chain === chain) ?? null;
+  const walletsForChain = (chain: ChainType) => wallets.filter((w) => w.chain === chain);
+
+  const sortedWalletsForChain = (chain: ChainType) =>
+    walletsForChain(chain)
+      .slice()
+      .sort((a, b) => {
+        const primaryDiff = Number(b.is_primary) - Number(a.is_primary);
+        if (primaryDiff !== 0) return primaryDiff;
+        return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+      });
+
+  const primaryWalletForChain = (chain: ChainType) => sortedWalletsForChain(chain).find((w) => w.is_primary) ?? null;
 
   // ── Add / Replace ─────────────────────────────────────────────────────────
+
+  const setWalletAsPrimary = async (wallet: WalletRow) => {
+    if (!user) return;
+
+    try {
+      setPrimarizingId(wallet.id);
+
+      if (wallet.chain === "solana") {
+        await syncUserSolanaWallet(user.id, wallet.address);
+      } else {
+        await supabase.from("wallets").update({ is_primary: false }).eq("user_id", user.id).eq("chain", wallet.chain);
+        await supabase.from("wallets").update({ is_primary: true }).eq("id", wallet.id);
+      }
+      await fetchWallets();
+
+      setFlashSuccess(wallet.chain);
+      setTimeout(() => setFlashSuccess(null), 2500);
+    } catch (err: any) {
+      setGlobalError(err?.message ?? "Failed to set primary wallet.");
+    } finally {
+      setPrimarizingId(null);
+    }
+  };
 
   const handleSave = async (chain: ChainType) => {
     setValidationError("");
@@ -165,30 +199,61 @@ export function LinkWallet({ onWalletsChange }: LinkWalletProps) {
     }
 
     const trimmed = inputAddress.trim();
-    const existing = walletForChain(chain);
 
     try {
       setIsSaving(true);
 
-      if (existing) {
-        // Replace: delete old, insert new
-        const { error: delErr } = await supabase
-          .from("wallets")
-          .delete()
-          .eq("id", existing.id);
-        if (delErr) throw delErr;
-      }
-
-      const { error: insertErr } = await supabase.from("wallets").insert({
-        user_id: user!.id,
-        chain,
-        address: trimmed,
-        is_primary: true,
-      });
-      if (insertErr) throw insertErr;
-
       if (chain === "solana") {
+        // Handles: profile.wallet_address + wallet is_primary promotion (and clears other primaries)
         await syncUserSolanaWallet(user!.id, trimmed);
+      } else {
+        const previousPrimary = primaryWalletForChain(chain);
+
+        // Ensure only this wallet ends up as is_primary=true (unique index safety).
+        await supabase
+          .from("wallets")
+          .update({ is_primary: false })
+          .eq("user_id", user!.id)
+          .eq("chain", chain);
+
+        try {
+          const { error: insertErr } = await supabase.from("wallets").insert({
+            user_id: user!.id,
+            chain,
+            address: trimmed,
+            is_primary: true,
+          });
+          if (insertErr) throw insertErr;
+        } catch (err: any) {
+          // Unique constraint violations come back as 23505.
+          if (err?.code === "23505") {
+            const { data: existingWallet, error: selErr } = await supabase
+              .from("wallets")
+              .select("id")
+              .eq("user_id", user!.id)
+              .eq("chain", chain)
+              .eq("address", trimmed)
+              .maybeSingle();
+
+            if (selErr) throw selErr;
+            if (!existingWallet?.id) {
+              setValidationError("This address is already linked to another account.");
+              // We already cleared primaries; restore the previous one to avoid leaving the user without a primary.
+              if (previousPrimary?.id) {
+                await supabase.from("wallets").update({ is_primary: true }).eq("id", previousPrimary.id);
+              }
+              return;
+            }
+
+            const { error: updErr } = await supabase
+              .from("wallets")
+              .update({ is_primary: true })
+              .eq("id", existingWallet.id);
+            if (updErr) throw updErr;
+          } else {
+            throw err;
+          }
+        }
       }
 
       await fetchWallets();
@@ -218,16 +283,37 @@ export function LinkWallet({ onWalletsChange }: LinkWalletProps) {
     setGlobalError("");
     try {
       setDeletingId(wallet.id);
+      const wasPrimary = wallet.is_primary;
       const { error } = await supabase
         .from("wallets")
         .delete()
         .eq("id", wallet.id);
       if (error) throw error;
-      if (wallet.chain === "solana") {
-        await clearUserSolanaWallet(user!.id);
+
+      // If the user deleted their current primary, promote the next available wallet.
+      if (wasPrimary) {
+        const remainingForChain = wallets
+          .filter((w) => w.chain === wallet.chain && w.id !== wallet.id)
+          .slice()
+          .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+
+        if (remainingForChain.length > 0) {
+          const next = remainingForChain[0];
+          await setWalletAsPrimary(next);
+        } else {
+          if (wallet.chain === "solana") {
+            await clearUserSolanaWallet(user!.id);
+          } else {
+            await supabase
+              .from("wallets")
+              .update({ is_primary: false })
+              .eq("user_id", user!.id)
+              .eq("chain", wallet.chain);
+          }
+        }
       }
-      setWallets((prev) => prev.filter((w) => w.id !== wallet.id));
-      onWalletsChange?.(Math.max(wallets.length - 1, 0));
+
+      await fetchWallets();
     } catch (err: any) {
       setGlobalError(err.message ?? "Failed to remove wallet.");
     } finally {
@@ -258,7 +344,7 @@ export function LinkWallet({ onWalletsChange }: LinkWalletProps) {
             <div>
               <h2 className="text-lg font-bold text-white">Linked Wallets</h2>
               <p className="text-sm text-gray-400">
-                Add one wallet per chain so others can tip you with crypto.
+                Link one or more wallets per chain, then choose a primary wallet for payouts/tips.
               </p>
             </div>
           </div>
@@ -266,7 +352,7 @@ export function LinkWallet({ onWalletsChange }: LinkWalletProps) {
           <div className="flex items-center gap-2 mt-4 text-xs text-gray-500 bg-gray-800/40 border border-gray-700/50 rounded-lg px-3 py-2">
             <ShieldCheck className="w-3.5 h-3.5 text-cyan-500/70 shrink-0" />
             Addresses are validated against chain format rules before saving.
-            Only one wallet per chain is allowed.
+            Only one PRIMARY wallet per chain is allowed.
           </div>
         </div>
       </div>
@@ -282,7 +368,9 @@ export function LinkWallet({ onWalletsChange }: LinkWalletProps) {
       {/* Chain cards */}
       <div className="grid gap-4">
         {CHAINS.map((chain) => {
-          const linked = walletForChain(chain.id);
+          const chainWallets = sortedWalletsForChain(chain.id);
+          const primary = primaryWalletForChain(chain.id);
+          const hasWallets = chainWallets.length > 0;
           const isExpanded = expandedChain === chain.id;
           const isFlashing = flashSuccess === chain.id;
 
@@ -292,7 +380,7 @@ export function LinkWallet({ onWalletsChange }: LinkWalletProps) {
                 className={`absolute inset-0 rounded-2xl blur-xl transition-opacity duration-500 ${
                   isFlashing
                     ? "opacity-100 bg-green-500/10"
-                    : linked
+                    : primary
                     ? "opacity-60 bg-gradient-to-r from-cyan-500/5 to-blue-500/5"
                     : "opacity-0"
                 }`}
@@ -303,7 +391,7 @@ export function LinkWallet({ onWalletsChange }: LinkWalletProps) {
                     ? "border-green-500/40"
                     : isExpanded
                     ? "border-cyan-500/40"
-                    : linked
+                    : primary
                     ? "border-gray-700/80"
                     : "border-gray-800"
                 }`}
@@ -323,16 +411,16 @@ export function LinkWallet({ onWalletsChange }: LinkWalletProps) {
                         <span className="text-white font-semibold">
                           {chain.label}
                         </span>
-                        {linked && (
+                        {primary && (
                           <Badge className="bg-cyan-500/15 text-cyan-400 border-cyan-500/30 text-[10px] px-1.5 py-0">
-                            Linked
+                            Primary
                           </Badge>
                         )}
                       </div>
 
-                      {linked ? (
+                      {primary ? (
                         <p className="text-xs font-mono text-gray-400 max-w-[260px] sm:max-w-sm truncate">
-                          {linked.address}
+                          {primary.address}
                         </p>
                       ) : (
                         <p className="text-xs text-gray-500">No wallet linked</p>
@@ -342,35 +430,14 @@ export function LinkWallet({ onWalletsChange }: LinkWalletProps) {
 
                   {/* Actions */}
                   <div className="flex items-center gap-2 shrink-0">
-                    {linked && !isExpanded && (
-                      <button
-                        onClick={() => handleDelete(linked)}
-                        disabled={deletingId === linked.id}
-                        className="p-2 rounded-lg text-gray-500 hover:text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition-all disabled:opacity-40"
-                        title="Remove wallet"
-                      >
-                        {deletingId === linked.id ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <Trash2 className="w-4 h-4" />
-                        )}
-                      </button>
-                    )}
-
                     <button
                       onClick={() => {
-                        if (isExpanded) {
-                          setExpandedChain(null);
-                        } else {
-                          setExpandedChain(chain.id);
-                          // Pre-fill if replacing
-                          setInputAddress(linked?.address ?? "");
-                        }
+                        setExpandedChain(isExpanded ? null : chain.id);
                       }}
                       className={`flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg border transition-all ${
                         isExpanded
                           ? "text-gray-400 border-gray-700 hover:bg-gray-800"
-                          : linked
+                          : hasWallets
                           ? "text-yellow-400 border-yellow-500/30 bg-yellow-500/10 hover:bg-yellow-500/20"
                           : "text-cyan-400 border-cyan-500/30 bg-cyan-500/10 hover:bg-cyan-500/20"
                       }`}
@@ -380,10 +447,10 @@ export function LinkWallet({ onWalletsChange }: LinkWalletProps) {
                           <ChevronDown className="w-3.5 h-3.5 rotate-180 transition-transform" />
                           Cancel
                         </>
-                      ) : linked ? (
+                      ) : hasWallets ? (
                         <>
                           <Plus className="w-3.5 h-3.5" />
-                          Replace
+                          Add another
                         </>
                       ) : (
                         <>
@@ -395,15 +462,62 @@ export function LinkWallet({ onWalletsChange }: LinkWalletProps) {
                   </div>
                 </div>
 
+                {/* Linked wallet list (choose primary / delete) */}
+                {!isExpanded && hasWallets && (
+                  <div className="px-5 pb-5 pt-0 space-y-3">
+                    {chainWallets.map((w) => (
+                      <div key={w.id} className="flex items-center justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            {w.is_primary ? (
+                              <Badge className="bg-cyan-500/15 text-cyan-400 border-cyan-500/30 text-[10px] px-1.5 py-0">
+                                Primary
+                              </Badge>
+                            ) : null}
+                            <p className="text-xs font-mono text-gray-400 max-w-[260px] truncate">{w.address}</p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 shrink-0">
+                          {!w.is_primary ? (
+                            <button
+                              onClick={() => setWalletAsPrimary(w)}
+                              disabled={isSaving || primarizingId === w.id}
+                              className="text-xs px-3 py-1.5 rounded-lg border border-cyan-500/30 bg-cyan-500/10 text-cyan-400 hover:bg-cyan-500/20 transition-all disabled:opacity-40"
+                            >
+                              {primarizingId === w.id ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : (
+                                "Make primary"
+                              )}
+                            </button>
+                          ) : null}
+
+                          <button
+                            onClick={() => handleDelete(w)}
+                            disabled={deletingId === w.id || isSaving || primarizingId === w.id}
+                            className="p-2 rounded-lg text-gray-500 hover:text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition-all disabled:opacity-40"
+                            title="Remove wallet"
+                          >
+                            {deletingId === w.id ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <Trash2 className="w-4 h-4" />
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
                 {/* Expandable form */}
                 {isExpanded && (
                   <div className="border-t border-gray-800/80 bg-gray-900/30 px-5 py-4 space-y-4">
-                    {linked && (
-                      <div className="flex items-center gap-2 text-xs text-yellow-400/80 bg-yellow-500/10 border border-yellow-500/20 rounded-lg px-3 py-2">
-                        <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                        Saving a new address will replace your current {chain.label} wallet.
-                      </div>
-                    )}
+                    <div className="flex items-center gap-2 text-xs text-yellow-400/80 bg-yellow-500/10 border border-yellow-500/20 rounded-lg px-3 py-2">
+                      <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                      Saving a new address will set it as your primary {chain.label} wallet.
+                    </div>
 
                     <div>
                       <Label className="text-white text-sm mb-1.5 block">
@@ -453,7 +567,7 @@ export function LinkWallet({ onWalletsChange }: LinkWalletProps) {
                         ) : (
                           <>
                             <CheckCircle2 className="w-4 h-4 mr-2" />
-                            {linked ? "Replace Wallet" : "Save Wallet"}
+                            Save as primary
                           </>
                         )}
                       </Button>

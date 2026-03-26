@@ -31,8 +31,14 @@ export function Navbar() {
       .eq("user_id", user.id)
       .eq("is_primary", true)
       .limit(1)
-      .single()
-      .then(({ data }) => setWalletAddress(data?.address ?? null));
+      .maybeSingle()
+      .then(({ data, error }) => {
+        if (error) {
+          setWalletAddress(null);
+          return;
+        }
+        setWalletAddress(data?.address ?? null);
+      });
   }, [user]);
 
   useEffect(() => {
