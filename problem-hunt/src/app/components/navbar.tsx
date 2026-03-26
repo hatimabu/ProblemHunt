@@ -66,7 +66,7 @@ export function Navbar() {
   };
 
   return (
-    <header className="sticky top-0 z-50 border-b border-[color:var(--board-line)] bg-[rgba(248,244,236,0.82)] backdrop-blur-xl">
+    <header className="board-nav sticky top-0 z-50 border-b border-[color:var(--board-line)] bg-[rgba(248,244,236,0.82)] backdrop-blur-xl">
       <div className="board-container flex min-h-[73px] items-center justify-between gap-4">
         <Link to="/" className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center border border-[color:var(--board-line-strong)] bg-[rgba(15,118,110,0.08)] text-[var(--board-accent)]">
@@ -195,7 +195,7 @@ export function Navbar() {
       </div>
 
       {mobileOpen ? (
-        <div className="border-t border-[color:var(--board-line)] bg-[rgba(248,244,236,0.96)] md:hidden">
+        <div className="board-nav__mobile border-t border-[color:var(--board-line)] bg-[rgba(248,244,236,0.96)] md:hidden">
           <div className="board-container flex flex-col gap-2 py-4">
             {NAV_LINKS.map((link) => (
               <Link

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { Link, useParams } from "react-router";
-import { ArrowUp, Calendar, ExternalLink, Loader2, Send, Wallet } from "lucide-react";
+import { Link, useNavigate, useParams } from "react-router";
+import { ArrowUp, Calendar, ExternalLink, Loader2, Send, Trash2, Wallet } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Textarea } from "../components/ui/textarea";
@@ -36,6 +36,7 @@ function MetaPill({ children, tone = "default" }: { children: ReactNode; tone?: 
 
 export function ProblemDetail() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [problem, setProblem] = useState<ProblemPost | null>(null);
   const [proposals, setProposals] = useState<ProposalRecord[]>([]);
@@ -49,6 +50,7 @@ export function ProblemDetail() {
   const [tipForm, setTipForm] = useState(EMPTY_TIP_FORM);
   const [submittingProposal, setSubmittingProposal] = useState(false);
   const [actionPending, setActionPending] = useState<"accept" | "complete" | "pay" | null>(null);
+  const [deletePending, setDeletePending] = useState(false);
   const [mySolanaWallet, setMySolanaWallet] = useState<string | null>(null);
 
   const isJob = isJobPost(problem);
@@ -190,6 +192,37 @@ export function ProblemDetail() {
     setStatusMessage(`Payment recorded: ${transfer.signature}`);
   };
 
+  const handleDeleteProblem = async () => {
+    if (!id || !user || !problem) return;
+
+    const confirmed = window.confirm(
+      `Delete "${problem.title}"? This will also remove its proposals, upvotes, and tips.`
+    );
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      setDeletePending(true);
+      const token = await getToken();
+      const response = await fetch(API_ENDPOINTS.DELETE_PROBLEM(id), {
+        method: "DELETE",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+
+      if (!response.ok) {
+        const message = await response.text();
+        throw new Error(message || "Failed to delete post");
+      }
+
+      navigate("/dashboard", { replace: true });
+    } catch (err) {
+      setStatusMessage(err instanceof Error ? err.message : "Failed to delete post");
+    } finally {
+      setDeletePending(false);
+    }
+  };
+
   if (loading) return <div className="board-app"><Navbar /><div className="board-container flex justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-[var(--board-accent)]" /></div></div>;
   if (error || !problem) return <div className="board-app"><Navbar /><div className="board-container py-16"><div className="border border-[color:rgba(178,103,55,0.2)] bg-[rgba(178,103,55,0.08)] px-6 py-5 text-[var(--board-rust)]">{error || "Post not found"}</div></div></div>;
 
@@ -215,7 +248,7 @@ export function ProblemDetail() {
             {statusMessage ? <div className="mt-6 border border-[color:rgba(15,118,110,0.18)] bg-[rgba(15,118,110,0.08)] px-4 py-3 text-sm text-[var(--board-accent)]">{statusMessage}</div> : null}
           </div>
           <aside className="space-y-5">
-            <div className="board-stat"><div className="board-stat__value">{formatBudget(problem)}</div><div className="board-stat__label">{isJob ? "Budget" : "Bounty"}</div></div>
+            <div className="board-stat board-stat--spotlight"><div className="board-stat__value">{formatBudget(problem)}</div><div className="board-stat__label">{isJob ? "Budget" : "Bounty"}</div></div>
             {problem.deadline ? <div className="board-stat"><div className="board-stat__value">{new Date(problem.deadline).toLocaleDateString()}</div><div className="board-stat__label">Deadline</div></div> : null}
             {isJob && problem.jobType ? <div className="board-stat"><div className="board-stat__value">{problem.jobType}</div><div className="board-stat__label">Job type</div></div> : null}
           </aside>
@@ -289,7 +322,7 @@ export function ProblemDetail() {
               </div>
             </div>
             <aside className="space-y-6">
-              <section className="board-panel p-6">
+              <section className="board-panel board-panel--command p-6">
                 <p className="board-kicker">Summary</p>
                 <div className="mt-5 space-y-4 text-sm text-[var(--board-muted)]">
                   <div className="flex items-center justify-between gap-3 border-b border-[color:var(--board-line)] pb-3"><span>{isJob ? "Budget" : "Bounty"}</span><span className="font-semibold text-[var(--board-ink)]">{formatBudget(problem)}</span></div>
@@ -299,7 +332,9 @@ export function ProblemDetail() {
                 </div>
               </section>
 
-              <section className="space-y-3">
+              <section className="board-panel board-panel--command p-6">
+                <p className="board-kicker">Actions</p>
+                <div className="board-action-cluster mt-5">
                 <Button variant="outline" onClick={handleUpvote} disabled={upvotePending} className={`w-full ${secondaryBtn}`}><ArrowUp className="mr-2 h-4 w-4" />{upvotePending ? "Updating..." : "Upvote"}</Button>
                 {isJob && isAcceptedBuilder && problem.jobStatus === "in_progress" ? <Button onClick={() => runAction("complete", async () => {
                   const token = await getToken();
@@ -308,7 +343,20 @@ export function ProblemDetail() {
                   setStatusMessage("Job marked complete.");
                 })} disabled={actionPending === "complete"} className={`w-full ${primaryBtn}`}>{actionPending === "complete" ? "Marking..." : "Mark complete"}</Button> : null}
                 {isJob && isOwner && problem.jobStatus === "completed" ? <Button onClick={() => runAction("pay", handlePayBuilder)} disabled={actionPending === "pay"} className={`w-full ${primaryBtn}`}><Wallet className="mr-2 h-4 w-4" />{actionPending === "pay" ? "Paying..." : "Pay builder"}</Button> : null}
+                {isOwner ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleDeleteProblem}
+                    disabled={deletePending}
+                    className="board-danger-btn w-full"
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    {deletePending ? "Deleting..." : "Delete post"}
+                  </Button>
+                ) : null}
                 <Link to="/browse" className="block"><Button variant="outline" className={`w-full ${secondaryBtn}`}>Back to browse</Button></Link>
+                </div>
               </section>
 
               {selectedTipProposal ? (

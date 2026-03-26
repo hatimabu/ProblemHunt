@@ -1,36 +1,20 @@
 # ProblemHunt
 
-ProblemHunt is a marketplace for validated problems. A user posts a problem and bounty, builders submit proposals, users upvote demand, and builders can receive crypto tips while they work.
+ProblemHunt is a marketplace for technical work. A requester posts a problem or paid job, builders submit proposals, the community can upvote interest, and the owner can track the work through acceptance, completion, payment, tipping, and deletion.
 
-This repo is not a single app. It is a small platform made of:
+This README is the single project guide. It is written for a fresh graduate or early junior DevOps / platform engineer who wants to understand the repo, run it locally, and test the main flows step by step.
 
-- A React + Vite frontend in [`problem-hunt`](./problem-hunt)
-- A Python Azure Functions API in [`problem-hunt/python-function`](./problem-hunt/python-function)
-- A Supabase project for authentication, profiles, wallets, and optional Edge Functions
-- Azure Cosmos DB for the main application data used by the Python API
+## 1. What Lives In This Repo
 
-This guide is written for a new DevOps engineer or junior developer who needs to understand the system, run it locally, and test it safely.
+The real application is inside `problem-hunt/`.
 
-## 1. What The Product Does
+Main parts:
 
-Main user flows:
-
-- A problem poster signs up or signs in with Supabase auth
-- The user posts a problem with title, description, category, bounty, and deadline
-- Builders browse problems and submit proposals
-- Users upvote problems to show demand
-- Builders manage profiles and optionally link wallets
-- Users can record tips against proposals
-
-The frontend routes reflect that workflow:
-
-- `/` landing page
-- `/browse` browse problems
-- `/problem/:id` problem detail + proposals + tipping
-- `/post` create a problem
-- `/dashboard` profile, wallets, problems, proposals
-- `/leaderboard` builder ranking
-- `/auth` sign-in / sign-up
+- React + Vite frontend
+- Python Azure Functions API
+- Supabase for auth, profiles, wallets, notifications, storage, and Edge Functions
+- Cosmos DB for marketplace data
+- Mock in-memory Cosmos fallback for easier local development
 
 ## 2. High-Level Architecture
 
@@ -40,122 +24,152 @@ Browser
   v
 React + Vite frontend
   |
-  +--> Supabase Auth + profiles + wallets
+  +--> Supabase
+  |      |- auth
+  |      |- profiles
+  |      |- wallets
+  |      |- notifications
+  |      |- storage
+  |      \- optional Edge Functions
   |
-  +--> Azure Functions API (/api/*)
-           |
-           +--> Cosmos DB containers
-           |
-           +--> Supabase JWT validation
-           |
-           +--> Optional wallet-related Supabase access
+  \--> Azure Functions API (/api/*)
+         |
+         +--> Cosmos DB
+         |      |- Problems
+         |      |- Proposals
+         |      |- Upvotes
+         |      \- Tips
+         |
+         \--> Supabase JWT validation
 ```
 
-## 3. Repo Layout
+## 3. Project Structure
 
 ```text
 .
-|-- package.json                  # Root helper scripts
-|-- README.md                     # This file
+|-- README.md
+|-- package.json                        # Root helper scripts
 |-- problem-hunt/
-|   |-- package.json              # Frontend app
-|   |-- src/                      # React application
-|   |-- python-function/          # Azure Functions backend
-|   |-- supabase/                 # Supabase migrations and Edge Functions
-|   |-- .env.example              # Frontend env template
-|   |-- server.js                 # Static server for built frontend
-|-- AZURE_NEXT_STEPS.md           # Azure follow-up notes
-|-- SUPABASE_NEXT_STEPS.md        # Supabase follow-up notes
-|-- WEB3_SETUP.md                 # Web3 setup notes
+|   |-- package.json                    # Frontend package
+|   |-- .env.example                    # Frontend env template
+|   |-- server.js                       # Serves built frontend
+|   |-- src/
+|   |   |-- app/
+|   |   |   |-- components/             # Pages and shared UI
+|   |   |   |-- contexts/               # Auth context
+|   |   |   |-- routes.tsx              # Frontend routes
+|   |   |   |-- index.css               # Shared styling and motion
+|   |   |   \-- theme.css               # Theme tokens
+|   |   \-- lib/                        # Frontend helpers
+|   |
+|   |-- python-function/
+|   |   |-- handlers/                   # API business logic
+|   |   |-- router.py                   # Route dispatch
+|   |   |-- cosmos.py                   # Cosmos + mock mode
+|   |   |-- utils.py                    # Shared helpers
+|   |   |-- host.json                   # Functions host config
+|   |   \-- local.settings.example.json # Backend env template
+|   |
+|   \-- supabase/
+|       |-- migrations/                 # SQL schema changes
+|       \-- functions/                  # Edge Functions
 ```
 
-## 4. Services Used In This Repo
+## 4. Main User Flow
 
-| Service | Why it exists | Required for local frontend? | Required for full local testing? |
-| --- | --- | --- | --- |
-| Node.js | Runs Vite and frontend build | Yes | Yes |
-| npm | Installs JS dependencies | Yes | Yes |
-| Supabase | Auth, profiles, wallets, optional Edge Functions | Yes | Yes |
-| Azure Functions Core Tools | Runs Python API locally | No | Yes |
-| Python | Runs Azure Functions worker | No | Yes |
-| Azurite | Satisfies local Azure Storage requirement for Functions | No | Usually yes |
-| Azure Cosmos DB | Main API data store in cloud | No | Optional |
-| Mock in-memory Cosmos mode | Lets API run without real Cosmos DB | No | Yes |
-| Supabase CLI | Runs migrations and Edge Functions locally or deploys them | No | Recommended |
-| Web3 RPC provider | Verifies blockchain payments | No | Optional |
+This is the product flow in plain English:
 
-## 5. Recommended Local Modes
+1. A user signs in with Supabase.
+2. A requester creates a problem or a paid job.
+3. Builders browse posts and submit proposals.
+4. Users upvote posts to show demand.
+5. A requester can accept one proposal for a paid job.
+6. The accepted builder can mark the job complete.
+7. The requester can record payment.
+8. Users can record tips.
+9. The owner can delete their own post.
 
-There are two good ways to work locally.
+## 5. Signal Flow
 
-### Mode A: Fastest local setup
+Think of signal flow as “which service talks to which other service.”
 
-Use this if you only need the app running quickly.
+### Auth Flow
 
-- Frontend runs locally
-- Supabase is real remote Supabase
-- Azure Functions run locally
-- Cosmos DB uses the built-in mock in-memory fallback
+1. Frontend signs in through Supabase.
+2. Supabase returns a session token.
+3. Frontend sends `Authorization: Bearer <token>` to the Python API.
+4. Python API validates the token with the Supabase JWT secret.
+5. API uses the user ID from the token to authorize protected actions.
 
-This is the best starting point for a junior engineer.
+### Read Flow
 
-### Mode B: Closer to production
+1. Browser opens `/browse` or `/problem/:id`.
+2. Frontend calls the API.
+3. Azure Functions routes the request to a handler.
+4. Handler reads Cosmos DB.
+5. JSON is returned to the frontend.
+6. UI renders the result.
 
-Use this if you need end-to-end confidence.
+### Write Flow
 
-- Frontend runs locally
-- Supabase is real remote Supabase
-- Azure Functions run locally
-- Cosmos DB is a real Azure Cosmos DB account
-- Optional Supabase Edge Functions are deployed or run locally
-- Optional web3 RPC values are configured
+Example actions: create post, submit proposal, upvote, delete.
 
-## 6. Prerequisites
+1. Frontend collects form data.
+2. Frontend sends a request to the API.
+3. API validates auth and payload.
+4. Handler writes to Cosmos DB.
+5. Frontend refreshes state and updates the UI.
 
-Install these before touching the app.
+## 6. Services You Need
 
-### Required
+Required:
 
 1. Node.js 20+
 2. npm
-3. Git
+3. Python 3.11+
+4. Azure Functions Core Tools v4
+5. Azurite
+6. Git
 
-### Required for backend/API testing
-
-1. Python
-2. Azure Functions Core Tools v4
-3. Azurite
-
-### Recommended
+Recommended:
 
 1. Supabase CLI
 2. Azure CLI
-3. VS Code with Azure Functions extension
+3. VS Code
 
-## 7. Before You Start: Security Note
+## 7. Recommended Local Mode
 
-This repo currently contains local environment files under [`problem-hunt/.env`](./problem-hunt/.env) and [`problem-hunt/.env.local`](./problem-hunt/.env.local). Treat any real credentials found there as already exposed to the repo and rotate them before using this project in a shared environment.
+Start with the easiest working mode:
 
-For real work, keep secrets only in:
+- frontend local
+- Azure Functions local
+- Supabase real remote project
+- Cosmos in mock mode
 
-- local `.env` files ignored by git
-- Azure Function App settings
-- Supabase project secrets
-- CI/CD secret stores
+Why this is best first:
 
-## 8. First-Time Local Setup
+- fewer moving parts
+- faster setup
+- enough to test most of the app
 
-### Step 1: Install root dependencies
+Later, switch to real Cosmos DB if you need persistent data between API restarts.
 
-From the repo root:
+## 8. Step-By-Step Local Setup
+
+### Step 1. Clone the repo
+
+```powershell
+git clone <your-repo-url>
+cd ProblemHunt
+```
+
+### Step 2. Install root helper dependencies
 
 ```powershell
 npm install
 ```
 
-### Step 2: Install frontend dependencies
-
-The actual app is inside `problem-hunt`:
+### Step 3. Install frontend dependencies
 
 ```powershell
 cd problem-hunt
@@ -163,15 +177,13 @@ npm install
 cd ..
 ```
 
-You can also use the root helper:
+Or use the helper:
 
 ```powershell
 npm run install:all
 ```
 
-### Step 3: Create a safe frontend env file
-
-Copy the template:
+### Step 4. Create the frontend env file
 
 ```powershell
 Copy-Item problem-hunt/.env.example problem-hunt/.env.local
@@ -183,24 +195,21 @@ Set these values in `problem-hunt/.env.local`:
 VITE_SUPABASE_URL=https://your-project-ref.supabase.co
 VITE_SUPABASE_ANON_KEY=your-anon-key
 VITE_API_BASE_URL=http://localhost:7071
+VITE_ALCHEMY_SOLANA_RPC_URL=https://solana-mainnet.g.alchemy.com/v2/YOUR_KEY
 ```
 
 Important:
 
-- `VITE_API_BASE_URL=http://localhost:7071` is what makes the frontend call your local Azure Functions API instead of the deployed Azure site
-- if you leave it unset, the app defaults to `https://problemhunt-api.azurewebsites.net`
+- `VITE_API_BASE_URL=http://localhost:7071` makes the browser call your local API
+- if you forget this, the frontend may still talk to the deployed Azure API
 
-### Step 4: Create backend local settings
-
-Copy the Azure Functions example:
+### Step 5. Create the backend local settings file
 
 ```powershell
 Copy-Item problem-hunt/python-function/local.settings.example.json problem-hunt/python-function/local.settings.json
 ```
 
-Then edit `problem-hunt/python-function/local.settings.json`.
-
-For the easiest setup, use:
+Edit `problem-hunt/python-function/local.settings.json` and start with:
 
 ```json
 {
@@ -222,171 +231,36 @@ For the easiest setup, use:
 }
 ```
 
-Why placeholders for Cosmos?
+Why fake Cosmos values are okay at first:
 
-- this backend contains a fallback mock in-memory database
-- if `COSMOS_ENDPOINT` or `COSMOS_KEY` are missing or obviously fake, the API switches to mock mode
-- that is enough for basic local feature testing
+- this repo supports mock in-memory Cosmos mode
+- placeholder values trigger the fallback
+- that is enough for basic local testing
 
-### Step 5: Install Python dependencies
+### Step 6. Create and activate a Python virtual environment
+
+```powershell
+py -3 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+```
+
+If `py` does not work on your machine, use:
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+```
+
+### Step 7. Install Python dependencies
 
 ```powershell
 cd problem-hunt/python-function
+python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
 cd ../..
 ```
 
-### Step 6: Start Azurite
-
-Azurite provides the local storage emulator required by Azure Functions when using `UseDevelopmentStorage=true`.
-
-If installed globally:
-
-```powershell
-azurite
-```
-
-If installed with npm:
-
-```powershell
-npx azurite
-```
-
-Leave it running in its own terminal.
-
-### Step 7: Start the backend API
-
-In a new terminal:
-
-```powershell
-cd problem-hunt/python-function
-func start
-```
-
-Expected local backend base URL:
-
-```text
-http://localhost:7071
-```
-
-### Step 8: Start the frontend
-
-In another terminal:
-
-```powershell
-cd problem-hunt
-npm run dev
-```
-
-Expected local frontend URL:
-
-```text
-http://localhost:5173
-```
-
-## 9. Quick Smoke Test
-
-Once both services are running:
-
-1. Open `http://localhost:5173`
-2. Confirm the landing page loads
-3. Open `/browse` and confirm the page renders
-4. Sign up or sign in through Supabase auth
-5. Post a new problem
-6. Open the created problem detail page
-7. Submit a proposal
-8. Upvote the problem
-9. Open `/dashboard` and confirm profile data appears
-
-If you are in mock Cosmos mode:
-
-- your data exists only in the API process memory
-- restarting `func start` clears problems, proposals, upvotes, and tips
-
-## 10. How Local API Routing Works
-
-The frontend uses `authenticatedFetch()` and builds API URLs from `VITE_API_BASE_URL`.
-
-When developing locally, set:
-
-```env
-VITE_API_BASE_URL=http://localhost:7071
-```
-
-The Vite dev server also proxies `/api` requests. That means the frontend can call:
-
-```text
-/api/problems
-```
-
-and Vite forwards the request to your configured backend.
-
-## 11. Required Environment Variables
-
-### Frontend env
-
-File: `problem-hunt/.env.local`
-
-| Variable | Purpose | Example |
-| --- | --- | --- |
-| `VITE_SUPABASE_URL` | Supabase project URL | `https://your-project.supabase.co` |
-| `VITE_SUPABASE_ANON_KEY` | Public anon key for browser auth | `eyJ...` |
-| `VITE_API_BASE_URL` | Backend API base URL | `http://localhost:7071` |
-
-### Backend env
-
-File: `problem-hunt/python-function/local.settings.json`
-
-| Variable | Purpose | Required? |
-| --- | --- | --- |
-| `AzureWebJobsStorage` | Local Azure storage connection | Yes |
-| `FUNCTIONS_WORKER_RUNTIME` | Tells Functions to use Python | Yes |
-| `SUPABASE_JWT_SECRET` or `JWT_SECRET` | Verifies Supabase bearer tokens | Yes |
-| `SUPABASE_URL` | Used by some wallet/profile flows | Recommended |
-| `SUPABASE_SERVICE_ROLE_KEY` | Server-side Supabase access | Recommended |
-| `COSMOS_ENDPOINT` | Real Cosmos DB endpoint | Optional |
-| `COSMOS_KEY` | Real Cosmos DB key | Optional |
-| `COSMOS_DATABASE` | Cosmos DB database name | Optional |
-| `COSMOS_CONTAINER_PROBLEMS` | Problems container | Optional |
-| `COSMOS_CONTAINER_PROPOSALS` | Proposals container | Optional |
-| `COSMOS_CONTAINER_UPVOTES` | Upvotes container | Optional |
-| `COSMOS_CONTAINER_TIPS` | Tips container | Optional |
-
-## 12. Service Tutorial: Supabase
-
-Supabase is used here for:
-
-- email/password authentication
-- JWT issuance
-- `profiles` table
-- `wallets` table
-- optional `orders` and `tip_records`
-- optional Edge Functions for wallet auth and payment verification
-
-### How to create or inspect the Supabase project
-
-1. Log in to Supabase
-2. Open your project
-3. Go to `Settings -> API`
-4. Copy:
-   - Project URL
-   - anon key
-   - service role key
-   - JWT secret
-
-You need:
-
-- URL + anon key in the frontend
-- JWT secret in the backend
-- service role key only in server-side or Edge Function contexts
-
-### How to apply the SQL migrations
-
-This repo contains SQL in:
-
-- `problem-hunt/supabase/migrations`
-
-Recommended:
+### Step 8. Apply Supabase migrations
 
 ```powershell
 cd problem-hunt
@@ -396,45 +270,168 @@ supabase db push
 cd ..
 ```
 
-Alternative:
+Minimum database areas you should expect after migrations:
 
-- open Supabase SQL Editor
-- run the migration files manually in order
+- profiles
+- wallets
+- payments
+- notifications
+- tip-related tables
 
-### Tables you should expect
+### Step 9. Start Azurite
 
-At minimum, verify these exist or are created by migrations:
+```powershell
+azurite
+```
 
-- `profiles`
-- `wallets`
-- `orders` if using payment flows
-- `tip_records` if you want tip tracking inside Supabase too
+Or:
 
-### What to test in Supabase
+```powershell
+npx azurite
+```
 
-1. Sign up a new user in the app
-2. Confirm a row exists for the user profile if your profile bootstrap flow is active
-3. Edit profile details in `/dashboard`
-4. Add or manage wallets if using that flow
+Leave Azurite running in its own terminal.
 
-### Common Supabase mistakes
+### Step 10. Start the Python API
 
-- using the service role key in the browser
-- forgetting to add `VITE_SUPABASE_URL`
-- forgetting to set the JWT secret in `local.settings.json`
-- enabling auth but not setting allowed redirect URLs
+Open a new terminal:
 
-## 13. Service Tutorial: Azure Functions
+```powershell
+cd problem-hunt/python-function
+func start
+```
 
-The Python API is inside:
+Expected local API base URL:
 
-- `problem-hunt/python-function`
+```text
+http://localhost:7071
+```
 
-Important local routes include:
+### Step 11. Start the frontend
+
+Open another terminal:
+
+```powershell
+cd problem-hunt
+npm run dev
+```
+
+Expected frontend URL:
+
+```text
+http://localhost:5173
+```
+
+### Step 12. Optional: test the built frontend
+
+```powershell
+cd problem-hunt
+npm run build
+npm run server
+```
+
+## 9. How To Test Everything
+
+Use this order:
+
+### Smoke Test
+
+1. Open `http://localhost:5173`
+2. Confirm the landing page loads
+3. Open `/browse`
+4. Open `/auth`
+
+### Auth Test
+
+1. Sign up or sign in
+2. Confirm `/dashboard` opens
+3. Confirm protected routes like `/post` are blocked when signed out
+
+### Create Post Test
+
+1. Go to `/post`
+2. Create a problem or paid job
+3. Confirm it appears in `/browse`
+4. Open its detail page
+
+### Proposal Test
+
+1. Submit a proposal
+2. Refresh the page
+3. Confirm the proposal appears
+4. Confirm related dashboard sections update
+
+### Upvote Test
+
+1. Upvote a problem
+2. Confirm the count changes
+
+### Delete Test
+
+If you are the post owner:
+
+1. Open your post
+2. Click delete
+3. Confirm it disappears from your dashboard and browse views
+
+### Paid Job Lifecycle Test
+
+Best done with two accounts:
+
+1. Account A creates a paid job
+2. Account B submits a proposal
+3. Account A accepts it
+4. Account B marks it complete
+5. Account A records payment
+
+### Tip Test
+
+1. Open the tip flow from a proposal
+2. Submit the tip details
+3. Confirm the request succeeds
+
+## 10. Mock Cosmos vs Real Cosmos
+
+### Mock Cosmos Mode
+
+Good for:
+
+- learning the codebase
+- fast local testing
+- UI and route testing
+
+Limitation:
+
+- data disappears when the Functions host restarts
+
+### Real Cosmos Mode
+
+Good for:
+
+- persistent local data
+- closer production behavior
+- shared testing
+
+To use it, replace the placeholder Cosmos values in `local.settings.json` with real account values.
+
+## 11. Important Routes
+
+Frontend:
+
+- `/`
+- `/browse`
+- `/problem/:id`
+- `/post`
+- `/dashboard`
+- `/leaderboard`
+- `/auth`
+
+API:
 
 - `GET /api/problems`
 - `POST /api/problems`
 - `GET /api/problems/{id}`
+- `DELETE /api/problems/{id}`
 - `POST /api/problems/{id}/proposals`
 - `GET /api/problems/{id}/proposals`
 - `POST /api/problems/{id}/upvote`
@@ -442,226 +439,46 @@ Important local routes include:
 - `GET /api/user/problems`
 - `GET /api/user/proposals`
 - `GET /api/leaderboard`
+- `POST /api/problems/{id}/complete`
+- `POST /api/problems/{id}/payments`
 - `POST /api/proposals/{id}/tip`
 
-### How auth works in the API
+## 12. Optional Web3 / Edge Function Setup
 
-1. Frontend gets a Supabase session
-2. Frontend sends `Authorization: Bearer <token>`
-3. Python backend validates the token using `SUPABASE_JWT_SECRET`
-4. Backend reads the user ID from the `sub` claim
+Do this only after the core app works.
 
-### How to test the API directly
+Relevant folder:
 
-After `func start`, use PowerShell or Postman.
+- `problem-hunt/supabase/functions`
 
-Unauthenticated example:
+Suggested order:
 
-```powershell
-Invoke-RestMethod http://localhost:7071/api/problems
-```
+1. make frontend + auth + API work
+2. apply all Supabase migrations
+3. configure RPC environment values
+4. deploy or serve the Edge Functions
+5. test with testnet wallets first
 
-Authenticated testing:
+## 13. Troubleshooting
 
-1. Sign in through the frontend
-2. Copy the access token from browser storage or the Supabase session
-3. Call the endpoint with the bearer token
-
-Example:
-
-```powershell
-$token = "paste-access-token"
-Invoke-RestMethod `
-  -Uri http://localhost:7071/api/user/problems `
-  -Headers @{ Authorization = "Bearer $token" }
-```
-
-### What to watch in backend logs
-
-- JWT validation failures
-- missing env vars
-- `Using MOCK in-memory database`
-- route not found errors
-
-## 14. Service Tutorial: Cosmos DB
-
-Cosmos DB is the main application store for:
-
-- problems
-- proposals
-- upvotes
-- tips
-
-### Good news for local development
-
-You do not need a real Cosmos DB account on day one.
-
-This repo already supports a mock in-memory mode in `problem-hunt/python-function/cosmos.py`.
-
-Use mock mode when:
-
-- you are learning the app
-- you only need local functional testing
-- you do not need persistent data between runs
-
-### When to switch to real Cosmos DB
-
-Use a real Cosmos account when you need:
-
-- persistent test data
-- realistic query behavior
-- shared test environments
-- closer production parity
-
-### Suggested Cosmos setup
-
-Database:
-
-- `ProblemHuntDB`
-
-Containers:
-
-- `Problems`
-- `Proposals`
-- `Upvotes`
-- `Tips`
-
-### Example backend config for real Cosmos
-
-```json
-{
-  "Values": {
-    "COSMOS_ENDPOINT": "https://your-account.documents.azure.com:443/",
-    "COSMOS_KEY": "your-key",
-    "COSMOS_DATABASE": "ProblemHuntDB",
-    "COSMOS_CONTAINER_PROBLEMS": "Problems",
-    "COSMOS_CONTAINER_PROPOSALS": "Proposals",
-    "COSMOS_CONTAINER_UPVOTES": "Upvotes",
-    "COSMOS_CONTAINER_TIPS": "Tips"
-  }
-}
-```
-
-### What to test with real Cosmos
-
-1. Create a problem
-2. Restart the Functions host
-3. Confirm the problem still exists
-4. Submit a proposal
-5. Upvote it from another account
-
-## 15. Service Tutorial: Web3 And Payment Flows
-
-Web3 support in this repo is optional, not required for the core app to run locally.
-
-Relevant files:
-
-- `WEB3_SETUP.md`
-- `WEB3_README.md`
-- `problem-hunt/supabase/functions/auth-wallet`
-- `problem-hunt/supabase/functions/verify-payment`
-
-### What web3 features exist
-
-- wallet sign-in
-- wallet linking
-- payment verification
-- recorded tips with transaction hash
-
-### What you need if you want to test web3 flows
-
-1. Supabase Edge Functions deployed or running locally
-2. Supabase service role key configured in Edge Functions
-3. blockchain RPC endpoints, for example:
-   - Ethereum RPC
-   - Polygon RPC
-   - Arbitrum RPC
-   - Solana RPC
-
-### Minimal approach for a junior engineer
-
-Do this only after the core app works:
-
-1. get frontend + auth + local API working
-2. apply wallet/payment SQL migrations
-3. deploy `auth-wallet` and `verify-payment`
-4. test with testnet wallets first
-
-## 16. Local Testing Checklist
-
-Use this checklist every time you set up the repo on a fresh machine.
-
-### Basic platform checks
-
-- `npm install` completes
-- `python -m pip install -r requirements.txt` completes
-- `azurite` starts
-- `func start` starts without config errors
-- `npm run dev` starts without frontend env errors
-
-### UI checks
-
-- landing page loads
-- browse page loads
-- auth page loads
-- dashboard loads after sign-in
-
-### Auth checks
-
-- sign up works
-- sign in works
-- sign out works
-- protected routes redirect or block correctly when not signed in
-
-### Problem flow checks
-
-- create problem works
-- problem appears in browse list
-- problem detail loads
-- upvote changes count
-
-### Builder flow checks
-
-- submit proposal works
-- proposal appears on the problem detail page
-- user proposals appear in dashboard
-
-### Tip flow checks
-
-- tip modal opens
-- tip record API succeeds in mock or real mode
-
-## 17. Troubleshooting
-
-### Frontend loads, but API calls still go to Azure
-
-Cause:
-
-- `VITE_API_BASE_URL` or `VITE_API_BASE` still points to the deployed API
+### Frontend still calls Azure instead of local API
 
 Fix:
 
-- set `VITE_API_BASE_URL=http://localhost:7071`
-- restart the Vite dev server
+1. set `VITE_API_BASE_URL=http://localhost:7071`
+2. restart the Vite dev server
 
-### Login works, but API returns 401
+### API returns `401`
 
-Cause:
+Check:
 
-- backend is missing `SUPABASE_JWT_SECRET`
-- frontend and backend point at different Supabase projects
+1. `SUPABASE_JWT_SECRET`
+2. frontend Supabase URL
+3. backend Supabase URL
 
-Fix:
+They must all point to the same Supabase project.
 
-1. verify frontend `VITE_SUPABASE_URL`
-2. verify backend `SUPABASE_JWT_SECRET`
-3. verify both values belong to the same Supabase project
-
-### Functions host fails on storage startup
-
-Cause:
-
-- Azurite is not running
+### Functions fail because of storage
 
 Fix:
 
@@ -669,120 +486,68 @@ Fix:
 2. keep `AzureWebJobsStorage=UseDevelopmentStorage=true`
 3. restart `func start`
 
-### Data disappears after restarting the API
+### Data disappears after restart
 
 Cause:
 
-- you are in mock Cosmos mode
+- you are using mock Cosmos mode
 
-Fix:
+That is expected.
 
-- expected behavior in local mock mode
-- configure real Cosmos DB if you need persistence
+### Wallet / payment flows fail
 
-### Wallet or payment features fail
+Check:
 
-Cause:
+1. migrations ran
+2. Edge Functions are deployed or served
+3. RPC values are set
 
-- Edge Functions not deployed
-- missing Supabase secrets
-- missing RPC URLs
+## 14. Useful Commands
 
-Fix:
-
-- follow `WEB3_SETUP.md`
-- test core app first, then web3
-
-## 18. Build Commands
-
-From repo root:
-
-```powershell
-npm run dev
-npm run build
-npm run server
-```
-
-From `problem-hunt`:
-
-```powershell
-npm run dev
-npm run build
-npm run server
-```
-
-## 19. Suggested Daily Workflow For A Junior DevOps Engineer
-
-1. Pull latest code
-2. Check `.env.local` and `local.settings.json`
-3. Start Azurite
-4. Start Azure Functions
-5. Start frontend
-6. Run smoke tests
-7. Make one small change at a time
-8. Re-test the affected user flow
-9. Never commit secrets
-10. Write down every assumption you made
-
-## 20. What To Improve Next
-
-This repo would benefit from:
-
-- a sanitized `.env.example` for backend too
-- automated tests for frontend and Python handlers
-- a single root startup script for frontend + backend + Azurite
-- a seeded local dataset for mock mode
-- CI checks for missing env vars
-- secret scanning in CI
-
-## 21. Useful Commands Reference
-
-Install frontend:
+Root helpers:
 
 ```powershell
 npm run install:all
+npm run dev
+npm run build
+npm run server
 ```
 
-Run frontend:
+Frontend:
 
 ```powershell
 cd problem-hunt
 npm run dev
+npm run build
+npm run server
 ```
 
-Run backend:
+Backend:
 
 ```powershell
 cd problem-hunt/python-function
 func start
 ```
 
-Run Azurite:
-
-```powershell
-npx azurite
-```
-
-Push Supabase migrations:
+Supabase migrations:
 
 ```powershell
 cd problem-hunt
 supabase db push
 ```
 
-## 22. Final Recommendation
+## 15. Final Advice
 
-If you are new to DevOps, do not try to solve everything at once.
+Do not debug everything at once.
 
-Start with this order:
+Use this order:
 
-1. Frontend env configured
-2. Supabase auth working
-3. Azure Functions running locally
-4. Mock Cosmos mode working
-5. Problem and proposal flows working
-6. Real Cosmos DB
-7. Wallet and payment flows
-8. Production deployment automation
+1. frontend loads
+2. auth works
+3. API starts
+4. mock Cosmos mode works
+5. create / browse / proposal / delete work
+6. real Cosmos
+7. wallet / payment extras
 
-That order gives you the fastest feedback loop and the fewest moving parts.
+That gives the fastest feedback loop and the lowest confusion.

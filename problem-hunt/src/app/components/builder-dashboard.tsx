@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Link } from "react-router";
-import { Bell, Briefcase, CheckCircle2, Edit2, Loader2, Save, User, Wallet, Camera, AlertCircle } from "lucide-react";
+import { Bell, Briefcase, CheckCircle2, Edit2, Loader2, Save, User, Wallet, Camera, AlertCircle, Trash2 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { supabase } from "../../../lib/supabaseClient";
 import { API_ENDPOINTS } from "../../lib/api-config";
@@ -80,6 +80,8 @@ export function BuilderDashboard() {
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [avatarError, setAvatarError] = useState<string | null>(null);
   const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null);
+  const [briefActionMessage, setBriefActionMessage] = useState<string | null>(null);
+  const [deletingPostId, setDeletingPostId] = useState<string | null>(null);
   const [profileForm, setProfileForm] = useState({ full_name: "", bio: "" });
 
   const activeJobs = useMemo(
@@ -240,6 +242,37 @@ export function BuilderDashboard() {
       setAvatarPreviewUrl(null);
     } finally {
       setAvatarUploading(false);
+    }
+  };
+
+  const handleDeletePost = async (post: ProblemPost) => {
+    const confirmed = window.confirm(
+      `Delete "${post.title}"? This will remove the post and related activity.`
+    );
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      setDeletingPostId(post.id);
+      setBriefActionMessage(null);
+      const token = (await supabase.auth.getSession()).data.session?.access_token;
+      const response = await fetch(API_ENDPOINTS.DELETE_PROBLEM(post.id), {
+        method: "DELETE",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+
+      if (!response.ok) {
+        const message = await response.text();
+        throw new Error(message || "Failed to delete post");
+      }
+
+      setPosts((current) => current.filter((item) => item.id !== post.id));
+      setBriefActionMessage(`Deleted "${post.title}".`);
+    } catch (err) {
+      setBriefActionMessage(err instanceof Error ? err.message : "Failed to delete post");
+    } finally {
+      setDeletingPostId(null);
     }
   };
 
@@ -478,6 +511,11 @@ export function BuilderDashboard() {
               />
             ) : (
               <div className="border-t border-[color:var(--board-line)]">
+                {briefActionMessage ? (
+                  <div className="board-inline-note mt-4">
+                    {briefActionMessage}
+                  </div>
+                ) : null}
                 {posts.map((post) => (
                   <article key={post.id} className="board-row">
                     <div className="grid gap-5 md:grid-cols-[minmax(0,1fr)_180px] md:items-start">
@@ -502,6 +540,16 @@ export function BuilderDashboard() {
                         <p className="mt-3 text-sm text-[var(--board-muted)]">
                           {post.proposals} bid{post.proposals === 1 ? "" : "s"}
                         </p>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => handleDeletePost(post)}
+                          disabled={deletingPostId === post.id}
+                          className="board-danger-btn mt-4 w-full md:ml-auto"
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          {deletingPostId === post.id ? "Deleting..." : "Delete"}
+                        </Button>
                       </div>
                     </div>
                   </article>

@@ -35,8 +35,18 @@ Thumbs.db
 __azurite_db_*.json
 __azurite_db_*_extent__.json
 __blobstorage__/
+__queuestorage__/
+AzuriteConfig
 
 # Local runtime artifacts
 problem-hunt/python-function/func-host*.log
 problem-hunt/supabase/.temp/
 supabase/.temp/
+diagnosis_report.txt
+jwks.json
+jwks_error.txt
+jwt_decoded.json
+auth_user_response.txt
+sample_jwt.txt
+jwt.txt
+token.txt

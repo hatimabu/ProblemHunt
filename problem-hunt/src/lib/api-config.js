@@ -35,6 +35,7 @@ export const API_ENDPOINTS = {
   // Problems
   PROBLEMS: `${API_URL}/api/problems`,
   PROBLEM_BY_ID: (id) => `${API_URL}/api/problems/${id}`,
+  DELETE_PROBLEM: (id) => `${API_URL}/api/problems/${id}`,
   USER_PROBLEMS: `${API_URL}/api/user/problems`,
   USER_PROPOSALS: `${API_URL}/api/user/proposals`,
   SEARCH_PROBLEMS: `${API_URL}/api/problems/search`,
