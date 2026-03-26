@@ -131,7 +131,11 @@ export function Navbar() {
               </button>
 
               {dropdownOpen ? (
-                <div className="absolute right-0 mt-2 w-60 border border-[color:var(--board-line-strong)] bg-[var(--board-panel-strong)] p-2 shadow-[0_24px_70px_rgba(23,39,52,0.12)]">
+                <div
+                  onMouseDown={(event) => event.stopPropagation()}
+                  onClick={(event) => event.stopPropagation()}
+                  className="absolute right-0 z-[70] mt-2 w-60 border border-[color:var(--board-line-strong)] bg-[var(--board-panel-strong)] p-2 shadow-[0_24px_70px_rgba(23,39,52,0.12)]"
+                >
                   <div className="border-b border-[color:var(--board-line)] px-3 py-3">
                     <p className="text-sm font-semibold text-[var(--board-ink)]">
                       {user.username || "Builder"}
