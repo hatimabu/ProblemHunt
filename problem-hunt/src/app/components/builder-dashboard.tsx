@@ -12,7 +12,7 @@ import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
-import { formatBudget, formatJobStatus, formatSol, shortWallet, type NotificationRow, type ProblemPost, type ProposalRecord } from "../../lib/marketplace";
+import { formatBudget, formatJobStatus, formatSol, type NotificationRow, type ProblemPost, type ProposalRecord } from "../../lib/marketplace";
 
 interface ProfileData {
   username: string;
@@ -213,7 +213,6 @@ export function BuilderDashboard() {
               <MetaPill tone="accent">{identityLabel}</MetaPill>
               <MetaPill>{walletCount} wallet{walletCount === 1 ? "" : "s"} linked</MetaPill>
               <MetaPill tone="rust">{unreadSignals} unread signal{unreadSignals === 1 ? "" : "s"}</MetaPill>
-              {profile?.wallet_address ? <MetaPill>Primary {shortWallet(profile.wallet_address)}</MetaPill> : null}
             </div>
 
             <div className="mt-8 flex flex-col gap-4 sm:flex-row">
@@ -347,25 +346,7 @@ export function BuilderDashboard() {
                   )}
                 </div>
 
-                <aside className="border-t border-[color:var(--board-line)] pt-6 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0">
-                  <p className="board-kicker">Payout path</p>
-                  <div className="mt-5 space-y-4">
-                    <div>
-                      <p className="board-eyebrow">Primary wallet</p>
-                      <p className="mt-2 text-sm text-[var(--board-ink)]">
-                        {profile?.wallet_address ? shortWallet(profile.wallet_address) : "No wallet linked yet"}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="board-eyebrow">Linked wallets</p>
-                      <p className="mt-2 text-sm text-[var(--board-ink)]">{walletCount}</p>
-                    </div>
-                    <div>
-                      <p className="board-eyebrow">Unread signals</p>
-                      <p className="mt-2 text-sm text-[var(--board-ink)]">{unreadSignals}</p>
-                    </div>
-                  </div>
-                </aside>
+                {/* Payout path removed: primary wallet selection is managed in “Manage wallets” */}
               </div>
             </div>
           </TabsContent>
@@ -535,13 +516,15 @@ export function BuilderDashboard() {
       </main>
 
       <Dialog open={walletModalOpen} onOpenChange={setWalletModalOpen}>
-        <DialogContent className="h-[85vh] max-w-2xl overflow-y-auto rounded-none border-[color:var(--board-line-strong)] bg-[var(--board-paper)] text-[var(--board-ink)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          <DialogHeader>
-            <DialogTitle className="font-display text-2xl font-semibold tracking-[-0.05em] text-[var(--board-ink)]">
-              Manage wallets
-            </DialogTitle>
-          </DialogHeader>
-          <LinkWallet onWalletsChange={setWalletCount} />
+        <DialogContent className="h-[90vh] max-w-2xl overflow-hidden rounded-none border-0 shadow-none bg-[var(--board-paper)] text-[var(--board-ink)] p-0">
+          <div className="h-full overflow-y-auto p-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <DialogHeader>
+              <DialogTitle className="font-display text-2xl font-semibold tracking-[-0.05em] text-[var(--board-ink)]">
+                Manage wallets
+              </DialogTitle>
+            </DialogHeader>
+            <LinkWallet onWalletsChange={setWalletCount} />
+          </div>
         </DialogContent>
       </Dialog>
     </div>
