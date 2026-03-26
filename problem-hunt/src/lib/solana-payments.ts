@@ -7,13 +7,15 @@ import {
   clusterApiUrl,
 } from "@solana/web3.js";
 
-type SolanaProvider = {
+export type SolanaProvider = {
   isPhantom?: boolean;
   isSolflare?: boolean;
   publicKey?: { toString(): string };
   connect: (options?: Record<string, unknown>) => Promise<{ publicKey: { toString(): string } }>;
+  signMessage?: (message: Uint8Array, encoding: string) => Promise<{ signature: Uint8Array }>;
   signAndSendTransaction?: (transaction: Transaction) => Promise<{ signature: string }>;
   signTransaction?: (transaction: Transaction) => Promise<Transaction>;
+  disconnect?: () => Promise<void>;
 };
 
 declare global {

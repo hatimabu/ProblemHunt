@@ -9,6 +9,11 @@ type ProfileRow = {
   full_name?: string | null;
 };
 
+type ProfileQueryResult = {
+  data: ProfileRow | null;
+  error: { code?: string; message?: string } | null;
+};
+
 function withTimeout<T>(promise: Promise<T>, timeoutMs: number, label: string): Promise<T> {
   return Promise.race([
     promise,
@@ -41,7 +46,7 @@ export async function getOrCreateProfile(userId: string): Promise<ProfileRow | n
         .from('profiles')
         .select('user_id, username, user_type, full_name')
         .eq('user_id', userId)
-        .maybeSingle(),
+        .maybeSingle() as Promise<ProfileQueryResult>,
       PROFILE_QUERY_TIMEOUT_MS,
       'Profile lookup'
     );
@@ -71,7 +76,7 @@ export async function getOrCreateProfile(userId: string): Promise<ProfileRow | n
           username: `user_${userId.slice(0, 8)}`,
         })
         .select('user_id, username, user_type, full_name')
-        .single(),
+        .single() as Promise<ProfileQueryResult>,
       PROFILE_QUERY_TIMEOUT_MS,
       'Profile insert'
     );

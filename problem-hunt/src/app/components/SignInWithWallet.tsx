@@ -6,6 +6,7 @@ import { Alert, AlertDescription } from "./ui/alert";
 import { supabase } from "../../../lib/supabaseClient";
 import { setSessionWithTimeout } from "../utils/sessionUtils";
 import { ethers } from "ethers";
+import type { SolanaProvider } from "../../lib/solana-payments";
 
 /**
  * SignInWithWallet Component
@@ -27,18 +28,9 @@ interface WalletProvider {
   removeListener?: (event: string, handler: (...args: any[]) => void) => void;
 }
 
-interface SolanaProvider {
-  isPhantom?: boolean;
-  publicKey?: { toString: () => string };
-  connect: () => Promise<{ publicKey: { toString: () => string } }>;
-  signMessage: (message: Uint8Array, encoding: string) => Promise<{ signature: Uint8Array }>;
-  disconnect: () => Promise<void>;
-}
-
 declare global {
   interface Window {
     ethereum?: WalletProvider;
-    solana?: SolanaProvider;
   }
 }
 
@@ -186,6 +178,10 @@ export function SignInWithWallet({
       const encodedMessage = new TextEncoder().encode(statement);
       
       // Request signature
+      if (!window.solana.signMessage) {
+        throw new Error("Connected Solana wallet does not support message signing");
+      }
+
       const signedMessage = await window.solana.signMessage(encodedMessage, 'utf8');
       const signature = Buffer.from(signedMessage.signature).toString('base64');
 
