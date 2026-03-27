@@ -117,11 +117,12 @@ export function BuilderDashboard() {
             .from("profiles")
             .select("username, full_name, bio, reputation_score, user_type, created_at, wallet_address, avatar_url")
             .eq("user_id", user.id)
-            .single(),
+            .maybeSingle(),
           supabase.from("wallets").select("*", { count: "exact", head: true }).eq("user_id", user.id),
           supabase
             .from("notifications")
             .select("id, message, link, is_read, created_at")
+            .eq("user_id", user.id)
             .order("created_at", { ascending: false })
             .limit(20),
         ]);

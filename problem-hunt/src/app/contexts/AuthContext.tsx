@@ -278,8 +278,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // ── Explicit auth actions ─────────────────────────────────────────────────
   // These are always initiated by the user pressing a button, so a loading
-  // indicator is appropriate.  The subsequent onAuthStateChange event (SIGNED_IN
-  // or SIGNED_OUT) will clear the loading state.
+  // indicator is appropriate. Resolve the local user state before returning so
+  // protected routes do not redirect during the SIGNED_IN event race window.
 
   const login = useCallback(async (email: string, password: string) => {
     setIsLoading(true);
@@ -289,14 +289,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         password,
       });
       if (error) throw error;
-      // setAuthState will be called by onAuthStateChange
+
+      if (data.session?.user) {
+        setSession(data.session);
+        await resolveAuthState(data.session.user, false);
+      }
+
+      if (isMountedRef.current) {
+        setIsLoading(false);
+      }
     } catch (error) {
       console.error("Login error:", error);
+      if (isMountedRef.current) {
+        setIsLoading(false);
+      }
       throw error;
-    } finally {
-      if (isMountedRef.current) setIsLoading(false);
     }
-  }, []);
+  }, [resolveAuthState]);
 
   const signup = useCallback(async (
     username: string,
@@ -320,26 +329,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
       if (error) throw error;
       if (!data.user) throw new Error('Signup failed: No user data returned');
-      // setAuthState will be called by onAuthStateChange
+
+      if (data.session?.user) {
+        setSession(data.session);
+        await resolveAuthState(data.session.user, false);
+      }
+
+      if (isMountedRef.current) {
+        setIsLoading(false);
+      }
     } catch (error) {
       console.error("Signup error:", error);
+      if (isMountedRef.current) {
+        setIsLoading(false);
+      }
       throw error;
-    } finally {
-      if (isMountedRef.current) setIsLoading(false);
     }
-  }, []);
+  }, [resolveAuthState]);
 
   const logout = useCallback(async () => {
     setIsLoading(true);
     try {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
-      // setAuthState will be called by onAuthStateChange
+
+      if (isMountedRef.current) {
+        userRef.current = null;
+        setSession(null);
+        setUser(null);
+        setIsLoading(false);
+      }
     } catch (error) {
       console.error("Logout error:", error);
+      if (isMountedRef.current) {
+        setIsLoading(false);
+      }
       throw error;
-    } finally {
-      if (isMountedRef.current) setIsLoading(false);
     }
   }, []);
 
