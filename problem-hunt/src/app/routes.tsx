@@ -30,7 +30,7 @@ export const router = createBrowserRouter([
     ),
   },
   {
-    path: "/builder-dashboard",
+    path: "/dashboard",
     element: (
       <ProtectedRoute>
         <BuilderDashboard />
@@ -38,16 +38,12 @@ export const router = createBrowserRouter([
     ),
   },
   {
-    path: "/dashboard",
-    element: <Navigate to="/builder-dashboard" replace />,
+    path: "/builder-dashboard",
+    element: <Navigate to="/dashboard" replace />,
   },
   {
     path: "/profile",
-    element: (
-      <ProtectedRoute>
-        <BuilderDashboard />
-      </ProtectedRoute>
-    ),
+    element: <Navigate to="/dashboard" replace />,
   },
   {
     path: "/leaderboard",
