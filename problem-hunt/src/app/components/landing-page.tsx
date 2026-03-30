@@ -264,7 +264,7 @@ export function LandingPage() {
           <div className="flex flex-wrap gap-4 text-sm text-[var(--board-muted)]">
             <Link to="/browse" className="hover:text-[var(--board-accent)]">Browse</Link>
             <Link to="/leaderboard" className="hover:text-[var(--board-accent)]">Leaderboard</Link>
-            <Link to="/dashboard" className="hover:text-[var(--board-accent)]">Dashboard</Link>
+            <Link to="/builder-dashboard" className="hover:text-[var(--board-accent)]">Dashboard</Link>
           </div>
         </div>
       </footer>

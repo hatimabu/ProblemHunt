@@ -1,4 +1,4 @@
-import { createBrowserRouter } from "react-router";
+import { createBrowserRouter, Navigate } from "react-router";
 import { LandingPage } from "./components/landing-page.tsx";
 import { BrowseProblems } from "./components/browse-problems.tsx";
 import { ProblemDetail } from "./components/problem-detail.tsx";
@@ -30,12 +30,16 @@ export const router = createBrowserRouter([
     ),
   },
   {
-    path: "/dashboard",
+    path: "/builder-dashboard",
     element: (
       <ProtectedRoute>
         <BuilderDashboard />
       </ProtectedRoute>
     ),
+  },
+  {
+    path: "/dashboard",
+    element: <Navigate to="/builder-dashboard" replace />,
   },
   {
     path: "/profile",

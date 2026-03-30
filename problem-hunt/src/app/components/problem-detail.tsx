@@ -215,7 +215,7 @@ export function ProblemDetail() {
         throw new Error(message || "Failed to delete post");
       }
 
-      navigate("/dashboard", { replace: true });
+      navigate("/builder-dashboard", { replace: true });
     } catch (err) {
       setStatusMessage(err instanceof Error ? err.message : "Failed to delete post");
     } finally {

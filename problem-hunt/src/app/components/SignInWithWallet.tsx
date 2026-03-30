@@ -43,7 +43,7 @@ interface SignInWithWalletProps {
 export function SignInWithWallet({ 
   onSuccess, 
   onError,
-  redirectTo = '/dashboard'
+  redirectTo = '/builder-dashboard'
 }: SignInWithWalletProps) {
   const [isEthereumAvailable, setIsEthereumAvailable] = useState(false);
   const [isSolanaAvailable, setIsSolanaAvailable] = useState(false);

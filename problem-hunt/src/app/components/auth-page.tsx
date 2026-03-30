@@ -41,7 +41,7 @@ export function AuthPage() {
         signupData.userType
       );
 
-      navigate(signupData.userType === "builder" ? "/dashboard" : "/browse");
+      navigate(signupData.userType === "builder" ? "/builder-dashboard" : "/browse");
     } catch (error: any) {
       setSignupError(error.message || "Signup failed. Please try again.");
     } finally {
@@ -56,7 +56,7 @@ export function AuthPage() {
 
     try {
       await login(loginData.email, loginData.password);
-      navigate("/dashboard");
+      navigate("/builder-dashboard");
     } catch (error: any) {
       setLoginError(error.message || "Login failed. Please check your credentials.");
     } finally {

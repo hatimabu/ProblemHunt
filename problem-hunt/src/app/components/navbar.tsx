@@ -1,11 +1,11 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation } from "react-router";
 import { Check, ChevronDown, Copy, LayoutDashboard, LogOut, Menu, Sparkles, Trophy, X } from "lucide-react";
 import { Button } from "./ui/button";
 import { useAuth } from "../contexts/AuthContext";
 import { supabase } from "../../../lib/supabaseClient";
 
-const NAV_LINKS = [
+const PUBLIC_NAV_LINKS = [
   { path: "/browse", label: "Browse" },
   { path: "/leaderboard", label: "Leaderboard" },
 ];
@@ -18,6 +18,10 @@ export function Navbar() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const navLinks = useMemo(
+    () => (user ? [{ path: "/builder-dashboard", label: "Dashboard" }, ...PUBLIC_NAV_LINKS] : PUBLIC_NAV_LINKS),
+    [user]
+  );
 
   useEffect(() => {
     if (!user) {
@@ -42,15 +46,20 @@ export function Navbar() {
   }, [user]);
 
   useEffect(() => {
-    const handleClick = (event: MouseEvent) => {
+    const handlePointerDown = (event: PointerEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setDropdownOpen(false);
       }
     };
 
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => document.removeEventListener("pointerdown", handlePointerDown);
   }, []);
+
+  useEffect(() => {
+    setDropdownOpen(false);
+    setMobileOpen(false);
+  }, [location.pathname]);
 
   const isActive = (path: string) => location.pathname === path;
   const shortAddress = walletAddress ? `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}` : null;
@@ -83,7 +92,7 @@ export function Navbar() {
         </Link>
 
         <nav className="hidden items-center gap-1 md:flex">
-          {NAV_LINKS.map((link) => (
+          {navLinks.map((link) => (
             <Link
               key={link.path}
               to={link.path}
@@ -144,18 +153,23 @@ export function Navbar() {
                   </div>
 
                   <div className="py-2">
-                    <Link
-                      to="/dashboard"
-                      onClick={() => setDropdownOpen(false)}
-                      className="flex items-center gap-2 px-3 py-2 text-sm text-[var(--board-muted)] transition-colors hover:bg-[rgba(15,118,110,0.08)] hover:text-[var(--board-accent)]"
-                    >
-                      <LayoutDashboard className="h-4 w-4" />
-                      Dashboard
-                    </Link>
+                    <div className="flex items-center gap-2 px-3 py-2 text-sm text-[var(--board-muted)]">
+                      <LayoutDashboard className="h-4 w-4 text-[var(--board-accent)]" />
+                      Builder account
+                    </div>
+                    {shortAddress ? (
+                      <button
+                        onClick={copyWallet}
+                        className="flex w-full items-center gap-2 px-3 py-2 text-sm text-[var(--board-muted)] transition-colors hover:bg-[rgba(15,118,110,0.08)] hover:text-[var(--board-accent)]"
+                      >
+                        {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                        Copy wallet
+                      </button>
+                    ) : null}
                     <Link
                       to="/leaderboard"
                       onClick={() => setDropdownOpen(false)}
-                      className="flex items-center gap-2 px-3 py-2 text-sm text-[var(--board-muted)] transition-colors hover:bg-[rgba(15,118,110,0.08)] hover:text-[var(--board-accent)]"
+                      className="flex items-center gap-2 px-3 py-2 text-sm text-[var(--board-muted)] transition-colors hover:bg-[rgba(15,118,110,0.08)] hover:text-[var(--board-accent)] md:hidden"
                     >
                       <Trophy className="h-4 w-4" />
                       Leaderboard
@@ -201,7 +215,7 @@ export function Navbar() {
       {mobileOpen ? (
         <div className="board-nav__mobile border-t border-[color:var(--board-line)] bg-[rgba(248,244,236,0.96)] md:hidden">
           <div className="board-container flex flex-col gap-2 py-4">
-            {NAV_LINKS.map((link) => (
+            {navLinks.map((link) => (
               <Link
                 key={link.path}
                 to={link.path}
