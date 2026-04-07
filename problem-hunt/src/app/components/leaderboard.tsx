@@ -18,11 +18,11 @@ interface LeaderboardEntry {
 }
 
 const TIER_STYLES: Record<string, string> = {
-  Legend: "border-[color:rgba(191,147,81,0.24)] bg-[rgba(191,147,81,0.1)] text-[#8c6229]",
-  Expert: "border-[color:rgba(15,118,110,0.24)] bg-[rgba(15,118,110,0.08)] text-[var(--board-accent)]",
-  Senior: "border-[color:rgba(23,39,52,0.18)] bg-white/56 text-[var(--board-ink)]",
-  Builder: "border-[color:rgba(23,39,52,0.14)] bg-white/46 text-[var(--board-muted)]",
-  Newcomer: "border-[color:rgba(23,39,52,0.12)] bg-white/36 text-[var(--board-soft)]",
+  Legend: "border-[color:rgba(232,197,71,0.36)] bg-[rgba(232,197,71,0.12)] text-[var(--board-gold)]",
+  Expert: "border-[color:rgba(219,84,97,0.34)] bg-[rgba(219,84,97,0.14)] text-[var(--board-accent)]",
+  Senior: "border-[color:var(--board-line-strong)] bg-[var(--board-panel-strong)] text-[var(--board-ink)]",
+  Builder: "border-[color:var(--board-line)] bg-[var(--board-panel)] text-[var(--board-muted)]",
+  Newcomer: "border-[color:var(--board-line)] bg-[var(--board-bg)] text-[var(--board-soft)]",
 };
 
 export function Leaderboard() {
@@ -125,13 +125,13 @@ export function Leaderboard() {
                           {entry.builderId === user?.id ? " (you)" : ""}
                         </h2>
                       </div>
-                      <div className="flex h-11 w-11 items-center justify-center border border-[color:var(--board-line)] bg-white/56 text-[var(--board-accent)]">
+                      <div className="flex h-11 w-11 items-center justify-center rounded-md border border-[color:var(--board-line)] bg-[var(--board-panel-strong)] text-[var(--board-accent)]">
                         {index === 0 ? <Crown className="h-5 w-5" /> : <Award className="h-5 w-5" />}
                       </div>
                     </div>
 
                     <div className="mt-4 flex items-center gap-2">
-                      <Badge className={`rounded-none border px-2 py-1 text-[10px] uppercase tracking-[0.14em] ${TIER_STYLES[entry.tier] || TIER_STYLES.Newcomer}`}>
+                      <Badge className={`rounded-full border px-2.5 py-1 text-[12px] uppercase tracking-[0.14em] ${TIER_STYLES[entry.tier] || TIER_STYLES.Newcomer}`}>
                         {entry.tier}
                       </Badge>
                     </div>
@@ -168,7 +168,7 @@ export function Leaderboard() {
                             {entry.builderName}
                             {entry.builderId === user?.id ? " (you)" : ""}
                           </h2>
-                          <Badge className={`rounded-none border px-2 py-1 text-[10px] uppercase tracking-[0.14em] ${TIER_STYLES[entry.tier] || TIER_STYLES.Newcomer}`}>
+                          <Badge className={`rounded-full border px-2.5 py-1 text-[12px] uppercase tracking-[0.14em] ${TIER_STYLES[entry.tier] || TIER_STYLES.Newcomer}`}>
                             {entry.tier}
                           </Badge>
                         </div>

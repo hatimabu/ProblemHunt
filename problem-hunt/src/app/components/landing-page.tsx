@@ -73,7 +73,7 @@ export function LandingPage() {
 
               <div className="mt-8 flex flex-col gap-4 sm:flex-row fade-in stagger-4">
                 <Link to="/browse">
-                  <Button className="h-12 rounded-none border border-[color:rgba(15,118,110,0.24)] bg-[var(--board-accent)] px-6 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-white hover:bg-[color:#0d625c]">
+                  <Button className="board-btn-primary h-12 border-0 bg-[var(--board-accent)] px-6 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-white hover:bg-[var(--color-accent-hover)]">
                     Browse live work
                     <ArrowRight className="h-4 w-4" />
                   </Button>
@@ -81,7 +81,7 @@ export function LandingPage() {
                 <Link to="/post">
                   <Button
                     variant="outline"
-                    className="h-12 rounded-none border-[color:var(--board-line-strong)] bg-white/56 px-6 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-[var(--board-ink)] hover:bg-white"
+                    className="board-btn-secondary h-12 border-[color:var(--board-line-strong)] bg-transparent px-6 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-[var(--board-muted)] hover:bg-[var(--board-panel-strong)] hover:text-[var(--board-ink)]"
                   >
                     Post a brief
                   </Button>
@@ -235,14 +235,14 @@ export function LandingPage() {
 
             <div className="mt-8 flex flex-col gap-4 sm:flex-row">
               <Link to="/post">
-                <Button className="h-12 rounded-none border border-[color:rgba(15,118,110,0.24)] bg-[var(--board-accent)] px-6 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-white hover:bg-[color:#0d625c]">
+                <Button className="board-btn-primary h-12 border-0 bg-[var(--board-accent)] px-6 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-white hover:bg-[var(--color-accent-hover)]">
                   Post a brief
                 </Button>
               </Link>
               <Link to="/browse">
                 <Button
                   variant="outline"
-                  className="h-12 rounded-none border-[color:var(--board-line-strong)] bg-white/56 px-6 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-[var(--board-ink)] hover:bg-white"
+                  className="board-btn-secondary h-12 border-[color:var(--board-line-strong)] bg-transparent px-6 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-[var(--board-muted)] hover:bg-[var(--board-panel-strong)] hover:text-[var(--board-ink)]"
                 >
                   Browse builders
                 </Button>

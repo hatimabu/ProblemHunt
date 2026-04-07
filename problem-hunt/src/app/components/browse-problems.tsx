@@ -126,7 +126,7 @@ export function BrowseProblems() {
                       setSearchQuery(event.target.value);
                     });
                   }}
-                  className="board-field h-12 rounded-none pl-10"
+                  className="board-field h-12 pl-10"
                 />
               </div>
 
@@ -140,7 +140,7 @@ export function BrowseProblems() {
                           setSelectedType(filter.value);
                         });
                       }}
-                      className={selectedType === filter.value ? "bg-[rgba(15,118,110,0.08)] text-[var(--board-accent)]" : "text-[var(--board-soft)] hover:text-[var(--board-ink)]"}
+                      className={selectedType === filter.value ? "bg-[var(--board-panel-strong)] text-[var(--board-accent)]" : "text-[var(--board-soft)] hover:bg-[var(--board-panel-strong)] hover:text-[var(--board-ink)]"}
                     >
                       {filter.label}
                     </button>
@@ -155,10 +155,10 @@ export function BrowseProblems() {
                     });
                   }}
                 >
-                  <SelectTrigger className="board-field h-12 rounded-none border-[color:var(--board-line)] bg-white/58 text-[var(--board-ink)]">
+                  <SelectTrigger className="board-field h-12 text-[var(--board-ink)]">
                     <SelectValue placeholder="Category" />
                   </SelectTrigger>
-                  <SelectContent className="rounded-none border-[color:var(--board-line-strong)] bg-[var(--board-paper)] text-[var(--board-ink)]">
+                  <SelectContent className="border-[color:var(--board-line-strong)] bg-[var(--board-panel-strong)] text-[var(--board-ink)]">
                     {CATEGORIES.map((category) => (
                       <SelectItem key={category} value={category}>
                         {category}
@@ -177,10 +177,10 @@ export function BrowseProblems() {
                 });
               }}
             >
-              <SelectTrigger className="board-field h-12 rounded-none border-[color:var(--board-line)] bg-white/58 text-[var(--board-ink)] lg:self-end">
+              <SelectTrigger className="board-field h-12 text-[var(--board-ink)] lg:self-end">
                 <SelectValue placeholder="Sort by" />
               </SelectTrigger>
-              <SelectContent className="rounded-none border-[color:var(--board-line-strong)] bg-[var(--board-paper)] text-[var(--board-ink)]">
+              <SelectContent className="border-[color:var(--board-line-strong)] bg-[var(--board-panel-strong)] text-[var(--board-ink)]">
                 {SORT_OPTIONS.map((option) => (
                   <SelectItem key={option.value} value={option.value}>
                     {option.label}
@@ -212,7 +212,7 @@ export function BrowseProblems() {
                 <h2 className="board-subtitle">Nothing matches this slice of the board.</h2>
                 <p>Try another category, loosen the search, or post the first brief for this niche yourself.</p>
                 <Link to="/post" className="inline-flex">
-                  <Button className="mt-6 h-11 rounded-none border border-[color:rgba(15,118,110,0.24)] bg-[var(--board-accent)] px-5 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-white hover:bg-[color:#0d625c]">
+                  <Button className="board-btn-primary mt-6 h-11 border-0 bg-[var(--board-accent)] px-5 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-white hover:bg-[var(--color-accent-hover)]">
                     Post a brief
                   </Button>
                 </Link>

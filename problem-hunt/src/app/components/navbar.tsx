@@ -38,10 +38,10 @@ export function Navbar() {
   };
 
   return (
-    <header className="board-nav sticky top-0 z-50 border-b border-[color:var(--board-line)] bg-[rgba(248,244,236,0.82)] backdrop-blur-xl">
+    <header className="board-nav sticky top-0 z-50 border-b border-[color:var(--board-line)] backdrop-blur-xl">
       <div className="board-container flex min-h-[73px] items-center justify-between gap-4">
         <Link to="/" className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center border border-[color:var(--board-line-strong)] bg-[rgba(15,118,110,0.08)] text-[var(--board-accent)]">
+          <div className="flex h-10 w-10 items-center justify-center rounded-md border border-[color:var(--board-line-strong)] bg-[var(--board-panel-strong)] text-[var(--board-accent)]">
             <Sparkles className="h-4 w-4" />
           </div>
           <div>
@@ -59,9 +59,9 @@ export function Navbar() {
             <Link
               key={link.path}
               to={link.path}
-              className={`px-4 py-2 font-mono-alt text-[0.7rem] font-semibold uppercase tracking-[0.18em] transition-colors ${
+              className={`board-nav__link px-4 py-2 font-mono-alt text-[0.75rem] font-semibold uppercase tracking-[0.14em] ${
                 isActive(link.path)
-                  ? "bg-[rgba(15,118,110,0.08)] text-[var(--board-accent)]"
+                  ? "board-nav__link--active text-[var(--board-accent)]"
                   : "text-[var(--board-soft)] hover:text-[var(--board-ink)]"
               }`}
             >
@@ -72,7 +72,7 @@ export function Navbar() {
 
         <div className="flex items-center gap-2">
           <Link to="/post" className="hidden sm:block">
-            <Button className="h-11 rounded-none border border-[color:rgba(15,118,110,0.24)] bg-[var(--board-accent)] px-5 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-white hover:bg-[color:#0d625c]">
+            <Button className="board-btn-primary h-11 border-0 bg-[var(--board-accent)] px-5 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-white hover:bg-[var(--color-accent-hover)]">
               Post brief
             </Button>
           </Link>
@@ -81,7 +81,7 @@ export function Navbar() {
             <Button
               variant="outline"
               onClick={handleSignOut}
-              className="h-11 rounded-none border-[color:rgba(178,103,55,0.22)] bg-white/60 px-4 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-[var(--board-rust)] hover:bg-white"
+              className="board-btn-secondary h-11 border-[color:var(--board-line-strong)] bg-transparent px-4 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-[var(--board-accent)] hover:bg-[var(--board-panel-strong)]"
             >
               <LogOut className="h-4 w-4" />
               Sign out
@@ -90,7 +90,7 @@ export function Navbar() {
             <Link to="/auth">
               <Button
                 variant="outline"
-                className="h-11 rounded-none border-[color:var(--board-line-strong)] bg-white/60 px-4 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-[var(--board-ink)] hover:bg-white"
+                className="board-btn-secondary h-11 border-[color:var(--board-line-strong)] bg-transparent px-4 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-[var(--board-muted)] hover:bg-[var(--board-panel-strong)] hover:text-[var(--board-ink)]"
               >
                 Sign in
               </Button>
@@ -99,7 +99,7 @@ export function Navbar() {
 
           <button
             onClick={() => setMobileOpen((open) => !open)}
-            className="flex h-11 w-11 items-center justify-center border border-[color:var(--board-line)] bg-white/56 text-[var(--board-ink)] md:hidden"
+            className="flex h-11 w-11 items-center justify-center rounded-md border border-[color:var(--board-line)] bg-[var(--board-panel)] text-[var(--board-ink)] md:hidden"
             aria-label="Toggle menu"
           >
             {mobileOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
@@ -108,16 +108,16 @@ export function Navbar() {
       </div>
 
       {mobileOpen ? (
-        <div className="board-nav__mobile border-t border-[color:var(--board-line)] bg-[rgba(248,244,236,0.96)] md:hidden">
+        <div className="board-nav__mobile border-t border-[color:var(--board-line)] md:hidden">
           <div className="board-container flex flex-col gap-2 py-4">
             {navLinks.map((link) => (
               <Link
                 key={link.path}
                 to={link.path}
                 onClick={() => setMobileOpen(false)}
-                className={`px-4 py-3 font-mono-alt text-[0.72rem] font-semibold uppercase tracking-[0.18em] ${
+                className={`board-nav__link px-4 py-3 font-mono-alt text-[0.75rem] font-semibold uppercase tracking-[0.14em] ${
                   isActive(link.path)
-                    ? "bg-[rgba(15,118,110,0.08)] text-[var(--board-accent)]"
+                    ? "board-nav__link--active text-[var(--board-accent)]"
                     : "text-[var(--board-soft)]"
                 }`}
               >
@@ -126,7 +126,7 @@ export function Navbar() {
             ))}
 
             <Link to="/post" onClick={() => setMobileOpen(false)}>
-              <Button className="mt-2 h-11 w-full rounded-none border border-[color:rgba(15,118,110,0.24)] bg-[var(--board-accent)] text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-white hover:bg-[color:#0d625c]">
+              <Button className="board-btn-primary mt-2 h-11 w-full border-0 bg-[var(--board-accent)] text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-white hover:bg-[var(--color-accent-hover)]">
                 Post brief
               </Button>
             </Link>
@@ -135,7 +135,7 @@ export function Navbar() {
               <Button
                 variant="outline"
                 onClick={handleSignOut}
-                className="mt-1 h-11 w-full rounded-none border-[color:rgba(178,103,55,0.22)] bg-white/60 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-[var(--board-rust)] hover:bg-white"
+                className="board-btn-secondary mt-1 h-11 w-full border-[color:var(--board-line-strong)] bg-transparent text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-[var(--board-accent)] hover:bg-[var(--board-panel-strong)]"
               >
                 <LogOut className="h-4 w-4" />
                 Sign out
@@ -144,7 +144,7 @@ export function Navbar() {
               <Link to="/auth" onClick={() => setMobileOpen(false)}>
                 <Button
                   variant="outline"
-                  className="mt-1 h-11 w-full rounded-none border-[color:var(--board-line-strong)] bg-white/60 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-[var(--board-ink)] hover:bg-white"
+                  className="board-btn-secondary mt-1 h-11 w-full border-[color:var(--board-line-strong)] bg-transparent text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-[var(--board-muted)] hover:bg-[var(--board-panel-strong)] hover:text-[var(--board-ink)]"
                 >
                   Sign in
                 </Button>

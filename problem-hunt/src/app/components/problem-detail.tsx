@@ -26,9 +26,9 @@ import { getUserSolanaWallet, syncUserSolanaWallet } from "../../lib/wallets";
 
 const EMPTY_PROPOSAL_FORM = { title: "", description: "", briefSolution: "", timeline: "", estimatedDelivery: "", cost: "", proposedPriceSol: "", projectUrl: "", expertise: "" };
 const EMPTY_TIP_FORM = { amount: "", chain: "solana", txHash: "", message: "" };
-const primaryBtn = "h-11 rounded-none border border-[color:rgba(15,118,110,0.24)] bg-[var(--board-accent)] px-5 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-white hover:bg-[color:#0d625c]";
-const secondaryBtn = "h-11 rounded-none border-[color:var(--board-line-strong)] bg-white/56 px-5 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-[var(--board-ink)] hover:bg-white";
-const field = "board-field rounded-none";
+const primaryBtn = "board-btn-primary h-11 border-0 bg-[var(--board-accent)] px-5 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-white hover:bg-[var(--color-accent-hover)]";
+const secondaryBtn = "board-btn-secondary h-11 border-[color:var(--board-line-strong)] bg-transparent px-5 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-[var(--board-muted)] hover:bg-[var(--board-panel-strong)] hover:text-[var(--board-ink)]";
+const field = "board-field";
 
 function MetaPill({ children, tone = "default" }: { children: ReactNode; tone?: "default" | "accent" | "rust" }) {
   return <span className={`board-pill ${tone === "accent" ? "board-pill--accent" : tone === "rust" ? "board-pill--rust" : ""}`}>{children}</span>;
@@ -224,7 +224,7 @@ export function ProblemDetail() {
   };
 
   if (loading) return <div className="board-app"><Navbar /><div className="board-container flex justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-[var(--board-accent)]" /></div></div>;
-  if (error || !problem) return <div className="board-app"><Navbar /><div className="board-container py-16"><div className="border border-[color:rgba(178,103,55,0.2)] bg-[rgba(178,103,55,0.08)] px-6 py-5 text-[var(--board-rust)]">{error || "Post not found"}</div></div></div>;
+  if (error || !problem) return <div className="board-app"><Navbar /><div className="board-container py-16"><div className="rounded-xl border border-[color:rgba(219,84,97,0.34)] bg-[rgba(219,84,97,0.12)] px-6 py-5 text-[var(--board-accent)]">{error || "Post not found"}</div></div></div>;
 
   return (
     <div className="board-app">
@@ -245,7 +245,7 @@ export function ProblemDetail() {
               <span>{problem.proposals} proposals</span>
               <span>{problem.upvotes} upvotes</span>
             </div>
-            {statusMessage ? <div className="mt-6 border border-[color:rgba(15,118,110,0.18)] bg-[rgba(15,118,110,0.08)] px-4 py-3 text-sm text-[var(--board-accent)]">{statusMessage}</div> : null}
+            {statusMessage ? <div className="mt-6 rounded-lg border border-[color:rgba(219,84,97,0.34)] bg-[rgba(219,84,97,0.12)] px-4 py-3 text-sm text-[var(--board-accent)]">{statusMessage}</div> : null}
           </div>
           <aside className="space-y-5">
             <div className="board-stat board-stat--spotlight"><div className="board-stat__value">{formatBudget(problem)}</div><div className="board-stat__label">{isJob ? "Budget" : "Bounty"}</div></div>
@@ -267,10 +267,10 @@ export function ProblemDetail() {
 
               {showProposalForm ? (
                 <form onSubmit={handleProposalSubmit} className="board-panel mt-6 p-6 md:p-8">
-                  {isJob && !mySolanaWallet ? <div className="mb-5 border border-[color:rgba(191,147,81,0.24)] bg-[rgba(191,147,81,0.08)] px-4 py-3 text-sm text-[#8c6229]">Add a Solana wallet in your dashboard before taking on jobs so the requester can pay you directly.</div> : null}
+                  {isJob && !mySolanaWallet ? <div className="mb-5 rounded-lg border border-[color:rgba(232,197,71,0.34)] bg-[rgba(232,197,71,0.1)] px-4 py-3 text-sm text-[var(--board-gold)]">Add a Solana wallet in your dashboard before taking on jobs so the requester can pay you directly.</div> : null}
                   <div className="grid gap-5">
                     <div><Label className="mb-2 block text-sm text-[var(--board-ink)]">Title</Label><Input value={proposalForm.title} onChange={(event) => setProposalForm({ ...proposalForm, title: event.target.value })} className={field} required /></div>
-                    <div><Label className="mb-2 block text-sm text-[var(--board-ink)]">Proposal</Label><Textarea value={proposalForm.description} onChange={(event) => setProposalForm({ ...proposalForm, description: event.target.value })} className="board-field min-h-[140px] rounded-none" required /></div>
+                    <div><Label className="mb-2 block text-sm text-[var(--board-ink)]">Proposal</Label><Textarea value={proposalForm.description} onChange={(event) => setProposalForm({ ...proposalForm, description: event.target.value })} className="board-field min-h-[140px]" required /></div>
                     <div className="grid gap-5 md:grid-cols-2">
                       <div><Label className="mb-2 block text-sm text-[var(--board-ink)]">Brief solution</Label><Input value={proposalForm.briefSolution} onChange={(event) => setProposalForm({ ...proposalForm, briefSolution: event.target.value })} className={field} /></div>
                       <div><Label className="mb-2 block text-sm text-[var(--board-ink)]">{isJob ? "Estimated delivery" : "Timeline"}</Label><Input value={isJob ? proposalForm.estimatedDelivery : proposalForm.timeline} onChange={(event) => setProposalForm({ ...proposalForm, [isJob ? "estimatedDelivery" : "timeline"]: event.target.value })} className={field} required={isJob} /></div>
@@ -365,11 +365,11 @@ export function ProblemDetail() {
                   <h3 className="mt-3 font-display text-2xl font-semibold tracking-[-0.05em] text-[var(--board-ink)]">{selectedTipProposal.builderName}</h3>
                   <div className="mt-5 space-y-4">
                     <div><Label className="mb-2 block text-sm text-[var(--board-ink)]">Amount</Label><Input type="number" min="0" step="0.000001" value={tipForm.amount} onChange={(event) => setTipForm({ ...tipForm, amount: event.target.value })} className={field} required /></div>
-                    <div><Label className="mb-2 block text-sm text-[var(--board-ink)]">Chain</Label><select value={tipForm.chain} onChange={(event) => setTipForm({ ...tipForm, chain: event.target.value as typeof tipForm.chain })} className="board-field h-12 w-full rounded-none px-3"><option value="solana">Solana</option><option value="ethereum">Ethereum</option><option value="polygon">Polygon</option><option value="arbitrum">Arbitrum</option></select></div>
+                    <div><Label className="mb-2 block text-sm text-[var(--board-ink)]">Chain</Label><select value={tipForm.chain} onChange={(event) => setTipForm({ ...tipForm, chain: event.target.value as typeof tipForm.chain })} className="board-field h-12 w-full px-3"><option value="solana">Solana</option><option value="ethereum">Ethereum</option><option value="polygon">Polygon</option><option value="arbitrum">Arbitrum</option></select></div>
                     <div><Label className="mb-2 block text-sm text-[var(--board-ink)]">Transaction hash</Label><Input value={tipForm.txHash} onChange={(event) => setTipForm({ ...tipForm, txHash: event.target.value })} className={field} required /></div>
-                    <div><Label className="mb-2 block text-sm text-[var(--board-ink)]">Message</Label><Textarea value={tipForm.message} onChange={(event) => setTipForm({ ...tipForm, message: event.target.value })} className="board-field min-h-[110px] rounded-none" /></div>
+                    <div><Label className="mb-2 block text-sm text-[var(--board-ink)]">Message</Label><Textarea value={tipForm.message} onChange={(event) => setTipForm({ ...tipForm, message: event.target.value })} className="board-field min-h-[110px]" /></div>
                   </div>
-                  <div className="mt-5 border border-[color:var(--board-line)] bg-white/42 px-4 py-3 text-sm text-[var(--board-muted)]">Send the tip directly first, then paste the transaction hash here so the payment is attached to the proposal.</div>
+                  <div className="mt-5 rounded-lg border border-[color:var(--board-line)] bg-[var(--board-panel)] px-4 py-3 text-sm text-[var(--board-muted)]">Send the tip directly first, then paste the transaction hash here so the payment is attached to the proposal.</div>
                   <div className="mt-5 flex gap-3"><Button type="submit" className={`flex-1 ${primaryBtn}`}>Record tip</Button><Button type="button" variant="outline" onClick={() => setSelectedTipProposal(null)} className={`flex-1 ${secondaryBtn}`}>Cancel</Button></div>
                 </form>
               ) : null}
@@ -383,7 +383,7 @@ export function ProblemDetail() {
                     <p>3. Owner pays directly from Phantom or Solflare.</p>
                     <p>4. The transaction hash is recorded and the job is marked paid.</p>
                   </div>
-                  {mySolanaWallet ? <div className="mt-5 border border-[color:rgba(15,118,110,0.18)] bg-[rgba(15,118,110,0.08)] px-4 py-3 text-sm text-[var(--board-accent)]">Your Solana wallet: {shortWallet(mySolanaWallet)}</div> : null}
+                  {mySolanaWallet ? <div className="mt-5 rounded-lg border border-[color:rgba(219,84,97,0.34)] bg-[rgba(219,84,97,0.12)] px-4 py-3 text-sm text-[var(--board-accent)]">Your Solana wallet: {shortWallet(mySolanaWallet)}</div> : null}
                 </section>
               ) : null}
             </aside>

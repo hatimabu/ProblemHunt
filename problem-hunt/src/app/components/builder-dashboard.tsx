@@ -57,7 +57,7 @@ function EmptyState({
       <p>{description}</p>
       {ctaHref && ctaLabel ? (
         <Link to={ctaHref} className="inline-flex">
-          <Button className="mt-6 h-11 rounded-none border border-[color:rgba(15,118,110,0.24)] bg-[var(--board-accent)] px-5 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-white hover:bg-[color:#0d625c]">
+          <Button className="board-btn-primary mt-6 h-11 border-0 bg-[var(--board-accent)] px-5 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-white hover:bg-[var(--color-accent-hover)]">
             {ctaLabel}
           </Button>
         </Link>
@@ -314,7 +314,7 @@ export function BuilderDashboard() {
             <div className="mt-8 flex flex-col gap-4 sm:flex-row">
               <Button
                 onClick={() => setWalletModalOpen(true)}
-                className="h-11 rounded-none border border-[color:rgba(15,118,110,0.24)] bg-[var(--board-accent)] px-5 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-white hover:bg-[color:#0d625c]"
+                className="board-btn-primary h-11 border-0 bg-[var(--board-accent)] px-5 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-white hover:bg-[var(--color-accent-hover)]"
               >
                 <Wallet className="mr-2 h-4 w-4" />
                 Manage wallets
@@ -322,7 +322,7 @@ export function BuilderDashboard() {
               <Link to="/post">
                 <Button
                   variant="outline"
-                  className="h-11 rounded-none border-[color:var(--board-line-strong)] bg-white/56 px-5 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-[var(--board-ink)] hover:bg-white"
+                  className="board-btn-secondary h-11 border-[color:var(--board-line-strong)] bg-transparent px-5 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-[var(--board-muted)] hover:bg-[var(--board-panel-strong)] hover:text-[var(--board-ink)]"
                 >
                   Post a brief
                 </Button>
@@ -341,7 +341,7 @@ export function BuilderDashboard() {
         </section>
 
         <Tabs defaultValue="identity" className="board-section px-0">
-          <TabsList className="board-tabs grid h-auto w-full rounded-none p-1 md:grid-cols-5">
+          <TabsList className="board-tabs grid h-auto w-full p-1 md:grid-cols-5">
             <TabsTrigger value="identity">
               <User className="h-4 w-4" />
               Identity
@@ -375,7 +375,7 @@ export function BuilderDashboard() {
                         <Input
                           value={profileForm.full_name}
                           onChange={(event) => setProfileForm({ ...profileForm, full_name: event.target.value })}
-                          className="board-field rounded-none"
+                          className="board-field"
                         />
                       </div>
                       <div>
@@ -383,14 +383,14 @@ export function BuilderDashboard() {
                         <Textarea
                           value={profileForm.bio}
                           onChange={(event) => setProfileForm({ ...profileForm, bio: event.target.value })}
-                          className="board-field min-h-[160px] rounded-none"
+                          className="board-field min-h-[160px]"
                         />
                       </div>
                       <div className="flex flex-col gap-3 sm:flex-row">
                         <Button
                           onClick={handleSaveProfile}
                           disabled={savingProfile}
-                          className="h-11 rounded-none border border-[color:rgba(15,118,110,0.24)] bg-[var(--board-accent)] px-5 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-white hover:bg-[color:#0d625c]"
+                          className="board-btn-primary h-11 border-0 bg-[var(--board-accent)] px-5 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-white hover:bg-[var(--color-accent-hover)]"
                         >
                           <Save className="mr-2 h-4 w-4" />
                           {savingProfile ? "Saving..." : "Save profile"}
@@ -398,7 +398,7 @@ export function BuilderDashboard() {
                         <Button
                           variant="outline"
                           onClick={() => setEditingProfile(false)}
-                          className="h-11 rounded-none border-[color:var(--board-line-strong)] bg-white/56 px-5 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-[var(--board-ink)] hover:bg-white"
+                          className="board-btn-secondary h-11 border-[color:var(--board-line-strong)] bg-transparent px-5 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-[var(--board-muted)] hover:bg-[var(--board-panel-strong)] hover:text-[var(--board-ink)]"
                         >
                           Cancel
                         </Button>
@@ -417,7 +417,7 @@ export function BuilderDashboard() {
                         <Button
                           variant="outline"
                           onClick={() => setEditingProfile(true)}
-                          className="h-11 rounded-none border-[color:var(--board-line-strong)] bg-white/56 px-5 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-[var(--board-ink)] hover:bg-white"
+                          className="board-btn-secondary h-11 border-[color:var(--board-line-strong)] bg-transparent px-5 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-[var(--board-muted)] hover:bg-[var(--board-panel-strong)] hover:text-[var(--board-ink)]"
                         >
                           <Edit2 className="mr-2 h-4 w-4" />
                           Edit
@@ -445,7 +445,7 @@ export function BuilderDashboard() {
                   <p className="board-kicker">Profile</p>
                   <div className="mt-5 space-y-4">
                     <div className="flex items-center gap-4">
-                      <Avatar className="size-16 border border-[color:var(--board-line-strong)] bg-white/50">
+                      <Avatar className="size-16 border border-[color:var(--board-line-strong)] bg-[var(--board-panel)]">
                         {profile?.avatar_url ? (
                           <AvatarImage src={profile.avatar_url} alt="Profile picture" className="object-cover" />
                         ) : null}
@@ -461,7 +461,7 @@ export function BuilderDashboard() {
                     </div>
 
                     <label
-                      className="flex cursor-pointer items-center justify-center gap-2 border border-[color:var(--board-line-strong)] bg-white/56 px-4 py-2 text-sm font-semibold text-[var(--board-ink)] hover:bg-white disabled:opacity-50"
+                      className="board-btn-secondary flex cursor-pointer items-center justify-center gap-2 border border-[color:var(--board-line-strong)] bg-transparent px-4 py-2 text-sm font-semibold text-[var(--board-muted)] hover:bg-[var(--board-panel-strong)] hover:text-[var(--board-ink)] disabled:opacity-50"
                     >
                       {avatarUploading ? (
                         <>
@@ -491,7 +491,7 @@ export function BuilderDashboard() {
                     </label>
 
                     {avatarError ? (
-                      <div className="flex items-center gap-2 border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+                      <div className="flex items-center gap-2 rounded-lg border border-[color:rgba(219,84,97,0.34)] bg-[rgba(219,84,97,0.12)] px-4 py-3 text-sm text-[var(--board-accent)]">
                         <AlertCircle className="h-4 w-4" />
                         {avatarError}
                       </div>
@@ -682,7 +682,7 @@ export function BuilderDashboard() {
       </main>
 
       <Dialog open={walletModalOpen} onOpenChange={setWalletModalOpen}>
-        <DialogContent className="h-[90vh] max-w-2xl overflow-hidden rounded-none border-0 shadow-none bg-[var(--board-paper)] text-[var(--board-ink)] p-0">
+        <DialogContent className="h-[90vh] max-w-2xl overflow-hidden border border-[color:var(--board-line)] bg-[var(--board-panel-strong)] text-[var(--board-ink)] p-0">
           <div className="h-full overflow-y-auto p-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             <DialogHeader>
               <DialogTitle className="font-display text-2xl font-semibold tracking-[-0.05em] text-[var(--board-ink)]">

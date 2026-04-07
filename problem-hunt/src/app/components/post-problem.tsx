@@ -138,7 +138,7 @@ export function PostProblem() {
 
         <form onSubmit={handleSubmit} className="board-section px-0">
           {error ? (
-            <div className="mb-6 border border-[color:rgba(178,103,55,0.2)] bg-[rgba(178,103,55,0.08)] px-4 py-3 text-sm text-[var(--board-rust)]">
+            <div className="mb-6 rounded-lg border border-[color:rgba(219,84,97,0.34)] bg-[rgba(219,84,97,0.12)] px-4 py-3 text-sm text-[var(--board-accent)]">
               {error}
             </div>
           ) : null}
@@ -166,8 +166,8 @@ export function PostProblem() {
                       onClick={() => setFormData((current) => ({ ...current, type: option.value }))}
                       className={`border px-5 py-5 text-left transition-colors ${
                         formData.type === option.value
-                          ? "border-[color:rgba(15,118,110,0.24)] bg-[rgba(15,118,110,0.08)]"
-                          : "border-[color:var(--board-line)] bg-white/40"
+                          ? "border-[color:rgba(219,84,97,0.34)] bg-[rgba(219,84,97,0.14)]"
+                          : "border-[color:var(--board-line)] bg-[var(--board-panel)]"
                       }`}
                     >
                       <p className="font-display text-2xl font-semibold tracking-[-0.04em] text-[var(--board-ink)]">
@@ -191,7 +191,7 @@ export function PostProblem() {
                       placeholder={isJob ? "Harden our CI deployment workflow" : "Need a better Terraform drift workflow"}
                       value={formData.title}
                       onChange={(event) => setFormData({ ...formData, title: event.target.value })}
-                      className="board-field rounded-none"
+                      className="board-field"
                       required
                     />
                   </div>
@@ -209,7 +209,7 @@ export function PostProblem() {
                       }
                       value={formData.description}
                       onChange={(event) => setFormData({ ...formData, description: event.target.value })}
-                      className="board-field min-h-[170px] rounded-none"
+                      className="board-field min-h-[170px]"
                       required
                     />
                   </div>
@@ -223,7 +223,7 @@ export function PostProblem() {
                       placeholder="List the must-haves, one per line."
                       value={formData.requirements}
                       onChange={(event) => setFormData({ ...formData, requirements: event.target.value })}
-                      className="board-field min-h-[130px] rounded-none"
+                      className="board-field min-h-[130px]"
                     />
                   </div>
                 </div>
@@ -237,10 +237,10 @@ export function PostProblem() {
                       Category
                     </Label>
                     <Select value={formData.category} onValueChange={(value) => setFormData({ ...formData, category: value })}>
-                      <SelectTrigger className="board-field rounded-none border-[color:var(--board-line)] bg-white/58 text-[var(--board-ink)]">
+                      <SelectTrigger className="board-field text-[var(--board-ink)]">
                         <SelectValue placeholder="Select a category" />
                       </SelectTrigger>
-                      <SelectContent className="rounded-none border-[color:var(--board-line-strong)] bg-[var(--board-paper)] text-[var(--board-ink)]">
+                      <SelectContent className="border-[color:var(--board-line-strong)] bg-[var(--board-panel-strong)] text-[var(--board-ink)]">
                         {CATEGORIES.map((category) => (
                           <SelectItem key={category} value={category}>
                             {category}
@@ -267,7 +267,7 @@ export function PostProblem() {
                           [isJob ? "budgetSol" : "budget"]: event.target.value,
                         })
                       }
-                      className="board-field rounded-none"
+                      className="board-field"
                       required
                     />
                   </div>
@@ -282,7 +282,7 @@ export function PostProblem() {
                       type="date"
                       value={formData.deadline}
                       onChange={(event) => setFormData({ ...formData, deadline: event.target.value })}
-                      className="board-field rounded-none"
+                      className="board-field"
                       required={isJob}
                     />
                   </div>
@@ -296,10 +296,10 @@ export function PostProblem() {
                         Job type
                       </Label>
                       <Select value={formData.jobType} onValueChange={(value) => setFormData({ ...formData, jobType: value })}>
-                        <SelectTrigger className="board-field rounded-none border-[color:var(--board-line)] bg-white/58 text-[var(--board-ink)]">
+                        <SelectTrigger className="board-field text-[var(--board-ink)]">
                           <SelectValue placeholder="Select engagement type" />
                         </SelectTrigger>
-                        <SelectContent className="rounded-none border-[color:var(--board-line-strong)] bg-[var(--board-paper)] text-[var(--board-ink)]">
+                        <SelectContent className="border-[color:var(--board-line-strong)] bg-[var(--board-panel-strong)] text-[var(--board-ink)]">
                           {JOB_TYPES.map((jobType) => (
                             <SelectItem key={jobType.value} value={jobType.value}>
                               {jobType.label}
@@ -318,7 +318,7 @@ export function PostProblem() {
                         placeholder="Terraform, Kubernetes, GitHub Actions"
                         value={formData.skillsRequired}
                         onChange={(event) => setFormData({ ...formData, skillsRequired: event.target.value })}
-                        className="board-field rounded-none"
+                        className="board-field"
                       />
                     </div>
                   </div>
@@ -353,7 +353,7 @@ export function PostProblem() {
                 <Link to="/browse">
                   <Button
                     variant="outline"
-                    className="h-11 w-full rounded-none border-[color:var(--board-line-strong)] bg-white/56 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-[var(--board-ink)] hover:bg-white"
+                    className="board-btn-secondary h-11 w-full border-[color:var(--board-line-strong)] bg-transparent text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-[var(--board-muted)] hover:bg-[var(--board-panel-strong)] hover:text-[var(--board-ink)]"
                   >
                     Cancel
                   </Button>
@@ -361,7 +361,7 @@ export function PostProblem() {
                 <Button
                   type="submit"
                   disabled={isSubmitting || isLoading || !user}
-                  className="h-11 rounded-none border border-[color:rgba(15,118,110,0.24)] bg-[var(--board-accent)] text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-white hover:bg-[color:#0d625c] disabled:opacity-50"
+                  className="board-btn-primary h-11 border-0 bg-[var(--board-accent)] text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-white hover:bg-[var(--color-accent-hover)] disabled:opacity-50"
                 >
                   {isSubmitting ? "Posting..." : isJob ? "Post job" : "Post brief"}
                 </Button>

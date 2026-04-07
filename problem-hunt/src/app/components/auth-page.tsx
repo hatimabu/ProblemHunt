@@ -94,7 +94,7 @@ export function AuthPage() {
 
           <div className="board-panel p-6 md:p-8">
             <Tabs defaultValue="login" className="space-y-6">
-              <TabsList className="board-tabs grid h-auto w-full grid-cols-2 rounded-none p-1">
+              <TabsList className="board-tabs grid h-auto w-full grid-cols-2 p-1">
                 <TabsTrigger value="login">Login</TabsTrigger>
                 <TabsTrigger value="signup">Sign up</TabsTrigger>
               </TabsList>
@@ -112,7 +112,7 @@ export function AuthPage() {
                       placeholder="you@company.com"
                       value={loginData.email}
                       onChange={(event) => setLoginData({ ...loginData, email: event.target.value })}
-                      className="board-field rounded-none"
+                      className="board-field"
                       required
                     />
                   </div>
@@ -128,13 +128,13 @@ export function AuthPage() {
                       placeholder="••••••••"
                       value={loginData.password}
                       onChange={(event) => setLoginData({ ...loginData, password: event.target.value })}
-                      className="board-field rounded-none"
+                      className="board-field"
                       required
                     />
                   </div>
 
                   {loginError ? (
-                    <div className="border border-[color:rgba(178,103,55,0.2)] bg-[rgba(178,103,55,0.08)] px-4 py-3 text-sm text-[var(--board-rust)]">
+                    <div className="rounded-lg border border-[color:rgba(219,84,97,0.34)] bg-[rgba(219,84,97,0.12)] px-4 py-3 text-sm text-[var(--board-accent)]">
                       {loginError}
                     </div>
                   ) : null}
@@ -142,7 +142,7 @@ export function AuthPage() {
                   <Button
                     type="submit"
                     disabled={isSubmitting}
-                    className="h-12 w-full rounded-none border border-[color:rgba(15,118,110,0.24)] bg-[var(--board-accent)] text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-white hover:bg-[color:#0d625c]"
+                    className="board-btn-primary h-12 w-full border-0 bg-[var(--board-accent)] text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-white hover:bg-[var(--color-accent-hover)]"
                   >
                     {isSubmitting ? "Logging in..." : "Login"}
                   </Button>
@@ -162,7 +162,7 @@ export function AuthPage() {
                       placeholder="builder_handle"
                       value={signupData.username}
                       onChange={(event) => setSignupData({ ...signupData, username: event.target.value })}
-                      className="board-field rounded-none"
+                      className="board-field"
                       minLength={3}
                       maxLength={30}
                       required
@@ -180,7 +180,7 @@ export function AuthPage() {
                       placeholder="Jane Doe"
                       value={signupData.fullName}
                       onChange={(event) => setSignupData({ ...signupData, fullName: event.target.value })}
-                      className="board-field rounded-none"
+                      className="board-field"
                     />
                   </div>
 
@@ -195,7 +195,7 @@ export function AuthPage() {
                       placeholder="you@company.com"
                       value={signupData.email}
                       onChange={(event) => setSignupData({ ...signupData, email: event.target.value })}
-                      className="board-field rounded-none"
+                      className="board-field"
                       required
                     />
                   </div>
@@ -211,7 +211,7 @@ export function AuthPage() {
                       placeholder="Minimum 6 characters"
                       value={signupData.password}
                       onChange={(event) => setSignupData({ ...signupData, password: event.target.value })}
-                      className="board-field rounded-none"
+                      className="board-field"
                       minLength={6}
                       required
                     />
@@ -228,8 +228,8 @@ export function AuthPage() {
                         onClick={() => setSignupData({ ...signupData, userType: "builder" })}
                         className={`border px-4 py-4 text-left transition-colors ${
                           signupData.userType === "builder"
-                            ? "border-[color:rgba(15,118,110,0.24)] bg-[rgba(15,118,110,0.08)]"
-                            : "border-[color:var(--board-line)] bg-white/40"
+                            ? "border-[color:rgba(219,84,97,0.34)] bg-[rgba(219,84,97,0.14)]"
+                            : "border-[color:var(--board-line)] bg-[var(--board-panel)]"
                         }`}
                       >
                         <p className="font-display text-lg font-semibold tracking-[-0.04em] text-[var(--board-ink)]">Build</p>
@@ -240,8 +240,8 @@ export function AuthPage() {
                         onClick={() => setSignupData({ ...signupData, userType: "problem_poster" })}
                         className={`border px-4 py-4 text-left transition-colors ${
                           signupData.userType === "problem_poster"
-                            ? "border-[color:rgba(15,118,110,0.24)] bg-[rgba(15,118,110,0.08)]"
-                            : "border-[color:var(--board-line)] bg-white/40"
+                            ? "border-[color:rgba(219,84,97,0.34)] bg-[rgba(219,84,97,0.14)]"
+                            : "border-[color:var(--board-line)] bg-[var(--board-panel)]"
                         }`}
                       >
                         <p className="font-display text-lg font-semibold tracking-[-0.04em] text-[var(--board-ink)]">Post</p>
@@ -251,7 +251,7 @@ export function AuthPage() {
                   </div>
 
                   {signupError ? (
-                    <div className="border border-[color:rgba(178,103,55,0.2)] bg-[rgba(178,103,55,0.08)] px-4 py-3 text-sm text-[var(--board-rust)]">
+                    <div className="rounded-lg border border-[color:rgba(219,84,97,0.34)] bg-[rgba(219,84,97,0.12)] px-4 py-3 text-sm text-[var(--board-accent)]">
                       {signupError}
                     </div>
                   ) : null}
@@ -259,7 +259,7 @@ export function AuthPage() {
                   <Button
                     type="submit"
                     disabled={isSubmitting}
-                    className="h-12 w-full rounded-none border border-[color:rgba(15,118,110,0.24)] bg-[var(--board-accent)] text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-white hover:bg-[color:#0d625c]"
+                    className="board-btn-primary h-12 w-full border-0 bg-[var(--board-accent)] text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-white hover:bg-[var(--color-accent-hover)]"
                   >
                     {isSubmitting ? "Creating account..." : "Create account"}
                   </Button>
