@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Link } from "react-router";
-import { Bell, Briefcase, CheckCircle2, Edit2, Loader2, Save, User, Wallet, Camera, AlertCircle, Trash2 } from "lucide-react";
+import { Bell, Briefcase, CheckCircle2, Edit2, Loader2, Save, User, Wallet, Camera, AlertCircle, Trash2, ArrowRight } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { supabase } from "../../../lib/supabaseClient";
 import { API_ENDPOINTS } from "../../lib/api-config";
@@ -92,16 +92,6 @@ export function BuilderDashboard() {
   const unreadSignals = useMemo(
     () => notifications.filter((notification) => !notification.is_read).length,
     [notifications]
-  );
-
-  const dashboardStats = useMemo(
-    () => [
-      { label: "Reputation", value: String(profile?.reputation_score || 0) },
-      { label: "Open briefs", value: String(posts.length) },
-      { label: "Live bids", value: String(proposals.length) },
-      { label: "Accepted work", value: String(activeJobs.length) },
-    ],
-    [activeJobs.length, posts.length, profile?.reputation_score, proposals.length]
   );
 
   useEffect(() => {
@@ -289,7 +279,6 @@ export function BuilderDashboard() {
   }
 
   const displayName = profile?.full_name || profile?.username || user?.username || "Builder";
-  const identityLabel = profile?.user_type === "builder" ? "Builder" : "Requester";
   const identityCopy = profile?.user_type === "builder"
     ? "Track the briefs you are chasing, the work you have landed, and the wallets that should get paid."
     : "Track the work you posted, the builders replying, and the signals coming back from the board.";
@@ -299,17 +288,11 @@ export function BuilderDashboard() {
       <Navbar />
 
       <main className="board-container py-8 md:py-10">
-        <section className="grid gap-8 border-b border-[color:var(--board-line)] pb-10 lg:grid-cols-[minmax(0,1fr)_320px]">
-          <div>
+        <section className="grid gap-6 border-b border-[color:var(--board-line)] pb-10 lg:grid-cols-[minmax(0,1.2fr)_minmax(280px,0.8fr)]">
+          <div className="board-panel p-6 md:p-8">
             <p className="board-kicker">Dashboard</p>
             <h1 className="board-title mt-3">{displayName}</h1>
-            <p className="board-copy mt-5">{identityCopy}</p>
-
-            <div className="mt-6 flex flex-wrap gap-2">
-              <MetaPill tone="accent">{identityLabel}</MetaPill>
-              <MetaPill>{walletCount} wallet{walletCount === 1 ? "" : "s"} linked</MetaPill>
-              <MetaPill tone="rust">{unreadSignals} unread signal{unreadSignals === 1 ? "" : "s"}</MetaPill>
-            </div>
+            <p className="board-copy mt-5 max-w-3xl">{identityCopy}</p>
 
             <div className="mt-8 flex flex-col gap-4 sm:flex-row">
               <Button
@@ -328,35 +311,71 @@ export function BuilderDashboard() {
                 </Button>
               </Link>
             </div>
+
+            <div className="mt-8 grid gap-3 border-t border-[color:var(--board-line)] pt-5 sm:grid-cols-3">
+              <div className="rounded-xl border border-[color:var(--board-line)] bg-[var(--board-panel-strong)] p-4">
+                <p className="board-eyebrow">Posted</p>
+                <p className="mt-2 text-sm leading-7 text-[var(--board-muted)]">
+                  {posts.length === 0 ? "No briefs yet." : `${posts.length} brief${posts.length === 1 ? "" : "s"} currently on the board.`}
+                </p>
+              </div>
+              <div className="rounded-xl border border-[color:var(--board-line)] bg-[var(--board-panel-strong)] p-4">
+                <p className="board-eyebrow">Replies</p>
+                <p className="mt-2 text-sm leading-7 text-[var(--board-muted)]">
+                  {proposals.length === 0 ? "No bids submitted yet." : `${proposals.length} active bid${proposals.length === 1 ? "" : "s"} across the marketplace.`}
+                </p>
+              </div>
+              <div className="rounded-xl border border-[color:var(--board-line)] bg-[var(--board-panel-strong)] p-4">
+                <p className="board-eyebrow">Signals</p>
+                <p className="mt-2 text-sm leading-7 text-[var(--board-muted)]">
+                  {unreadSignals === 0 ? "Everything is caught up." : `${unreadSignals} unread update${unreadSignals === 1 ? "" : "s"} waiting.`}
+                </p>
+              </div>
+            </div>
           </div>
 
-          <div className="board-stat-grid">
-            {dashboardStats.map((stat) => (
-              <div key={stat.label} className="board-stat">
-                <div className="board-stat__value">{stat.value}</div>
-                <div className="board-stat__label">{stat.label}</div>
-              </div>
-            ))}
-          </div>
+          <aside className="board-panel board-panel--command p-6">
+            <p className="board-kicker">Quick Start</p>
+            <h2 className="board-subtitle mt-3 text-[1.8rem]">Use the dashboard like a control room.</h2>
+            <div className="mt-5 space-y-4 text-sm leading-7 text-[var(--board-muted)]">
+              <p>Keep your profile current so people know who is behind the work.</p>
+              <p>Jump into posted briefs, submitted bids, accepted work, or signals without scanning filler metrics.</p>
+              <p>Open wallet management only when you actually need to update payout paths.</p>
+            </div>
+            <div className="mt-6 space-y-3 border-t border-[color:var(--board-line)] pt-5">
+              <button onClick={() => setWalletModalOpen(true)} className="flex w-full items-center justify-between rounded-xl border border-[color:var(--board-line)] bg-[var(--board-panel)] px-4 py-3 text-left text-sm text-[var(--board-ink)] hover:bg-[var(--board-panel-strong)]">
+                <span>Update payout wallets</span>
+                <ArrowRight className="h-4 w-4 text-[var(--board-accent)]" />
+              </button>
+              <Link to="/post" className="flex items-center justify-between rounded-xl border border-[color:var(--board-line)] bg-[var(--board-panel)] px-4 py-3 text-sm text-[var(--board-ink)] hover:bg-[var(--board-panel-strong)]">
+                <span>Create a new brief</span>
+                <ArrowRight className="h-4 w-4 text-[var(--board-accent)]" />
+              </Link>
+              <Link to="/browse" className="flex items-center justify-between rounded-xl border border-[color:var(--board-line)] bg-[var(--board-panel)] px-4 py-3 text-sm text-[var(--board-ink)] hover:bg-[var(--board-panel-strong)]">
+                <span>Browse live work</span>
+                <ArrowRight className="h-4 w-4 text-[var(--board-accent)]" />
+              </Link>
+            </div>
+          </aside>
         </section>
 
         <Tabs defaultValue="identity" className="board-section px-0">
           <TabsList className="board-tabs grid h-auto w-full p-1 md:grid-cols-5">
             <TabsTrigger value="identity">
               <User className="h-4 w-4" />
-              Identity
+              Profile
             </TabsTrigger>
             <TabsTrigger value="briefs">
               <Briefcase className="h-4 w-4" />
-              My briefs
+              Posted
             </TabsTrigger>
             <TabsTrigger value="bids">
               <Edit2 className="h-4 w-4" />
-              My bids
+              Bids
             </TabsTrigger>
             <TabsTrigger value="bounties">
               <CheckCircle2 className="h-4 w-4" />
-              Accepted work
+              Active work
             </TabsTrigger>
             <TabsTrigger value="signals">
               <Bell className="h-4 w-4" />
@@ -511,14 +530,22 @@ export function BuilderDashboard() {
                 ctaLabel="Post a brief"
               />
             ) : (
-              <div className="border-t border-[color:var(--board-line)]">
+              <div className="board-panel p-6 md:p-8">
+                <div className="flex flex-col gap-3 border-b border-[color:var(--board-line)] pb-5 sm:flex-row sm:items-end sm:justify-between">
+                  <div>
+                    <p className="board-kicker">Posted</p>
+                    <h2 className="board-subtitle mt-3">Your live briefs and tasks.</h2>
+                  </div>
+                  <p className="text-sm text-[var(--board-muted)]">Open anything here to review responses or clean up old listings.</p>
+                </div>
                 {briefActionMessage ? (
                   <div className="board-inline-note mt-4">
                     {briefActionMessage}
                   </div>
                 ) : null}
-                {posts.map((post) => (
-                  <article key={post.id} className="board-row">
+                <div className="mt-2">
+                  {posts.map((post) => (
+                    <article key={post.id} className="board-row">
                     <div className="grid gap-5 md:grid-cols-[minmax(0,1fr)_180px] md:items-start">
                       <div>
                         <div className="flex flex-wrap gap-2">
@@ -553,8 +580,9 @@ export function BuilderDashboard() {
                         </Button>
                       </div>
                     </div>
-                  </article>
-                ))}
+                    </article>
+                  ))}
+                </div>
               </div>
             )}
           </TabsContent>
@@ -568,7 +596,15 @@ export function BuilderDashboard() {
                 ctaLabel="Browse the board"
               />
             ) : (
-              <div className="border-t border-[color:var(--board-line)]">
+              <div className="board-panel p-6 md:p-8">
+                <div className="flex flex-col gap-3 border-b border-[color:var(--board-line)] pb-5 sm:flex-row sm:items-end sm:justify-between">
+                  <div>
+                    <p className="board-kicker">Bids</p>
+                    <h2 className="board-subtitle mt-3">Everything you have in motion.</h2>
+                  </div>
+                  <p className="text-sm text-[var(--board-muted)]">This view keeps your submitted proposals readable without opening each brief first.</p>
+                </div>
+                <div className="mt-2">
                 {proposals.map((proposal) => (
                   <article key={proposal.id} className="board-row">
                     <div className="grid gap-5 md:grid-cols-[minmax(0,1fr)_180px] md:items-start">
@@ -603,6 +639,7 @@ export function BuilderDashboard() {
                     </div>
                   </article>
                 ))}
+                </div>
               </div>
             )}
           </TabsContent>
@@ -614,7 +651,15 @@ export function BuilderDashboard() {
                 description="When a requester selects one of your bids, the active payout path will show up here."
               />
             ) : (
-              <div className="border-t border-[color:var(--board-line)]">
+              <div className="board-panel p-6 md:p-8">
+                <div className="flex flex-col gap-3 border-b border-[color:var(--board-line)] pb-5 sm:flex-row sm:items-end sm:justify-between">
+                  <div>
+                    <p className="board-kicker">Active Work</p>
+                    <h2 className="board-subtitle mt-3">Accepted jobs with a payout path.</h2>
+                  </div>
+                  <p className="text-sm text-[var(--board-muted)]">Only work that is actually active shows up here.</p>
+                </div>
+                <div className="mt-2">
                 {activeJobs.map((job) => (
                   <article key={job.id} className="board-row">
                     <div className="grid gap-5 md:grid-cols-[minmax(0,1fr)_180px] md:items-start">
@@ -638,6 +683,7 @@ export function BuilderDashboard() {
                     </div>
                   </article>
                 ))}
+                </div>
               </div>
             )}
           </TabsContent>
@@ -649,7 +695,15 @@ export function BuilderDashboard() {
                 description="Replies, updates, and movement from the board will collect here once your briefs or bids start moving."
               />
             ) : (
-              <div className="border-t border-[color:var(--board-line)]">
+              <div className="board-panel p-6 md:p-8">
+                <div className="flex flex-col gap-3 border-b border-[color:var(--board-line)] pb-5 sm:flex-row sm:items-end sm:justify-between">
+                  <div>
+                    <p className="board-kicker">Signals</p>
+                    <h2 className="board-subtitle mt-3">Updates from the board.</h2>
+                  </div>
+                  <p className="text-sm text-[var(--board-muted)]">Unread items stay obvious without dominating the whole page.</p>
+                </div>
+                <div className="mt-2">
                 {notifications.map((notification) => (
                   <article key={notification.id} className="board-row">
                     <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_120px] md:items-start">
@@ -671,10 +725,11 @@ export function BuilderDashboard() {
                         >
                           Open
                         </Link>
-                      ) : null}
-                    </div>
+                        ) : null}
+                      </div>
                   </article>
                 ))}
+                </div>
               </div>
             )}
           </TabsContent>
