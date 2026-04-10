@@ -16,7 +16,6 @@
     "resolveJsonModule": true,
     "allowImportingTsExtensions": true,
     "isolatedModules": true,
-    "baseUrl": ".",
     "types": ["vite/client"],
     "paths": {
       "@/*": ["./src/*"]
