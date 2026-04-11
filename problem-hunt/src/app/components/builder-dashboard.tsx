@@ -4,16 +4,15 @@ import { Bell, Briefcase, CheckCircle2, Edit2, Loader2, Save, User, Wallet, Came
 import { useAuth } from "../contexts/AuthContext";
 import { supabase } from "../../../lib/supabaseClient";
 import { API_ENDPOINTS } from "../../lib/api-config";
-import { LinkWallet } from "./LinkWallet";
 import { Navbar } from "./navbar";
 import { Button } from "./ui/button";
 import { Textarea } from "./ui/textarea";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { formatBudget, formatJobStatus, formatSol, type NotificationRow, type ProblemPost, type ProposalRecord } from "../../lib/marketplace";
+import { PayoutWalletDialog } from "./payout-wallet-dialog";
 
 interface ProfileData {
   username: string;
@@ -81,6 +80,7 @@ export function BuilderDashboard() {
   const [avatarError, setAvatarError] = useState<string | null>(null);
   const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null);
   const [briefActionMessage, setBriefActionMessage] = useState<string | null>(null);
+  const [dashboardError, setDashboardError] = useState<string | null>(null);
   const [deletingPostId, setDeletingPostId] = useState<string | null>(null);
   const [profileForm, setProfileForm] = useState({ full_name: "", bio: "" });
 
@@ -94,62 +94,82 @@ export function BuilderDashboard() {
     [notifications]
   );
 
-  useEffect(() => {
-    const load = async () => {
-      if (!user) {
-        return;
+  const loadDashboard = async (showSpinner = false) => {
+    if (!user) {
+      return;
+    }
+
+    if (showSpinner) {
+      setLoading(true);
+    }
+
+    try {
+      setDashboardError(null);
+      const [profileResult, walletCountResult, notificationsResult] = await Promise.all([
+        supabase
+          .from("profiles")
+          .select("username, full_name, bio, reputation_score, user_type, created_at, wallet_address, avatar_url")
+          .eq("user_id", user.id)
+          .maybeSingle(),
+        supabase.from("wallets").select("*", { count: "exact", head: true }).eq("user_id", user.id),
+        supabase
+          .from("notifications")
+          .select("id, message, link, is_read, created_at")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false })
+          .limit(20),
+      ]);
+
+      if (profileResult.error) {
+        throw profileResult.error;
+      }
+      if (walletCountResult.error) {
+        throw walletCountResult.error;
+      }
+      if (notificationsResult.error) {
+        throw notificationsResult.error;
       }
 
-      setLoading(true);
-      try {
-        const [profileResult, walletCountResult, notificationsResult] = await Promise.all([
-          supabase
-            .from("profiles")
-            .select("username, full_name, bio, reputation_score, user_type, created_at, wallet_address, avatar_url")
-            .eq("user_id", user.id)
-            .maybeSingle(),
-          supabase.from("wallets").select("*", { count: "exact", head: true }).eq("user_id", user.id),
-          supabase
-            .from("notifications")
-            .select("id, message, link, is_read, created_at")
-            .eq("user_id", user.id)
-            .order("created_at", { ascending: false })
-            .limit(20),
-        ]);
+      if (profileResult.data) {
+        setProfile(profileResult.data);
+        setProfileForm({
+          full_name: profileResult.data.full_name || "",
+          bio: profileResult.data.bio || "",
+        });
+      }
 
-        if (profileResult.data) {
-          setProfile(profileResult.data);
-          setProfileForm({
-            full_name: profileResult.data.full_name || "",
-            bio: profileResult.data.bio || "",
-          });
-        }
+      setWalletCount(walletCountResult.count || 0);
+      setNotifications(notificationsResult.data || []);
 
-        setWalletCount(walletCountResult.count || 0);
-        setNotifications(notificationsResult.data || []);
+      const token = (await supabase.auth.getSession()).data.session?.access_token;
+      const headers: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {};
+      const [postsResponse, proposalsResponse] = await Promise.all([
+        fetch(`${API_ENDPOINTS.USER_PROBLEMS}?sortBy=newest`, { headers }),
+        fetch(API_ENDPOINTS.USER_PROPOSALS, { headers }),
+      ]);
 
-        const token = (await supabase.auth.getSession()).data.session?.access_token;
-        const headers: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {};
-        const [postsResponse, proposalsResponse] = await Promise.all([
-          fetch(`${API_ENDPOINTS.USER_PROBLEMS}?sortBy=newest`, { headers }),
-          fetch(API_ENDPOINTS.USER_PROPOSALS, { headers }),
-        ]);
+      if (!postsResponse.ok) {
+        throw new Error("Failed to load your posted briefs.");
+      }
+      if (!proposalsResponse.ok) {
+        throw new Error("Failed to load your bids.");
+      }
 
-        if (postsResponse.ok) {
-          const postsData = await postsResponse.json();
-          setPosts(Array.isArray(postsData.problems) ? postsData.problems : []);
-        }
-
-        if (proposalsResponse.ok) {
-          const proposalsData = await proposalsResponse.json();
-          setProposals(Array.isArray(proposalsData.proposals) ? proposalsData.proposals : []);
-        }
-      } finally {
+      const postsData = await postsResponse.json();
+      const proposalsData = await proposalsResponse.json();
+      setPosts(Array.isArray(postsData.problems) ? postsData.problems : []);
+      setProposals(Array.isArray(proposalsData.proposals) ? proposalsData.proposals : []);
+    } catch (error) {
+      setDashboardError(error instanceof Error ? error.message : "Failed to load dashboard data.");
+    } finally {
+      if (showSpinner) {
         setLoading(false);
       }
-    };
+    }
+  };
 
-    load();
+  useEffect(() => {
+    void loadDashboard(true);
   }, [user]);
 
   useEffect(() => {
@@ -165,6 +185,7 @@ export function BuilderDashboard() {
 
     try {
       setSavingProfile(true);
+      setBriefActionMessage(null);
       const { data } = await supabase
         .from("profiles")
         .update({
@@ -175,11 +196,15 @@ export function BuilderDashboard() {
         .select("username, full_name, bio, reputation_score, user_type, created_at, wallet_address, avatar_url")
         .single();
 
-      if (data) {
-        setProfile(data);
+      if (!data) {
+        throw new Error("Failed to update profile.");
       }
 
+      setProfile(data);
       setEditingProfile(false);
+      setBriefActionMessage("Profile updated.");
+    } catch (error) {
+      setBriefActionMessage(error instanceof Error ? error.message : "Failed to update profile.");
     } finally {
       setSavingProfile(false);
     }
@@ -227,12 +252,31 @@ export function BuilderDashboard() {
       if (updateErr) throw updateErr;
 
       setProfile((prev) => (prev ? { ...prev, avatar_url: publicUrl } : prev));
+      URL.revokeObjectURL(previewUrl);
+      setAvatarPreviewUrl(null);
+      setBriefActionMessage("Profile picture updated.");
     } catch (err: any) {
       setAvatarError(err?.message ?? "Failed to upload avatar.");
       // If upload fails, clear the preview so we don't display a non-persisted image.
       setAvatarPreviewUrl(null);
     } finally {
       setAvatarUploading(false);
+    }
+  };
+
+  const handleWalletsChange = async (count: number) => {
+    setWalletCount(count);
+    await loadDashboard(false);
+  };
+
+  const handleNotificationOpen = async (notification: NotificationRow) => {
+    if (!notification.is_read) {
+      const { error } = await supabase.from("notifications").update({ is_read: true }).eq("id", notification.id);
+      if (!error) {
+        setNotifications((current) =>
+          current.map((item) => (item.id === notification.id ? { ...item, is_read: true } : item))
+        );
+      }
     }
   };
 
@@ -331,6 +375,12 @@ export function BuilderDashboard() {
                   {unreadSignals === 0 ? "Everything is caught up." : `${unreadSignals} unread update${unreadSignals === 1 ? "" : "s"} waiting.`}
                 </p>
               </div>
+              <div className="rounded-xl border border-[color:var(--board-line)] bg-[var(--board-panel-strong)] p-4 sm:col-span-3">
+                <p className="board-eyebrow">Payout Routes</p>
+                <p className="mt-2 text-sm leading-7 text-[var(--board-muted)]">
+                  {walletCount === 0 ? "No wallets connected yet." : `${walletCount} payout wallet${walletCount === 1 ? "" : "s"} connected and ready.`}
+                </p>
+              </div>
             </div>
           </div>
 
@@ -360,6 +410,18 @@ export function BuilderDashboard() {
         </section>
 
         <Tabs defaultValue="identity" className="board-section px-0">
+          {dashboardError ? (
+            <div className="board-inline-note mb-6">
+              {dashboardError}
+            </div>
+          ) : null}
+
+          {briefActionMessage ? (
+            <div className="board-inline-note mb-6">
+              {briefActionMessage}
+            </div>
+          ) : null}
+
           <TabsList className="board-tabs grid h-auto w-full p-1 md:grid-cols-5">
             <TabsTrigger value="identity">
               <User className="h-4 w-4" />
@@ -465,8 +527,8 @@ export function BuilderDashboard() {
                   <div className="mt-5 space-y-4">
                     <div className="flex items-center gap-4">
                       <Avatar className="size-16 border border-[color:var(--board-line-strong)] bg-[var(--board-panel)]">
-                        {profile?.avatar_url ? (
-                          <AvatarImage src={profile.avatar_url} alt="Profile picture" className="object-cover" />
+                        {avatarPreviewUrl || profile?.avatar_url ? (
+                          <AvatarImage src={avatarPreviewUrl || profile?.avatar_url || undefined} alt="Profile picture" className="object-cover" />
                         ) : null}
                         <AvatarFallback>
                           <Camera className="h-5 w-5 text-[var(--board-soft)]" />
@@ -538,11 +600,6 @@ export function BuilderDashboard() {
                   </div>
                   <p className="text-sm text-[var(--board-muted)]">Open anything here to review responses or clean up old listings.</p>
                 </div>
-                {briefActionMessage ? (
-                  <div className="board-inline-note mt-4">
-                    {briefActionMessage}
-                  </div>
-                ) : null}
                 <div className="mt-2">
                   {posts.map((post) => (
                     <article key={post.id} className="board-row">
@@ -721,6 +778,9 @@ export function BuilderDashboard() {
                       {notification.link ? (
                         <Link
                           to={notification.link}
+                          onClick={() => {
+                            void handleNotificationOpen(notification);
+                          }}
                           className="font-mono-alt text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-[var(--board-accent)] md:text-right"
                         >
                           Open
@@ -736,18 +796,14 @@ export function BuilderDashboard() {
         </Tabs>
       </main>
 
-      <Dialog open={walletModalOpen} onOpenChange={setWalletModalOpen}>
-        <DialogContent className="h-[90vh] max-w-2xl overflow-hidden border border-[color:var(--board-line)] bg-[var(--board-panel-strong)] text-[var(--board-ink)] p-0">
-          <div className="h-full overflow-y-auto p-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            <DialogHeader>
-              <DialogTitle className="font-display text-2xl font-semibold tracking-[-0.05em] text-[var(--board-ink)]">
-                Manage wallets
-              </DialogTitle>
-            </DialogHeader>
-            <LinkWallet onWalletsChange={setWalletCount} />
-          </div>
-        </DialogContent>
-      </Dialog>
+      <PayoutWalletDialog
+        open={walletModalOpen}
+        onOpenChange={setWalletModalOpen}
+        walletCount={walletCount}
+        onWalletsChange={(count) => {
+          void handleWalletsChange(count);
+        }}
+      />
     </div>
   );
 }

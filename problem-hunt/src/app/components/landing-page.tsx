@@ -3,13 +3,13 @@ import { ArrowRight, CheckCircle2, ChevronRight } from "lucide-react";
 import { Button } from "./ui/button";
 import { Navbar } from "./navbar";
 
-const HERO_TICKETS = [
-  { label: "Infrastructure", title: "Tighten deploy preview time before Friday.", meta: "3.2 SOL bounty" },
-  { label: "AI/ML", title: "Clean retrieval quality on our support agent.", meta: "$1,200 offer" },
-  { label: "Finance", title: "Rebuild reconciliation workflow for month-end.", meta: "Contract brief" },
-  { label: "Web3", title: "Ship wallet-based payout flow without support debt.", meta: "6.5 SOL bounty" },
-  { label: "Trading", title: "Fix signal latency in our market scanner.", meta: "$800 offer" },
-  { label: "Governance", title: "Translate forum chaos into an executable spec.", meta: "Open brief" },
+const WEB_NODES = [
+  { label: "Trace", left: "14%", top: "18%" },
+  { label: "Patch", left: "72%", top: "17%" },
+  { label: "Scope", left: "85%", top: "46%" },
+  { label: "Deploy", left: "71%", top: "79%" },
+  { label: "Resolve", left: "28%", top: "83%" },
+  { label: "Signal", left: "11%", top: "55%" },
 ];
 
 const AUDIENCES = [
@@ -105,25 +105,61 @@ export function LandingPage() {
             </div>
 
             <div className="board-hero__poster fade-in stagger-2">
-              <div className="board-ticker" aria-hidden="true">
-                <div className="board-ticker__lane">
-                  {[...HERO_TICKETS, ...HERO_TICKETS].map((ticket, index) => (
-                    <div key={`${ticket.title}-${index}`} className="board-ticket">
-                      <p className="board-ticket__label">{ticket.label}</p>
-                      <p className="board-ticket__title">{ticket.title}</p>
-                      <p className="board-ticket__meta">{ticket.meta}</p>
-                    </div>
-                  ))}
+              <div className="board-cyber-web" aria-hidden="true">
+                <div className="board-cyber-web__halo" />
+                <div className="board-cyber-web__status">
+                  <span className="board-cyber-web__status-dot" />
+                  system routing active
                 </div>
-                <div className="board-ticker__lane board-ticker__lane--reverse">
-                  {[...HERO_TICKETS.slice().reverse(), ...HERO_TICKETS.slice().reverse()].map((ticket, index) => (
-                    <div key={`${ticket.meta}-${index}`} className="board-ticket">
-                      <p className="board-ticket__label">{ticket.label}</p>
-                      <p className="board-ticket__title">{ticket.title}</p>
-                      <p className="board-ticket__meta">{ticket.meta}</p>
-                    </div>
-                  ))}
+
+                <svg viewBox="0 0 520 520" className="board-cyber-web__svg">
+                  <defs>
+                    <radialGradient id="webGlow" cx="50%" cy="50%" r="60%">
+                      <stop offset="0%" stopColor="rgba(14,226,255,0.38)" />
+                      <stop offset="45%" stopColor="rgba(242,139,148,0.18)" />
+                      <stop offset="100%" stopColor="rgba(14,226,255,0)" />
+                    </radialGradient>
+                  </defs>
+                  <circle cx="260" cy="260" r="160" className="board-cyber-web__ring board-cyber-web__ring--wide" />
+                  <circle cx="260" cy="260" r="112" className="board-cyber-web__ring" />
+                  <circle cx="260" cy="260" r="62" className="board-cyber-web__ring" />
+                  <path d="M260 260 84 100" className="board-cyber-web__line" />
+                  <path d="M260 260 356 86" className="board-cyber-web__line" />
+                  <path d="M260 260 444 220" className="board-cyber-web__line" />
+                  <path d="M260 260 394 422" className="board-cyber-web__line" />
+                  <path d="M260 260 170 442" className="board-cyber-web__line" />
+                  <path d="M260 260 70 300" className="board-cyber-web__line" />
+                  <path d="M84 100 C170 138, 216 172, 260 260" className="board-cyber-web__arc" />
+                  <path d="M356 86 C360 156, 316 206, 260 260" className="board-cyber-web__arc" />
+                  <path d="M444 220 C382 226, 322 236, 260 260" className="board-cyber-web__arc" />
+                  <path d="M394 422 C356 360, 316 306, 260 260" className="board-cyber-web__arc" />
+                  <path d="M170 442 C196 370, 222 316, 260 260" className="board-cyber-web__arc" />
+                  <path d="M70 300 C132 286, 198 274, 260 260" className="board-cyber-web__arc" />
+                  <circle cx="260" cy="260" r="28" className="board-cyber-web__core" />
+                  <circle cx="260" cy="260" r="82" fill="url(#webGlow)" />
+                  <circle cx="84" cy="100" r="7" className="board-cyber-web__node" />
+                  <circle cx="356" cy="86" r="7" className="board-cyber-web__node" />
+                  <circle cx="444" cy="220" r="7" className="board-cyber-web__node" />
+                  <circle cx="394" cy="422" r="7" className="board-cyber-web__node" />
+                  <circle cx="170" cy="442" r="7" className="board-cyber-web__node" />
+                  <circle cx="70" cy="300" r="7" className="board-cyber-web__node" />
+                </svg>
+
+                <div className="board-cyber-web__panel">
+                  <p className="board-ticket__label">Future Repair Mesh</p>
+                  <p className="board-ticket__title">Map the blocker. Route the fix.</p>
+                  <p className="board-ticket__meta">cyber board / live network / payout ready</p>
                 </div>
+
+                {WEB_NODES.map((node) => (
+                  <div
+                    key={node.label}
+                    className="board-cyber-web__tag"
+                    style={{ left: node.left, top: node.top }}
+                  >
+                    {node.label}
+                  </div>
+                ))}
               </div>
             </div>
           </div>

@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router";
-import { LogOut, Menu, Sparkles, X } from "lucide-react";
+import { LogOut, Menu, X } from "lucide-react";
 import { Button } from "./ui/button";
 import { useAuth } from "../contexts/AuthContext";
+import { BrandLogo } from "./brand-logo";
 
 const CORE_NAV_LINKS = [
   { path: "/", label: "Home" },
@@ -40,18 +41,8 @@ export function Navbar() {
   return (
     <header className="board-nav sticky top-0 z-50 border-b border-[color:var(--board-line)] backdrop-blur-xl">
       <div className="board-container flex min-h-[73px] items-center justify-between gap-4">
-        <Link to="/" className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-md border border-[color:var(--board-line-strong)] bg-[var(--board-panel-strong)] text-[var(--board-accent)]">
-            <Sparkles className="h-4 w-4" />
-          </div>
-          <div>
-            <p className="font-mono-alt text-[0.68rem] uppercase tracking-[0.24em] text-[var(--board-soft)]">
-              Problem Hunt
-            </p>
-            <p className="font-display text-base font-semibold tracking-[-0.04em] text-[var(--board-ink)]">
-              Bounty board for work that should ship
-            </p>
-          </div>
+        <Link to="/" className="flex items-center">
+          <BrandLogo />
         </Link>
 
         <nav className="hidden items-center gap-1 md:flex">
