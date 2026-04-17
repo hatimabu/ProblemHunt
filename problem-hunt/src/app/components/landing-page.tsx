@@ -3,19 +3,10 @@ import { ArrowRight, CheckCircle2, ChevronRight } from "lucide-react";
 import { Button } from "./ui/button";
 import { Navbar } from "./navbar";
 
-const WEB_NODES = [
-  { label: "Trace", left: "14%", top: "18%" },
-  { label: "Patch", left: "72%", top: "17%" },
-  { label: "Scope", left: "85%", top: "46%" },
-  { label: "Deploy", left: "71%", top: "79%" },
-  { label: "Resolve", left: "28%", top: "83%" },
-  { label: "Signal", left: "11%", top: "55%" },
-];
-
 const ORBITS = [
-  { className: "board-cyber-web__orbit--outer", label: "bounty sync" },
-  { className: "board-cyber-web__orbit--mid", label: "builder route" },
-  { className: "board-cyber-web__orbit--inner", label: "wallet ready" },
+  { className: "board-cyber-web__orbit--outer" },
+  { className: "board-cyber-web__orbit--mid" },
+  { className: "board-cyber-web__orbit--inner" },
 ];
 
 const AUDIENCES = [
@@ -68,13 +59,10 @@ export function LandingPage() {
             <div className="board-cyber-web__backdrop" />
             <div className="board-cyber-web__grid" />
             <div className="board-cyber-web__halo" />
+            <div className="board-cyber-web__aurora" />
 
             {ORBITS.map((orbit) => (
-              <div key={orbit.label} className={`board-cyber-web__orbit ${orbit.className}`}>
-                <div className="board-cyber-web__satellite">
-                  <span>{orbit.label}</span>
-                </div>
-              </div>
+              <div key={orbit.className} className={`board-cyber-web__orbit ${orbit.className}`} />
             ))}
 
             <svg viewBox="0 0 520 520" className="board-cyber-web__svg">
@@ -101,6 +89,8 @@ export function LandingPage() {
               <path d="M394 422 C356 360, 316 306, 260 260" className="board-cyber-web__arc" />
               <path d="M170 442 C196 370, 222 316, 260 260" className="board-cyber-web__arc" />
               <path d="M70 300 C132 286, 198 274, 260 260" className="board-cyber-web__arc" />
+              <circle cx="260" cy="260" r="172" className="board-cyber-web__sweep" />
+              <circle cx="260" cy="260" r="128" className="board-cyber-web__sweep board-cyber-web__sweep--inner" />
               <circle cx="260" cy="260" r="28" className="board-cyber-web__core" />
               <circle cx="260" cy="260" r="104" fill="url(#webGlow)" />
               <circle cx="84" cy="100" r="7" className="board-cyber-web__node" />
@@ -109,17 +99,11 @@ export function LandingPage() {
               <circle cx="394" cy="422" r="7" className="board-cyber-web__node" />
               <circle cx="170" cy="442" r="7" className="board-cyber-web__node" />
               <circle cx="70" cy="300" r="7" className="board-cyber-web__node" />
+              <circle cx="198" cy="154" r="4.8" className="board-cyber-web__node board-cyber-web__node--soft" />
+              <circle cx="332" cy="160" r="4.8" className="board-cyber-web__node board-cyber-web__node--soft" />
+              <circle cx="362" cy="292" r="4.8" className="board-cyber-web__node board-cyber-web__node--soft" />
+              <circle cx="246" cy="364" r="4.8" className="board-cyber-web__node board-cyber-web__node--soft" />
             </svg>
-
-            {WEB_NODES.map((node) => (
-              <div
-                key={node.label}
-                className="board-cyber-web__tag"
-                style={{ left: node.left, top: node.top }}
-              >
-                {node.label}
-              </div>
-            ))}
           </div>
 
           <div className="board-container board-hero__grid">
