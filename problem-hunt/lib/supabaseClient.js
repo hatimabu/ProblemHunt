@@ -18,13 +18,21 @@ if (supabaseUrl && !/^https:\/\/[a-z0-9-]+\.supabase\.co$/i.test(supabaseUrl)) {
 
 async function fetchWithTimeout(input, init = {}) {
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), SUPABASE_TIMEOUT_MS);
+  const timeoutId = setTimeout(
+    () => controller.abort(new DOMException(`Request timed out after ${SUPABASE_TIMEOUT_MS / 1000}s`, 'AbortError')),
+    SUPABASE_TIMEOUT_MS
+  );
 
   try {
     return await fetch(input, {
       ...init,
       signal: controller.signal,
     });
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      throw new TypeError(`Failed to fetch (request timed out after ${SUPABASE_TIMEOUT_MS / 1000}s)`);
+    }
+    throw error;
   } finally {
     clearTimeout(timeoutId);
   }
