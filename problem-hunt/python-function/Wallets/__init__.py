@@ -69,10 +69,11 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                 sb.table("wallets")
                 .select("id, chain, address, is_primary, created_at")
                 .eq("user_id", user_id)
-                .order("created_at", desc=False)
                 .execute()
             )
-            return _json({"wallets": result.data})
+            wallets = result.data or []
+            wallets.sort(key=lambda wallet: wallet.get("created_at") or "")
+            return _json({"wallets": wallets})
         except Exception as exc:
             return _json({"error": "Failed to fetch wallets", "details": str(exc)}, 500)
 
