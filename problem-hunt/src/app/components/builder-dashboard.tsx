@@ -109,7 +109,7 @@ export function BuilderDashboard() {
         supabase
           .from("profiles")
           .select("username, full_name, bio, reputation_score, user_type, created_at, wallet_address, avatar_url")
-          .eq("user_id", user.id)
+          .eq("id", user.id)
           .maybeSingle(),
         supabase.from("wallets").select("*", { count: "exact", head: true }).eq("user_id", user.id),
         supabase
@@ -127,7 +127,10 @@ export function BuilderDashboard() {
         throw walletCountResult.error;
       }
       if (notificationsResult.error) {
-        throw notificationsResult.error;
+        console.warn("Notifications query skipped:", notificationsResult.error.message);
+        setNotifications([]);
+      } else {
+        setNotifications(notificationsResult.data || []);
       }
 
       if (profileResult.data) {
@@ -139,7 +142,6 @@ export function BuilderDashboard() {
       }
 
       setWalletCount(walletCountResult.count || 0);
-      setNotifications(notificationsResult.data || []);
 
       const token = (await supabase.auth.getSession()).data.session?.access_token;
       const headers: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {};
@@ -192,7 +194,7 @@ export function BuilderDashboard() {
           full_name: profileForm.full_name,
           bio: profileForm.bio,
         })
-        .eq("user_id", user.id)
+        .eq("id", user.id)
         .select("username, full_name, bio, reputation_score, user_type, created_at, wallet_address, avatar_url")
         .single();
 
@@ -248,7 +250,7 @@ export function BuilderDashboard() {
       const { data: publicUrlData } = supabase.storage.from("avatars").getPublicUrl(objectPath);
       const publicUrl = publicUrlData.publicUrl;
 
-      const { error: updateErr } = await supabase.from("profiles").update({ avatar_url: publicUrl }).eq("user_id", user.id);
+      const { error: updateErr } = await supabase.from("profiles").update({ avatar_url: publicUrl }).eq("id", user.id);
       if (updateErr) throw updateErr;
 
       setProfile((prev) => (prev ? { ...prev, avatar_url: publicUrl } : prev));

@@ -8,6 +8,7 @@ import {
   Loader2,
   ShieldCheck,
   ChevronDown,
+  ClipboardPaste,
 } from "lucide-react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -16,10 +17,16 @@ import { Badge } from "./ui/badge";
 import { supabase } from "../../../lib/supabaseClient";
 import { useAuth } from "../contexts/AuthContext";
 import { clearUserSolanaWallet, syncUserSolanaWallet } from "../../lib/wallets";
+import {
+  deleteUserWalletApi,
+  listUserWalletsApi,
+  upsertPrimaryWalletApi,
+  type WalletChainDto,
+} from "../../lib/user-wallets-api";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type ChainType = "ethereum" | "polygon" | "arbitrum" | "solana";
+type ChainType = WalletChainDto;
 
 interface WalletRow {
   id: string;
@@ -130,23 +137,44 @@ export function LinkWallet({ onWalletsChange }: LinkWalletProps) {
 
   // ── Data helpers ──────────────────────────────────────────────────────────
 
-  const fetchWallets = async () => {
+  const fetchWallets = async (opts?: { showLoading?: boolean }): Promise<WalletRow[] | void> => {
     if (!user) return;
-    setIsLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from("wallets")
-        .select("*")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: true });
 
-      if (error) throw error;
-      setWallets(data ?? []);
-      onWalletsChange?.(data?.length ?? 0);
-    } catch (err: any) {
-      setGlobalError(err.message ?? "Failed to load wallets.");
+    const showLoading = opts?.showLoading !== false;
+    if (showLoading) setIsLoading(true);
+    try {
+      try {
+        const rows = await listUserWalletsApi();
+        const mapped: WalletRow[] = rows.map((w) => ({
+          id: w.id,
+          user_id: user.id,
+          chain: w.chain,
+          address: w.address,
+          is_primary: w.is_primary,
+          created_at: w.created_at,
+        }));
+        setWallets(mapped);
+        onWalletsChange?.(mapped.length);
+        return mapped;
+      } catch (apiErr) {
+        console.warn("[wallets] API list failed, using Supabase", apiErr);
+        const { data, error } = await supabase
+          .from("wallets")
+          .select("*")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: true });
+
+        if (error) throw error;
+        const mapped = (data ?? []) as WalletRow[];
+        setWallets(mapped);
+        onWalletsChange?.(mapped.length);
+        return mapped;
+      }
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to load wallets.";
+      setGlobalError(message);
     } finally {
-      setIsLoading(false);
+      if (showLoading) setIsLoading(false);
     }
   };
 
@@ -171,18 +199,28 @@ export function LinkWallet({ onWalletsChange }: LinkWalletProps) {
     try {
       setPrimarizingId(wallet.id);
 
+      try {
+        await upsertPrimaryWalletApi(wallet.chain, wallet.address);
+        await fetchWallets({ showLoading: false });
+        setFlashSuccess(wallet.chain);
+        setTimeout(() => setFlashSuccess(null), 2500);
+        return;
+      } catch (apiErr) {
+        console.warn("[wallets] API set-primary failed, using Supabase", apiErr);
+      }
+
       if (wallet.chain === "solana") {
         await syncUserSolanaWallet(user.id, wallet.address);
       } else {
         await supabase.from("wallets").update({ is_primary: false }).eq("user_id", user.id).eq("chain", wallet.chain);
         await supabase.from("wallets").update({ is_primary: true }).eq("id", wallet.id);
       }
-      await fetchWallets();
+      await fetchWallets({ showLoading: false });
 
       setFlashSuccess(wallet.chain);
       setTimeout(() => setFlashSuccess(null), 2500);
-    } catch (err: any) {
-      setGlobalError(err?.message ?? "Failed to set primary wallet.");
+    } catch (err: unknown) {
+      setGlobalError(err instanceof Error ? err.message : "Failed to set primary wallet.");
     } finally {
       setPrimarizingId(null);
     }
@@ -203,13 +241,28 @@ export function LinkWallet({ onWalletsChange }: LinkWalletProps) {
     try {
       setIsSaving(true);
 
+      try {
+        await upsertPrimaryWalletApi(chain, trimmed);
+        await fetchWallets({ showLoading: false });
+        setExpandedChain(null);
+        setInputAddress("");
+        setFlashSuccess(chain);
+        setTimeout(() => setFlashSuccess(null), 2500);
+        return;
+      } catch (apiErr: unknown) {
+        const status = typeof apiErr === "object" && apiErr !== null && "status" in apiErr ? (apiErr as { status?: number }).status : undefined;
+        if (status === 409) {
+          setValidationError("This address is already linked to another account.");
+          return;
+        }
+        console.warn("[wallets] API save failed, using Supabase", apiErr);
+      }
+
       if (chain === "solana") {
-        // Handles: profile.wallet_address + wallet is_primary promotion (and clears other primaries)
         await syncUserSolanaWallet(user!.id, trimmed);
       } else {
         const previousPrimary = primaryWalletForChain(chain);
 
-        // Ensure only this wallet ends up as is_primary=true (unique index safety).
         await supabase
           .from("wallets")
           .update({ is_primary: false })
@@ -224,9 +277,9 @@ export function LinkWallet({ onWalletsChange }: LinkWalletProps) {
             is_primary: true,
           });
           if (insertErr) throw insertErr;
-        } catch (err: any) {
-          // Unique constraint violations come back as 23505.
-          if (err?.code === "23505") {
+        } catch (err: unknown) {
+          const code = typeof err === "object" && err !== null && "code" in err ? (err as { code?: string }).code : undefined;
+          if (code === "23505") {
             const { data: existingWallet, error: selErr } = await supabase
               .from("wallets")
               .select("id")
@@ -238,7 +291,6 @@ export function LinkWallet({ onWalletsChange }: LinkWalletProps) {
             if (selErr) throw selErr;
             if (!existingWallet?.id) {
               setValidationError("This address is already linked to another account.");
-              // We already cleared primaries; restore the previous one to avoid leaving the user without a primary.
               if (previousPrimary?.id) {
                 await supabase.from("wallets").update({ is_primary: true }).eq("id", previousPrimary.id);
               }
@@ -256,21 +308,18 @@ export function LinkWallet({ onWalletsChange }: LinkWalletProps) {
         }
       }
 
-      await fetchWallets();
+      await fetchWallets({ showLoading: false });
       setExpandedChain(null);
       setInputAddress("");
 
-      // Flash success on the card
       setFlashSuccess(chain);
       setTimeout(() => setFlashSuccess(null), 2500);
-    } catch (err: any) {
-      // Supabase constraint violations come back as 23505 (unique violation)
-      if (err.code === "23505") {
-        setValidationError(
-          "This address is already linked to another account."
-        );
+    } catch (err: unknown) {
+      const code = typeof err === "object" && err !== null && "code" in err ? (err as { code?: string }).code : undefined;
+      if (code === "23505") {
+        setValidationError("This address is already linked to another account.");
       } else {
-        setGlobalError(err.message ?? "Failed to save wallet.");
+        setGlobalError(err instanceof Error ? err.message : "Failed to save wallet.");
       }
     } finally {
       setIsSaving(false);
@@ -284,22 +333,26 @@ export function LinkWallet({ onWalletsChange }: LinkWalletProps) {
     try {
       setDeletingId(wallet.id);
       const wasPrimary = wallet.is_primary;
-      const { error } = await supabase
-        .from("wallets")
-        .delete()
-        .eq("id", wallet.id);
-      if (error) throw error;
 
-      // If the user deleted their current primary, promote the next available wallet.
+      try {
+        await deleteUserWalletApi(wallet.id);
+      } catch (apiErr) {
+        console.warn("[wallets] API delete failed, using Supabase", apiErr);
+        const { error } = await supabase.from("wallets").delete().eq("id", wallet.id);
+        if (error) throw error;
+      }
+
+      const loaded = await fetchWallets({ showLoading: false });
+      const fresh: WalletRow[] = Array.isArray(loaded) ? loaded : [];
+
       if (wasPrimary) {
-        const remainingForChain = wallets
-          .filter((w) => w.chain === wallet.chain && w.id !== wallet.id)
+        const remainingForChain = fresh
+          .filter((w) => w.chain === wallet.chain)
           .slice()
           .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
 
         if (remainingForChain.length > 0) {
-          const next = remainingForChain[0];
-          await setWalletAsPrimary(next);
+          await setWalletAsPrimary(remainingForChain[0]);
         } else {
           if (wallet.chain === "solana") {
             await clearUserSolanaWallet(user!.id);
@@ -313,9 +366,9 @@ export function LinkWallet({ onWalletsChange }: LinkWalletProps) {
         }
       }
 
-      await fetchWallets();
-    } catch (err: any) {
-      setGlobalError(err.message ?? "Failed to remove wallet.");
+      await fetchWallets({ showLoading: false });
+    } catch (err: unknown) {
+      setGlobalError(err instanceof Error ? err.message : "Failed to remove wallet.");
     } finally {
       setDeletingId(null);
     }
@@ -553,7 +606,25 @@ export function LinkWallet({ onWalletsChange }: LinkWalletProps) {
                       )}
                     </div>
 
-                    <div className="flex gap-3 pt-1">
+                    <div className="flex flex-wrap gap-3 pt-1">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={async () => {
+                          try {
+                            const text = await navigator.clipboard.readText();
+                            setInputAddress(text.trim());
+                            setValidationError("");
+                          } catch {
+                            setValidationError("Could not read the clipboard. Use Ctrl+V in the field instead.");
+                          }
+                        }}
+                        disabled={isSaving}
+                        className="border-gray-700 text-gray-300 hover:bg-gray-800 text-sm"
+                      >
+                        <ClipboardPaste className="w-4 h-4 mr-2" />
+                        Paste
+                      </Button>
                       <Button
                         onClick={() => handleSave(chain.id)}
                         disabled={isSaving || !inputAddress.trim()}

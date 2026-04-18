@@ -38,6 +38,8 @@ export const API_ENDPOINTS = {
   DELETE_PROBLEM: (id) => `${API_URL}/api/problems/${id}`,
   USER_PROBLEMS: `${API_URL}/api/user/problems`,
   USER_PROPOSALS: `${API_URL}/api/user/proposals`,
+  USER_WALLETS: `${API_URL}/api/user/wallets`,
+  USER_WALLET_BY_ID: (walletId) => `${API_URL}/api/user/wallets/${walletId}`,
   SEARCH_PROBLEMS: `${API_URL}/api/problems/search`,
 
   // Upvotes

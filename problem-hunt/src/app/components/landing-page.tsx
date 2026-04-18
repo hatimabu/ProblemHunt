@@ -108,7 +108,6 @@ export function LandingPage() {
 
           <div className="board-container board-hero__grid">
             <div className="max-w-3xl">
-              <p className="board-kicker fade-in">Problem Hunt</p>
               <h1 className="board-display fade-in stagger-1">
                 Put the work on the board.
               </h1>

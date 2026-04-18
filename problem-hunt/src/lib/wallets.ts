@@ -4,7 +4,7 @@ export async function getUserSolanaWallet(userId: string): Promise<string | null
   const { data: profile } = await supabase
     .from("profiles")
     .select("wallet_address")
-    .eq("user_id", userId)
+    .eq("id", userId)
     .maybeSingle();
 
   if (profile?.wallet_address) {
@@ -30,7 +30,7 @@ export async function syncUserSolanaWallet(userId: string, address: string): Pro
   // For local UX and payouts:
   // - ensure only ONE solana wallet row is_primary=true
   // - ensure profiles.wallet_address matches that primary (python API checks profile first)
-  await supabase.from("profiles").update({ wallet_address: trimmed }).eq("user_id", userId);
+  await supabase.from("profiles").update({ wallet_address: trimmed }).eq("id", userId);
 
   // Clear any existing primaries first (avoids the unique index conflict)
   await supabase
@@ -64,6 +64,6 @@ export async function syncUserSolanaWallet(userId: string, address: string): Pro
 export async function clearUserSolanaWallet(userId: string): Promise<void> {
   // Clear both profile + wallet primaries to prevent the UI/navbar from getting stuck
   // with an out-of-date primary reference.
-  await supabase.from("profiles").update({ wallet_address: null }).eq("user_id", userId);
+  await supabase.from("profiles").update({ wallet_address: null }).eq("id", userId);
   await supabase.from("wallets").update({ is_primary: false }).eq("user_id", userId).eq("chain", "solana");
 }
