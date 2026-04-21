@@ -104,9 +104,10 @@ function validateAddress(chain: ChainType, address: string): string | null {
 
 interface LinkWalletProps {
   onWalletsChange?: (count: number) => void;
+  compactTop?: boolean;
 }
 
-export function LinkWallet({ onWalletsChange }: LinkWalletProps) {
+export function LinkWallet({ onWalletsChange, compactTop = false }: LinkWalletProps) {
   const { user } = useAuth();
 
   const [wallets, setWallets] = useState<WalletRow[]>([]);
@@ -385,24 +386,24 @@ export function LinkWallet({ onWalletsChange }: LinkWalletProps) {
   }
 
   return (
-    <div className="space-y-6">
+    <div className={compactTop ? "space-y-4" : "space-y-6"}>
       {/* Section header */}
       <div className="relative">
         <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/5 to-blue-500/5 rounded-2xl blur-xl" />
-        <div className="relative bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-2xl p-6">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-cyan-500/20 to-blue-600/20 border border-cyan-500/30 flex items-center justify-center">
-              <Wallet className="w-5 h-5 text-cyan-400" />
+        <div className={`${compactTop ? "p-4" : "p-6"} relative rounded-2xl border border-gray-800 bg-gray-900/50 backdrop-blur-sm`}>
+          <div className="mb-2 flex items-center gap-3">
+            <div className={`${compactTop ? "h-8 w-8" : "h-9 w-9"} flex items-center justify-center rounded-lg border border-cyan-500/30 bg-gradient-to-br from-cyan-500/20 to-blue-600/20`}>
+              <Wallet className={`${compactTop ? "h-4 w-4" : "h-5 w-5"} text-cyan-400`} />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-white">Linked Wallets</h2>
-              <p className="text-sm text-gray-400">
+              <h2 className={`${compactTop ? "text-base" : "text-lg"} font-bold text-white`}>Linked Wallets</h2>
+              <p className={`${compactTop ? "text-xs" : "text-sm"} text-gray-400`}>
                 Link one or more wallets per chain, then choose a primary wallet for payouts/tips.
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 mt-4 text-xs text-gray-500 bg-gray-800/40 border border-gray-700/50 rounded-lg px-3 py-2">
+          <div className={`${compactTop ? "mt-2 px-2.5 py-1.5" : "mt-4 px-3 py-2"} flex items-center gap-2 rounded-lg border border-gray-700/50 bg-gray-800/40 text-xs text-gray-500`}>
             <ShieldCheck className="w-3.5 h-3.5 text-cyan-500/70 shrink-0" />
             Addresses are validated against chain format rules before saving.
             Only one PRIMARY wallet per chain is allowed.
