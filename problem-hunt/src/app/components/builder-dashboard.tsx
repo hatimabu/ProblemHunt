@@ -2,8 +2,6 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Link } from "react-router";
 import { Bell, Briefcase, CheckCircle2, Edit2, Loader2, Save, User, Wallet, Camera, AlertCircle, Trash2, ArrowRight } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
-import { supabase } from "../../../lib/supabaseClient";
-import { API_ENDPOINTS } from "../../lib/api-config";
 import { Navbar } from "./navbar";
 import { Button } from "./ui/button";
 import { Textarea } from "./ui/textarea";
@@ -13,6 +11,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { formatBudget, formatJobStatus, formatSol, type NotificationRow, type ProblemPost, type ProposalRecord } from "../../lib/marketplace";
 import { PayoutWalletDialog } from "./payout-wallet-dialog";
+import {
+  deleteProblemById,
+  fetchDashboardSnapshot,
+  markNotificationRead,
+  updateDashboardProfile,
+  uploadDashboardAvatar,
+} from "../../lib/user-dashboard-api";
 
 interface ProfileData {
   username: string;
@@ -105,62 +110,18 @@ export function BuilderDashboard() {
 
     try {
       setDashboardError(null);
-      const [profileResult, walletCountResult, notificationsResult] = await Promise.all([
-        supabase
-          .from("profiles")
-          .select("username, full_name, bio, reputation_score, user_type, created_at, wallet_address, avatar_url")
-          .eq("id", user.id)
-          .maybeSingle(),
-        supabase.from("wallets").select("*", { count: "exact", head: true }).eq("user_id", user.id),
-        supabase
-          .from("notifications")
-          .select("id, message, link, is_read, created_at")
-          .eq("user_id", user.id)
-          .order("created_at", { ascending: false })
-          .limit(20),
-      ]);
-
-      if (profileResult.error) {
-        throw profileResult.error;
-      }
-      if (walletCountResult.error) {
-        throw walletCountResult.error;
-      }
-      if (notificationsResult.error) {
-        console.warn("Notifications query skipped:", notificationsResult.error.message);
-        setNotifications([]);
-      } else {
-        setNotifications(notificationsResult.data || []);
-      }
-
-      if (profileResult.data) {
-        setProfile(profileResult.data);
+      const snapshot = await fetchDashboardSnapshot(user.id);
+      setProfile(snapshot.profile);
+      if (snapshot.profile) {
         setProfileForm({
-          full_name: profileResult.data.full_name || "",
-          bio: profileResult.data.bio || "",
+          full_name: snapshot.profile.full_name || "",
+          bio: snapshot.profile.bio || "",
         });
       }
-
-      setWalletCount(walletCountResult.count || 0);
-
-      const token = (await supabase.auth.getSession()).data.session?.access_token;
-      const headers: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {};
-      const [postsResponse, proposalsResponse] = await Promise.all([
-        fetch(`${API_ENDPOINTS.USER_PROBLEMS}?sortBy=newest`, { headers }),
-        fetch(API_ENDPOINTS.USER_PROPOSALS, { headers }),
-      ]);
-
-      if (!postsResponse.ok) {
-        throw new Error("Failed to load your posted briefs.");
-      }
-      if (!proposalsResponse.ok) {
-        throw new Error("Failed to load your bids.");
-      }
-
-      const postsData = await postsResponse.json();
-      const proposalsData = await proposalsResponse.json();
-      setPosts(Array.isArray(postsData.problems) ? postsData.problems : []);
-      setProposals(Array.isArray(proposalsData.proposals) ? proposalsData.proposals : []);
+      setWalletCount(snapshot.walletCount);
+      setNotifications(snapshot.notifications);
+      setPosts(snapshot.posts);
+      setProposals(snapshot.proposals);
     } catch (error) {
       setDashboardError(error instanceof Error ? error.message : "Failed to load dashboard data.");
     } finally {
@@ -188,20 +149,10 @@ export function BuilderDashboard() {
     try {
       setSavingProfile(true);
       setBriefActionMessage(null);
-      const { data } = await supabase
-        .from("profiles")
-        .update({
-          full_name: profileForm.full_name,
-          bio: profileForm.bio,
-        })
-        .eq("id", user.id)
-        .select("username, full_name, bio, reputation_score, user_type, created_at, wallet_address, avatar_url")
-        .single();
-
-      if (!data) {
-        throw new Error("Failed to update profile.");
-      }
-
+      const data = await updateDashboardProfile(user.id, {
+        full_name: profileForm.full_name,
+        bio: profileForm.bio,
+      });
       setProfile(data);
       setEditingProfile(false);
       setBriefActionMessage("Profile updated.");
@@ -236,22 +187,7 @@ export function BuilderDashboard() {
     setAvatarPreviewUrl(previewUrl);
 
     try {
-      const extRaw = (file.name.split(".").pop() || "").trim().toLowerCase();
-      const safeExt = extRaw && extRaw.length <= 6 ? extRaw : "png";
-      const objectPath = `${user.id}/${Date.now()}-${Math.random().toString(16).slice(2)}.${safeExt}`;
-
-      const uploadResult = await supabase.storage.from("avatars").upload(objectPath, file, {
-        upsert: true,
-        contentType: file.type,
-      });
-
-      if (uploadResult.error) throw uploadResult.error;
-
-      const { data: publicUrlData } = supabase.storage.from("avatars").getPublicUrl(objectPath);
-      const publicUrl = publicUrlData.publicUrl;
-
-      const { error: updateErr } = await supabase.from("profiles").update({ avatar_url: publicUrl }).eq("id", user.id);
-      if (updateErr) throw updateErr;
+      const publicUrl = await uploadDashboardAvatar(user.id, file);
 
       setProfile((prev) => (prev ? { ...prev, avatar_url: publicUrl } : prev));
       URL.revokeObjectURL(previewUrl);
@@ -273,12 +209,12 @@ export function BuilderDashboard() {
 
   const handleNotificationOpen = async (notification: NotificationRow) => {
     if (!notification.is_read) {
-      const { error } = await supabase.from("notifications").update({ is_read: true }).eq("id", notification.id);
-      if (!error) {
+      try {
+        await markNotificationRead(notification.id);
         setNotifications((current) =>
           current.map((item) => (item.id === notification.id ? { ...item, is_read: true } : item))
         );
-      }
+      } catch {}
     }
   };
 
@@ -293,16 +229,7 @@ export function BuilderDashboard() {
     try {
       setDeletingPostId(post.id);
       setBriefActionMessage(null);
-      const token = (await supabase.auth.getSession()).data.session?.access_token;
-      const response = await fetch(API_ENDPOINTS.DELETE_PROBLEM(post.id), {
-        method: "DELETE",
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
-
-      if (!response.ok) {
-        const message = await response.text();
-        throw new Error(message || "Failed to delete post");
-      }
+      await deleteProblemById(post.id);
 
       setPosts((current) => current.filter((item) => item.id !== post.id));
       setBriefActionMessage(`Deleted "${post.title}".`);
