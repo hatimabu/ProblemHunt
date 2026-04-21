@@ -1,15 +1,27 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Link } from "react-router";
-import { Bell, Briefcase, CheckCircle2, Edit2, Loader2, Save, User, Wallet, Camera, AlertCircle, Trash2, ArrowRight } from "lucide-react";
+import {
+  Bell,
+  BriefcaseBusiness,
+  Camera,
+  CheckCircle2,
+  Edit3,
+  Loader2,
+  Save,
+  User,
+  Wallet,
+  ArrowRight,
+  Trash2,
+  AlertCircle,
+} from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { Navbar } from "./navbar";
 import { Button } from "./ui/button";
-import { Textarea } from "./ui/textarea";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
+import { Textarea } from "./ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
-import { formatBudget, formatJobStatus, formatSol, type NotificationRow, type ProblemPost, type ProposalRecord } from "../../lib/marketplace";
 import { PayoutWalletDialog } from "./payout-wallet-dialog";
 import {
   deleteProblemById,
@@ -17,51 +29,43 @@ import {
   markNotificationRead,
   updateDashboardProfile,
   uploadDashboardAvatar,
+  type DashboardProfile,
 } from "../../lib/user-dashboard-api";
+import {
+  formatBudget,
+  formatJobStatus,
+  formatSol,
+  type NotificationRow,
+  type ProblemPost,
+  type ProposalRecord,
+} from "../../lib/marketplace";
 
-interface ProfileData {
-  username: string;
-  full_name: string | null;
-  bio: string | null;
-  reputation_score: number;
-  user_type: string;
-  created_at: string;
-  wallet_address?: string | null;
-  avatar_url?: string | null;
-}
-
-function MetaPill({
-  children,
-  tone = "default",
-}: {
-  children: ReactNode;
-  tone?: "default" | "accent" | "rust";
-}) {
+function Pill({ children }: { children: ReactNode }) {
   return (
-    <span className={`board-pill ${tone === "accent" ? "board-pill--accent" : tone === "rust" ? "board-pill--rust" : ""}`}>
+    <span className="rounded-full border border-[color:var(--board-line-strong)] bg-[var(--board-panel)] px-2.5 py-1 text-[0.66rem] font-semibold uppercase tracking-[0.12em] text-[var(--board-muted)]">
       {children}
     </span>
   );
 }
 
-function EmptyState({
+function EmptyCard({
   title,
-  description,
+  copy,
   ctaHref,
   ctaLabel,
 }: {
   title: string;
-  description: string;
+  copy: string;
   ctaHref?: string;
   ctaLabel?: string;
 }) {
   return (
-    <div className="board-empty border-t border-[color:var(--board-line)]">
-      <h2 className="board-subtitle">{title}</h2>
-      <p>{description}</p>
+    <div className="board-panel p-6 md:p-8">
+      <h2 className="font-display text-4xl font-semibold tracking-[-0.05em] text-[var(--board-ink)]">{title}</h2>
+      <p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--board-muted)]">{copy}</p>
       {ctaHref && ctaLabel ? (
-        <Link to={ctaHref} className="inline-flex">
-          <Button className="board-btn-primary mt-6 h-11 border-0 bg-[var(--board-accent)] px-5 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-white hover:bg-[var(--color-accent-hover)]">
+        <Link to={ctaHref} className="mt-6 inline-flex">
+          <Button className="board-btn-primary h-11 border-0 bg-[var(--board-accent)] px-5 text-[0.75rem] font-semibold uppercase tracking-[0.14em] text-white hover:bg-[var(--color-accent-hover)]">
             {ctaLabel}
           </Button>
         </Link>
@@ -72,58 +76,59 @@ function EmptyState({
 
 export function BuilderDashboard() {
   const { user } = useAuth();
-  const [profile, setProfile] = useState<ProfileData | null>(null);
+
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [actionMessage, setActionMessage] = useState<string | null>(null);
+
+  const [profile, setProfile] = useState<DashboardProfile | null>(null);
+  const [profileForm, setProfileForm] = useState({ full_name: "", bio: "" });
+  const [editingProfile, setEditingProfile] = useState(false);
+  const [savingProfile, setSavingProfile] = useState(false);
+
   const [posts, setPosts] = useState<ProblemPost[]>([]);
   const [proposals, setProposals] = useState<ProposalRecord[]>([]);
   const [notifications, setNotifications] = useState<NotificationRow[]>([]);
   const [walletCount, setWalletCount] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [walletModalOpen, setWalletModalOpen] = useState(false);
-  const [editingProfile, setEditingProfile] = useState(false);
-  const [savingProfile, setSavingProfile] = useState(false);
+
+  const [walletDialogOpen, setWalletDialogOpen] = useState(false);
+  const [deletingPostId, setDeletingPostId] = useState<string | null>(null);
+
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [avatarError, setAvatarError] = useState<string | null>(null);
   const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null);
-  const [briefActionMessage, setBriefActionMessage] = useState<string | null>(null);
-  const [dashboardError, setDashboardError] = useState<string | null>(null);
-  const [deletingPostId, setDeletingPostId] = useState<string | null>(null);
-  const [profileForm, setProfileForm] = useState({ full_name: "", bio: "" });
 
-  const activeJobs = useMemo(
+  const acceptedJobs = useMemo(
     () => proposals.filter((proposal) => proposal.problemType === "job" && proposal.isAcceptedBuilder),
     [proposals]
   );
-
-  const unreadSignals = useMemo(
-    () => notifications.filter((notification) => !notification.is_read).length,
-    [notifications]
-  );
+  const unreadCount = useMemo(() => notifications.filter((n) => !n.is_read).length, [notifications]);
 
   const loadDashboard = async (showSpinner = false) => {
     if (!user) {
       return;
     }
-
     if (showSpinner) {
       setLoading(true);
     }
 
     try {
-      setDashboardError(null);
+      setError(null);
       const snapshot = await fetchDashboardSnapshot(user.id);
       setProfile(snapshot.profile);
+      setWalletCount(snapshot.walletCount);
+      setPosts(snapshot.posts);
+      setProposals(snapshot.proposals);
+      setNotifications(snapshot.notifications);
+
       if (snapshot.profile) {
         setProfileForm({
           full_name: snapshot.profile.full_name || "",
           bio: snapshot.profile.bio || "",
         });
       }
-      setWalletCount(snapshot.walletCount);
-      setNotifications(snapshot.notifications);
-      setPosts(snapshot.posts);
-      setProposals(snapshot.proposals);
-    } catch (error) {
-      setDashboardError(error instanceof Error ? error.message : "Failed to load dashboard data.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load dashboard.");
     } finally {
       if (showSpinner) {
         setLoading(false);
@@ -137,27 +142,23 @@ export function BuilderDashboard() {
 
   useEffect(() => {
     return () => {
-      if (avatarPreviewUrl) URL.revokeObjectURL(avatarPreviewUrl);
+      if (avatarPreviewUrl) {
+        URL.revokeObjectURL(avatarPreviewUrl);
+      }
     };
   }, [avatarPreviewUrl]);
 
   const handleSaveProfile = async () => {
-    if (!user) {
-      return;
-    }
-
+    if (!user) return;
     try {
       setSavingProfile(true);
-      setBriefActionMessage(null);
-      const data = await updateDashboardProfile(user.id, {
-        full_name: profileForm.full_name,
-        bio: profileForm.bio,
-      });
-      setProfile(data);
+      setActionMessage(null);
+      const updated = await updateDashboardProfile(user.id, profileForm);
+      setProfile(updated);
       setEditingProfile(false);
-      setBriefActionMessage("Profile updated.");
-    } catch (error) {
-      setBriefActionMessage(error instanceof Error ? error.message : "Failed to update profile.");
+      setActionMessage("Profile updated.");
+    } catch (err) {
+      setActionMessage(err instanceof Error ? err.message : "Failed to update profile.");
     } finally {
       setSavingProfile(false);
     }
@@ -166,406 +167,329 @@ export function BuilderDashboard() {
   const handleAvatarUpload = async (file: File) => {
     if (!user) return;
 
-    setAvatarError(null);
-    setAvatarUploading(true);
-
     const MAX_BYTES = 5 * 1024 * 1024;
+    setAvatarError(null);
+
     if (!file.type.startsWith("image/")) {
       setAvatarError("Please upload an image file.");
-      setAvatarUploading(false);
       return;
     }
     if (file.size > MAX_BYTES) {
       setAvatarError("Image is too large (max 5MB).");
-      setAvatarUploading(false);
       return;
     }
 
-    // Show an immediate preview while uploading.
-    if (avatarPreviewUrl) URL.revokeObjectURL(avatarPreviewUrl);
+    if (avatarPreviewUrl) {
+      URL.revokeObjectURL(avatarPreviewUrl);
+    }
     const previewUrl = URL.createObjectURL(file);
     setAvatarPreviewUrl(previewUrl);
+    setAvatarUploading(true);
 
     try {
       const publicUrl = await uploadDashboardAvatar(user.id, file);
-
       setProfile((prev) => (prev ? { ...prev, avatar_url: publicUrl } : prev));
+      setActionMessage("Profile picture updated.");
       URL.revokeObjectURL(previewUrl);
       setAvatarPreviewUrl(null);
-      setBriefActionMessage("Profile picture updated.");
-    } catch (err: any) {
-      setAvatarError(err?.message ?? "Failed to upload avatar.");
-      // If upload fails, clear the preview so we don't display a non-persisted image.
+    } catch (err) {
+      setAvatarError(err instanceof Error ? err.message : "Failed to upload avatar.");
       setAvatarPreviewUrl(null);
     } finally {
       setAvatarUploading(false);
     }
   };
 
-  const handleWalletsChange = async (count: number) => {
-    setWalletCount(count);
-    await loadDashboard(false);
-  };
-
-  const handleNotificationOpen = async (notification: NotificationRow) => {
-    if (!notification.is_read) {
-      try {
-        await markNotificationRead(notification.id);
-        setNotifications((current) =>
-          current.map((item) => (item.id === notification.id ? { ...item, is_read: true } : item))
-        );
-      } catch {}
-    }
-  };
-
   const handleDeletePost = async (post: ProblemPost) => {
-    const confirmed = window.confirm(
-      `Delete "${post.title}"? This will remove the post and related activity.`
-    );
+    const confirmed = window.confirm(`Delete "${post.title}"? This cannot be undone.`);
     if (!confirmed) {
       return;
     }
-
     try {
       setDeletingPostId(post.id);
-      setBriefActionMessage(null);
+      setActionMessage(null);
       await deleteProblemById(post.id);
-
       setPosts((current) => current.filter((item) => item.id !== post.id));
-      setBriefActionMessage(`Deleted "${post.title}".`);
+      setActionMessage(`Deleted "${post.title}".`);
     } catch (err) {
-      setBriefActionMessage(err instanceof Error ? err.message : "Failed to delete post");
+      setActionMessage(err instanceof Error ? err.message : "Failed to delete post.");
     } finally {
       setDeletingPostId(null);
     }
   };
 
+  const displayName = profile?.full_name || profile?.username || user?.username || "Builder";
+
   if (loading) {
     return (
       <div className="board-app">
         <Navbar />
-        <div className="board-container flex justify-center py-20">
-          <Loader2 className="h-8 w-8 animate-spin text-[var(--board-accent)]" />
+        <div className="board-container py-20">
+          <div className="flex justify-center">
+            <Loader2 className="h-8 w-8 animate-spin text-[var(--board-accent)]" />
+          </div>
         </div>
       </div>
     );
   }
-
-  const displayName = profile?.full_name || profile?.username || user?.username || "Builder";
-  const identityCopy = profile?.user_type === "builder"
-    ? "Track the briefs you are chasing, the work you have landed, and the wallets that should get paid."
-    : "Track the work you posted, the builders replying, and the signals coming back from the board.";
 
   return (
     <div className="board-app">
       <Navbar />
 
       <main className="board-container py-8 md:py-10">
-        <section className="grid gap-6 border-b border-[color:var(--board-line)] pb-10 lg:grid-cols-[minmax(0,1.2fr)_minmax(280px,0.8fr)]">
-          <div className="board-panel p-6 md:p-8">
-            <p className="board-kicker">Dashboard</p>
-            <h1 className="board-title mt-3">{displayName}</h1>
-            <p className="board-copy mt-5 max-w-3xl">{identityCopy}</p>
+        <section className="grid gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(300px,0.8fr)]">
+          <div className="board-panel relative overflow-hidden p-6 md:p-8">
+            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(14,226,255,0.12),transparent_45%)]" />
+            <div className="relative">
+              <p className="board-kicker">User Dashboard</p>
+              <h1 className="mt-3 font-display text-6xl font-semibold tracking-[-0.06em] text-[var(--board-ink)]">{displayName}</h1>
+              <p className="mt-4 max-w-3xl text-sm leading-7 text-[var(--board-muted)] md:text-base">
+                Manage your identity, payout wallets, posted briefs, and active bids from one clean workspace.
+              </p>
 
-            <div className="mt-8 flex flex-col gap-4 sm:flex-row">
-              <Button
-                onClick={() => setWalletModalOpen(true)}
-                className="board-btn-primary h-11 border-0 bg-[var(--board-accent)] px-5 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-white hover:bg-[var(--color-accent-hover)]"
-              >
-                <Wallet className="mr-2 h-4 w-4" />
-                Manage wallets
-              </Button>
-              <Link to="/post">
+              <div className="mt-7 flex flex-col gap-3 sm:flex-row">
                 <Button
-                  variant="outline"
-                  className="board-btn-secondary h-11 border-[color:var(--board-line-strong)] bg-transparent px-5 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-[var(--board-muted)] hover:bg-[var(--board-panel-strong)] hover:text-[var(--board-ink)]"
+                  onClick={() => setWalletDialogOpen(true)}
+                  className="h-11 border-0 bg-[var(--board-accent)] px-5 text-[0.75rem] font-semibold uppercase tracking-[0.14em] text-white hover:bg-[var(--color-accent-hover)]"
                 >
-                  Post a brief
+                  <Wallet className="mr-2 h-4 w-4" />
+                  Add wallet
                 </Button>
-              </Link>
-            </div>
+                <Link to="/post">
+                  <Button
+                    variant="outline"
+                    className="h-11 border-[color:var(--board-line-strong)] bg-transparent px-5 text-[0.75rem] font-semibold uppercase tracking-[0.14em] text-[var(--board-muted)] hover:bg-[var(--board-panel-strong)] hover:text-[var(--board-ink)]"
+                  >
+                    Post brief
+                  </Button>
+                </Link>
+              </div>
 
-            <div className="mt-8 grid gap-3 border-t border-[color:var(--board-line)] pt-5 sm:grid-cols-3">
-              <div className="rounded-xl border border-[color:var(--board-line)] bg-[var(--board-panel-strong)] p-4">
-                <p className="board-eyebrow">Posted</p>
-                <p className="mt-2 text-sm leading-7 text-[var(--board-muted)]">
-                  {posts.length === 0 ? "No briefs yet." : `${posts.length} brief${posts.length === 1 ? "" : "s"} currently on the board.`}
-                </p>
-              </div>
-              <div className="rounded-xl border border-[color:var(--board-line)] bg-[var(--board-panel-strong)] p-4">
-                <p className="board-eyebrow">Replies</p>
-                <p className="mt-2 text-sm leading-7 text-[var(--board-muted)]">
-                  {proposals.length === 0 ? "No bids submitted yet." : `${proposals.length} active bid${proposals.length === 1 ? "" : "s"} across the marketplace.`}
-                </p>
-              </div>
-              <div className="rounded-xl border border-[color:var(--board-line)] bg-[var(--board-panel-strong)] p-4">
-                <p className="board-eyebrow">Signals</p>
-                <p className="mt-2 text-sm leading-7 text-[var(--board-muted)]">
-                  {unreadSignals === 0 ? "Everything is caught up." : `${unreadSignals} unread update${unreadSignals === 1 ? "" : "s"} waiting.`}
-                </p>
-              </div>
-              <div className="rounded-xl border border-[color:var(--board-line)] bg-[var(--board-panel-strong)] p-4 sm:col-span-3">
-                <p className="board-eyebrow">Payout Routes</p>
-                <p className="mt-2 text-sm leading-7 text-[var(--board-muted)]">
-                  {walletCount === 0 ? "No wallets connected yet." : `${walletCount} payout wallet${walletCount === 1 ? "" : "s"} connected and ready.`}
-                </p>
+              <div className="mt-8 grid gap-3 border-t border-[color:var(--board-line)] pt-5 sm:grid-cols-2 xl:grid-cols-4">
+                <div className="rounded-xl border border-[color:var(--board-line)] bg-[var(--board-panel-strong)] p-4">
+                  <p className="board-eyebrow">Posted</p>
+                  <p className="mt-2 text-sm text-[var(--board-muted)]">{posts.length} brief{posts.length === 1 ? "" : "s"}</p>
+                </div>
+                <div className="rounded-xl border border-[color:var(--board-line)] bg-[var(--board-panel-strong)] p-4">
+                  <p className="board-eyebrow">Bids</p>
+                  <p className="mt-2 text-sm text-[var(--board-muted)]">{proposals.length} proposal{proposals.length === 1 ? "" : "s"}</p>
+                </div>
+                <div className="rounded-xl border border-[color:var(--board-line)] bg-[var(--board-panel-strong)] p-4">
+                  <p className="board-eyebrow">Wallets</p>
+                  <p className="mt-2 text-sm text-[var(--board-muted)]">{walletCount} linked wallet{walletCount === 1 ? "" : "s"}</p>
+                </div>
+                <div className="rounded-xl border border-[color:var(--board-line)] bg-[var(--board-panel-strong)] p-4">
+                  <p className="board-eyebrow">Notifications</p>
+                  <p className="mt-2 text-sm text-[var(--board-muted)]">{unreadCount} unread signal{unreadCount === 1 ? "" : "s"}</p>
+                </div>
               </div>
             </div>
           </div>
 
-          <aside className="board-panel board-panel--command p-6">
-            <p className="board-kicker">Quick Start</p>
-            <h2 className="board-subtitle mt-3 text-[1.8rem]">Use the dashboard like a control room.</h2>
-            <div className="mt-5 space-y-4 text-sm leading-7 text-[var(--board-muted)]">
-              <p>Keep your profile current so people know who is behind the work.</p>
-              <p>Jump into posted briefs, submitted bids, accepted work, or signals without scanning filler metrics.</p>
-              <p>Open wallet management only when you actually need to update payout paths.</p>
+          <aside className="board-panel p-6">
+            <p className="board-kicker">Profile</p>
+            <div className="mt-4 flex items-center gap-4">
+              <Avatar className="size-16 border border-[color:var(--board-line-strong)]">
+                {avatarPreviewUrl || profile?.avatar_url ? (
+                  <AvatarImage src={avatarPreviewUrl || profile?.avatar_url || undefined} alt="Profile" className="object-cover" />
+                ) : null}
+                <AvatarFallback>
+                  <User className="h-5 w-5 text-[var(--board-muted)]" />
+                </AvatarFallback>
+              </Avatar>
+              <div>
+                <p className="font-medium text-[var(--board-ink)]">{displayName}</p>
+                <p className="text-sm text-[var(--board-muted)]">@{profile?.username || user?.username || "user"}</p>
+              </div>
             </div>
-            <div className="mt-6 space-y-3 border-t border-[color:var(--board-line)] pt-5">
-              <button onClick={() => setWalletModalOpen(true)} className="flex w-full items-center justify-between rounded-xl border border-[color:var(--board-line)] bg-[var(--board-panel)] px-4 py-3 text-left text-sm text-[var(--board-ink)] hover:bg-[var(--board-panel-strong)]">
-                <span>Update payout wallets</span>
-                <ArrowRight className="h-4 w-4 text-[var(--board-accent)]" />
-              </button>
-              <Link to="/post" className="flex items-center justify-between rounded-xl border border-[color:var(--board-line)] bg-[var(--board-panel)] px-4 py-3 text-sm text-[var(--board-ink)] hover:bg-[var(--board-panel-strong)]">
-                <span>Create a new brief</span>
-                <ArrowRight className="h-4 w-4 text-[var(--board-accent)]" />
-              </Link>
-              <Link to="/browse" className="flex items-center justify-between rounded-xl border border-[color:var(--board-line)] bg-[var(--board-panel)] px-4 py-3 text-sm text-[var(--board-ink)] hover:bg-[var(--board-panel-strong)]">
-                <span>Browse live work</span>
-                <ArrowRight className="h-4 w-4 text-[var(--board-accent)]" />
-              </Link>
-            </div>
+
+            <label className="mt-5 flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-[color:var(--board-line-strong)] bg-transparent px-4 py-2.5 text-sm text-[var(--board-muted)] hover:bg-[var(--board-panel-strong)] hover:text-[var(--board-ink)]">
+              {avatarUploading ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Uploading...
+                </>
+              ) : (
+                <>
+                  <Camera className="h-4 w-4" />
+                  Update picture
+                </>
+              )}
+              <input
+                type="file"
+                accept="image/*"
+                disabled={avatarUploading}
+                className="hidden"
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  event.target.value = "";
+                  if (!file) return;
+                  void handleAvatarUpload(file);
+                }}
+              />
+            </label>
+            {avatarError ? (
+              <div className="mt-4 flex items-center gap-2 rounded-xl border border-[color:rgba(219,84,97,0.34)] bg-[rgba(219,84,97,0.12)] px-3 py-2 text-sm text-[var(--board-accent)]">
+                <AlertCircle className="h-4 w-4" />
+                {avatarError}
+              </div>
+            ) : null}
+
+            <button
+              type="button"
+              onClick={() => setWalletDialogOpen(true)}
+              className="mt-4 flex w-full items-center justify-between rounded-xl border border-[color:var(--board-line)] bg-[var(--board-panel)] px-4 py-3 text-sm text-[var(--board-ink)] hover:bg-[var(--board-panel-strong)]"
+            >
+              <span>Manage wallets</span>
+              <ArrowRight className="h-4 w-4 text-[var(--board-accent)]" />
+            </button>
           </aside>
         </section>
 
-        <Tabs defaultValue="identity" className="board-section px-0">
-          {dashboardError ? (
-            <div className="board-inline-note mb-6">
-              {dashboardError}
-            </div>
-          ) : null}
+        {error ? <div className="board-inline-note mt-6">{error}</div> : null}
+        {actionMessage ? <div className="board-inline-note mt-6">{actionMessage}</div> : null}
 
-          {briefActionMessage ? (
-            <div className="board-inline-note mb-6">
-              {briefActionMessage}
-            </div>
-          ) : null}
-
-          <TabsList className="board-tabs grid h-auto w-full p-1 md:grid-cols-5">
-            <TabsTrigger value="identity">
+        <Tabs defaultValue="profile" className="mt-8">
+          <TabsList className="board-tabs grid h-auto w-full p-1 md:grid-cols-4">
+            <TabsTrigger value="profile">
               <User className="h-4 w-4" />
               Profile
             </TabsTrigger>
-            <TabsTrigger value="briefs">
-              <Briefcase className="h-4 w-4" />
+            <TabsTrigger value="posts">
+              <BriefcaseBusiness className="h-4 w-4" />
               Posted
             </TabsTrigger>
             <TabsTrigger value="bids">
-              <Edit2 className="h-4 w-4" />
+              <CheckCircle2 className="h-4 w-4" />
               Bids
             </TabsTrigger>
-            <TabsTrigger value="bounties">
-              <CheckCircle2 className="h-4 w-4" />
-              Active work
-            </TabsTrigger>
-            <TabsTrigger value="signals">
+            <TabsTrigger value="notifications">
               <Bell className="h-4 w-4" />
               Signals
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="identity" className="mt-6">
+          <TabsContent value="profile" className="mt-6">
             <div className="board-panel p-6 md:p-8">
-              <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_280px]">
+              {editingProfile ? (
                 <div className="space-y-5">
-                  {editingProfile ? (
-                    <>
-                      <div>
-                        <Label className="mb-2 block text-sm text-[var(--board-ink)]">Full name</Label>
-                        <Input
-                          value={profileForm.full_name}
-                          onChange={(event) => setProfileForm({ ...profileForm, full_name: event.target.value })}
-                          className="board-field"
-                        />
-                      </div>
-                      <div>
-                        <Label className="mb-2 block text-sm text-[var(--board-ink)]">Bio</Label>
-                        <Textarea
-                          value={profileForm.bio}
-                          onChange={(event) => setProfileForm({ ...profileForm, bio: event.target.value })}
-                          className="board-field min-h-[160px]"
-                        />
-                      </div>
-                      <div className="flex flex-col gap-3 sm:flex-row">
-                        <Button
-                          onClick={handleSaveProfile}
-                          disabled={savingProfile}
-                          className="board-btn-primary h-11 border-0 bg-[var(--board-accent)] px-5 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-white hover:bg-[var(--color-accent-hover)]"
-                        >
-                          <Save className="mr-2 h-4 w-4" />
-                          {savingProfile ? "Saving..." : "Save profile"}
-                        </Button>
-                        <Button
-                          variant="outline"
-                          onClick={() => setEditingProfile(false)}
-                          className="board-btn-secondary h-11 border-[color:var(--board-line-strong)] bg-transparent px-5 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-[var(--board-muted)] hover:bg-[var(--board-panel-strong)] hover:text-[var(--board-ink)]"
-                        >
-                          Cancel
-                        </Button>
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                        <div>
-                          <p className="board-kicker">Identity</p>
-                          <h2 className="board-subtitle mt-3">Keep your operator profile current.</h2>
-                          <p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--board-muted)] md:text-base">
-                            A clean bio and a ready payout path make your dashboard easier to trust from both sides of the marketplace.
-                          </p>
-                        </div>
-                        <Button
-                          variant="outline"
-                          onClick={() => setEditingProfile(true)}
-                          className="board-btn-secondary h-11 border-[color:var(--board-line-strong)] bg-transparent px-5 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-[var(--board-muted)] hover:bg-[var(--board-panel-strong)] hover:text-[var(--board-ink)]"
-                        >
-                          <Edit2 className="mr-2 h-4 w-4" />
-                          Edit
-                        </Button>
-                      </div>
-
-                      <div className="grid gap-5 border-t border-[color:var(--board-line)] pt-5 md:grid-cols-2">
-                        <div>
-                          <p className="board-eyebrow">Username</p>
-                          <p className="mt-2 text-base text-[var(--board-ink)]">{profile?.username}</p>
-                        </div>
-                        <div>
-                          <p className="board-eyebrow">Full name</p>
-                          <p className="mt-2 text-base text-[var(--board-ink)]">{profile?.full_name || "Not set"}</p>
-                        </div>
-                        <div className="md:col-span-2">
-                          <p className="board-eyebrow">Bio</p>
-                          <p className="mt-2 text-base leading-8 text-[var(--board-muted)]">{profile?.bio || "No bio yet."}</p>
-                        </div>
-                      </div>
-                    </>
-                  )}
-                </div>
-                <aside className="border-t border-[color:var(--board-line)] pt-6 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0">
-                  <p className="board-kicker">Profile</p>
-                  <div className="mt-5 space-y-4">
-                    <div className="flex items-center gap-4">
-                      <Avatar className="size-16 border border-[color:var(--board-line-strong)] bg-[var(--board-panel)]">
-                        {avatarPreviewUrl || profile?.avatar_url ? (
-                          <AvatarImage src={avatarPreviewUrl || profile?.avatar_url || undefined} alt="Profile picture" className="object-cover" />
-                        ) : null}
-                        <AvatarFallback>
-                          <Camera className="h-5 w-5 text-[var(--board-soft)]" />
-                        </AvatarFallback>
-                      </Avatar>
-
-                      <div className="min-w-0">
-                        <p className="board-eyebrow">Profile picture</p>
-                        <p className="mt-2 text-sm text-[var(--board-muted)]">JPG/PNG/GIF up to 5MB</p>
-                      </div>
-                    </div>
-
-                    <label
-                      className="board-btn-secondary flex cursor-pointer items-center justify-center gap-2 border border-[color:var(--board-line-strong)] bg-transparent px-4 py-2 text-sm font-semibold text-[var(--board-muted)] hover:bg-[var(--board-panel-strong)] hover:text-[var(--board-ink)] disabled:opacity-50"
-                    >
-                      {avatarUploading ? (
-                        <>
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                          Uploading...
-                        </>
-                      ) : (
-                        <>
-                          <Camera className="h-4 w-4" />
-                          Upload picture
-                        </>
-                      )}
-
-                      <input
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        disabled={avatarUploading}
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (!file) return;
-                          // Allow selecting the same file again.
-                          e.target.value = "";
-                          void handleAvatarUpload(file);
-                        }}
-                      />
-                    </label>
-
-                    {avatarError ? (
-                      <div className="flex items-center gap-2 rounded-lg border border-[color:rgba(219,84,97,0.34)] bg-[rgba(219,84,97,0.12)] px-4 py-3 text-sm text-[var(--board-accent)]">
-                        <AlertCircle className="h-4 w-4" />
-                        {avatarError}
-                      </div>
-                    ) : null}
+                  <div>
+                    <Label className="mb-2 block text-sm text-[var(--board-ink)]">Full name</Label>
+                    <Input
+                      className="board-field"
+                      value={profileForm.full_name}
+                      onChange={(event) => setProfileForm((current) => ({ ...current, full_name: event.target.value }))}
+                    />
                   </div>
-                </aside>
-              </div>
+                  <div>
+                    <Label className="mb-2 block text-sm text-[var(--board-ink)]">Bio</Label>
+                    <Textarea
+                      className="board-field min-h-[150px]"
+                      value={profileForm.bio}
+                      onChange={(event) => setProfileForm((current) => ({ ...current, bio: event.target.value }))}
+                    />
+                  </div>
+                  <div className="flex flex-wrap gap-3">
+                    <Button
+                      onClick={handleSaveProfile}
+                      disabled={savingProfile}
+                      className="h-11 border-0 bg-[var(--board-accent)] px-5 text-[0.75rem] font-semibold uppercase tracking-[0.14em] text-white hover:bg-[var(--color-accent-hover)]"
+                    >
+                      <Save className="mr-2 h-4 w-4" />
+                      {savingProfile ? "Saving..." : "Save profile"}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => setEditingProfile(false)}
+                      className="h-11 border-[color:var(--board-line-strong)] bg-transparent px-5 text-[0.75rem] font-semibold uppercase tracking-[0.14em] text-[var(--board-muted)] hover:bg-[var(--board-panel-strong)] hover:text-[var(--board-ink)]"
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <p className="board-kicker">Identity</p>
+                      <h2 className="mt-2 font-display text-4xl font-semibold tracking-[-0.05em] text-[var(--board-ink)]">
+                        Keep your profile sharp.
+                      </h2>
+                    </div>
+                    <Button
+                      variant="outline"
+                      onClick={() => setEditingProfile(true)}
+                      className="h-11 border-[color:var(--board-line-strong)] bg-transparent px-5 text-[0.75rem] font-semibold uppercase tracking-[0.14em] text-[var(--board-muted)] hover:bg-[var(--board-panel-strong)] hover:text-[var(--board-ink)]"
+                    >
+                      <Edit3 className="mr-2 h-4 w-4" />
+                      Edit profile
+                    </Button>
+                  </div>
+
+                  <div className="mt-6 grid gap-5 border-t border-[color:var(--board-line)] pt-5 md:grid-cols-2">
+                    <div>
+                      <p className="board-eyebrow">Username</p>
+                      <p className="mt-2 text-base text-[var(--board-ink)]">{profile?.username || "-"}</p>
+                    </div>
+                    <div>
+                      <p className="board-eyebrow">Full name</p>
+                      <p className="mt-2 text-base text-[var(--board-ink)]">{profile?.full_name || "Not set"}</p>
+                    </div>
+                    <div className="md:col-span-2">
+                      <p className="board-eyebrow">Bio</p>
+                      <p className="mt-2 text-sm leading-7 text-[var(--board-muted)] md:text-base">
+                        {profile?.bio || "No bio yet. Add context about your strengths, delivery style, and preferred projects."}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </TabsContent>
 
-          <TabsContent value="briefs" className="mt-6">
+          <TabsContent value="posts" className="mt-6">
             {posts.length === 0 ? (
-              <EmptyState
-                title="No briefs on your board yet."
-                description="Post a problem, task, or request and your dashboard will start tracking bids, budget, and movement."
+              <EmptyCard
+                title="No briefs posted yet"
+                copy="Create your first brief and track responses from builders right here."
                 ctaHref="/post"
                 ctaLabel="Post a brief"
               />
             ) : (
               <div className="board-panel p-6 md:p-8">
-                <div className="flex flex-col gap-3 border-b border-[color:var(--board-line)] pb-5 sm:flex-row sm:items-end sm:justify-between">
-                  <div>
-                    <p className="board-kicker">Posted</p>
-                    <h2 className="board-subtitle mt-3">Your live briefs and tasks.</h2>
-                  </div>
-                  <p className="text-sm text-[var(--board-muted)]">Open anything here to review responses or clean up old listings.</p>
-                </div>
-                <div className="mt-2">
+                <h2 className="font-display text-4xl font-semibold tracking-[-0.05em] text-[var(--board-ink)]">Your posted briefs</h2>
+                <div className="mt-5 space-y-4">
                   {posts.map((post) => (
-                    <article key={post.id} className="board-row">
-                    <div className="grid gap-5 md:grid-cols-[minmax(0,1fr)_180px] md:items-start">
-                      <div>
-                        <div className="flex flex-wrap gap-2">
-                          <MetaPill>{post.type === "job" ? "Paid task" : "Problem brief"}</MetaPill>
-                          {post.type === "job" && post.jobStatus ? <MetaPill tone="accent">{formatJobStatus(post.jobStatus)}</MetaPill> : null}
+                    <article key={post.id} className="rounded-2xl border border-[color:var(--board-line)] bg-[var(--board-panel-strong)] p-5">
+                      <div className="flex flex-wrap items-start justify-between gap-4">
+                        <div>
+                          <div className="flex flex-wrap gap-2">
+                            <Pill>{post.type === "job" ? "Paid task" : "Problem brief"}</Pill>
+                            {post.type === "job" && post.jobStatus ? <Pill>{formatJobStatus(post.jobStatus)}</Pill> : null}
+                          </div>
+                          <Link to={`/problem/${post.id}`} className="mt-3 block font-display text-3xl font-semibold tracking-[-0.05em] text-[var(--board-ink)]">
+                            {post.title}
+                          </Link>
+                          <p className="mt-2 max-w-3xl text-sm leading-7 text-[var(--board-muted)]">{post.description}</p>
                         </div>
-                        <Link to={`/problem/${post.id}`} className="mt-4 block font-display text-3xl font-semibold tracking-[-0.05em] text-[var(--board-ink)]">
-                          {post.title}
-                        </Link>
-                        <p className="mt-3 max-w-3xl text-sm leading-7 text-[var(--board-muted)] md:text-base">
-                          {post.description}
-                        </p>
+                        <div className="sm:text-right">
+                          <p className="board-eyebrow">{post.type === "job" ? "Budget" : "Bounty"}</p>
+                          <p className="mt-2 font-display text-3xl font-semibold tracking-[-0.05em] text-[var(--board-ink)]">
+                            {formatBudget(post)}
+                          </p>
+                          <p className="mt-2 text-sm text-[var(--board-muted)]">{post.proposals} bid{post.proposals === 1 ? "" : "s"}</p>
+                          <Button
+                            variant="outline"
+                            onClick={() => handleDeletePost(post)}
+                            disabled={deletingPostId === post.id}
+                            className="mt-4 border-[color:rgba(219,84,97,0.34)] bg-transparent text-[var(--board-accent)] hover:bg-[rgba(219,84,97,0.12)]"
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            {deletingPostId === post.id ? "Deleting..." : "Delete"}
+                          </Button>
+                        </div>
                       </div>
-
-                      <div className="md:text-right">
-                        <p className="board-eyebrow">{post.type === "job" ? "Budget" : "Bounty"}</p>
-                        <p className="mt-2 font-display text-3xl font-semibold tracking-[-0.06em] text-[var(--board-ink)]">
-                          {formatBudget(post)}
-                        </p>
-                        <p className="mt-3 text-sm text-[var(--board-muted)]">
-                          {post.proposals} bid{post.proposals === 1 ? "" : "s"}
-                        </p>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={() => handleDeletePost(post)}
-                          disabled={deletingPostId === post.id}
-                          className="board-danger-btn mt-4 w-full md:ml-auto"
-                        >
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          {deletingPostId === post.id ? "Deleting..." : "Delete"}
-                        </Button>
-                      </div>
-                    </div>
                     </article>
                   ))}
                 </div>
@@ -575,149 +499,95 @@ export function BuilderDashboard() {
 
           <TabsContent value="bids" className="mt-6">
             {proposals.length === 0 ? (
-              <EmptyState
-                title="No bids submitted yet."
-                description="Browse the marketplace, reply to a strong brief, and your active bids will appear here."
+              <EmptyCard
+                title="No bids yet"
+                copy="When you respond to briefs, your proposals and accepted work will show up here."
                 ctaHref="/browse"
-                ctaLabel="Browse the board"
+                ctaLabel="Browse work"
               />
             ) : (
               <div className="board-panel p-6 md:p-8">
-                <div className="flex flex-col gap-3 border-b border-[color:var(--board-line)] pb-5 sm:flex-row sm:items-end sm:justify-between">
-                  <div>
-                    <p className="board-kicker">Bids</p>
-                    <h2 className="board-subtitle mt-3">Everything you have in motion.</h2>
-                  </div>
-                  <p className="text-sm text-[var(--board-muted)]">This view keeps your submitted proposals readable without opening each brief first.</p>
-                </div>
-                <div className="mt-2">
-                {proposals.map((proposal) => (
-                  <article key={proposal.id} className="board-row">
-                    <div className="grid gap-5 md:grid-cols-[minmax(0,1fr)_180px] md:items-start">
-                      <div>
-                        <div className="flex flex-wrap gap-2">
-                          <MetaPill>{proposal.problemType === "job" ? "Paid task" : "Problem brief"}</MetaPill>
-                          <MetaPill tone="rust">{proposal.status || "pending"}</MetaPill>
-                          {proposal.jobStatus ? <MetaPill tone="accent">{formatJobStatus(proposal.jobStatus)}</MetaPill> : null}
+                <h2 className="font-display text-4xl font-semibold tracking-[-0.05em] text-[var(--board-ink)]">Your bids and active work</h2>
+                <p className="mt-2 text-sm text-[var(--board-muted)]">
+                  {acceptedJobs.length} accepted job{acceptedJobs.length === 1 ? "" : "s"} currently in progress.
+                </p>
+                <div className="mt-5 space-y-4">
+                  {proposals.map((proposal) => (
+                    <article key={proposal.id} className="rounded-2xl border border-[color:var(--board-line)] bg-[var(--board-panel-strong)] p-5">
+                      <div className="flex flex-wrap items-start justify-between gap-4">
+                        <div>
+                          <div className="flex flex-wrap gap-2">
+                            <Pill>{proposal.problemType === "job" ? "Paid task" : "Problem brief"}</Pill>
+                            <Pill>{proposal.status || "pending"}</Pill>
+                            {proposal.jobStatus ? <Pill>{formatJobStatus(proposal.jobStatus)}</Pill> : null}
+                          </div>
+                          <Link
+                            to={`/problem/${proposal.problemId}`}
+                            className="mt-3 block font-display text-3xl font-semibold tracking-[-0.05em] text-[var(--board-ink)]"
+                          >
+                            {proposal.problemTitle || "Untitled brief"}
+                          </Link>
+                          <p className="mt-2 max-w-3xl text-sm leading-7 text-[var(--board-muted)]">
+                            {proposal.briefSolution || proposal.description}
+                          </p>
                         </div>
-                        <Link to={`/problem/${proposal.problemId}`} className="mt-4 block font-display text-3xl font-semibold tracking-[-0.05em] text-[var(--board-ink)]">
-                          {proposal.problemTitle || "Untitled brief"}
-                        </Link>
-                        <p className="mt-3 max-w-3xl text-sm leading-7 text-[var(--board-muted)] md:text-base">
-                          {proposal.briefSolution || proposal.description}
-                        </p>
+                        <div className="sm:text-right">
+                          {proposal.proposedPriceSol ? (
+                            <p className="font-display text-3xl font-semibold tracking-[-0.05em] text-[var(--board-ink)]">
+                              {formatSol(proposal.proposedPriceSol)} SOL
+                            </p>
+                          ) : proposal.cost ? (
+                            <p className="text-sm text-[var(--board-muted)]">{proposal.cost}</p>
+                          ) : null}
+                          {proposal.tipTotal ? (
+                            <p className="mt-2 text-sm text-[var(--board-accent)]">{formatSol(proposal.tipTotal)} tipped</p>
+                          ) : null}
+                        </div>
                       </div>
-
-                      <div className="md:text-right">
-                        {proposal.proposedPriceSol ? (
-                          <p className="font-display text-3xl font-semibold tracking-[-0.06em] text-[var(--board-ink)]">
-                            {formatSol(proposal.proposedPriceSol)} SOL
-                          </p>
-                        ) : proposal.cost ? (
-                          <p className="text-base text-[var(--board-ink)]">{proposal.cost}</p>
-                        ) : null}
-                        {proposal.tipTotal ? (
-                          <p className="mt-3 text-sm text-[var(--board-accent)]">
-                            {formatSol(proposal.tipTotal)} tipped
-                          </p>
-                        ) : null}
-                      </div>
-                    </div>
-                  </article>
-                ))}
+                    </article>
+                  ))}
                 </div>
               </div>
             )}
           </TabsContent>
 
-          <TabsContent value="bounties" className="mt-6">
-            {activeJobs.length === 0 ? (
-              <EmptyState
-                title="No accepted work yet."
-                description="When a requester selects one of your bids, the active payout path will show up here."
-              />
-            ) : (
-              <div className="board-panel p-6 md:p-8">
-                <div className="flex flex-col gap-3 border-b border-[color:var(--board-line)] pb-5 sm:flex-row sm:items-end sm:justify-between">
-                  <div>
-                    <p className="board-kicker">Active Work</p>
-                    <h2 className="board-subtitle mt-3">Accepted jobs with a payout path.</h2>
-                  </div>
-                  <p className="text-sm text-[var(--board-muted)]">Only work that is actually active shows up here.</p>
-                </div>
-                <div className="mt-2">
-                {activeJobs.map((job) => (
-                  <article key={job.id} className="board-row">
-                    <div className="grid gap-5 md:grid-cols-[minmax(0,1fr)_180px] md:items-start">
-                      <div>
-                        <MetaPill tone="accent">{formatJobStatus(job.jobStatus)}</MetaPill>
-                        <Link to={`/problem/${job.problemId}`} className="mt-4 block font-display text-3xl font-semibold tracking-[-0.05em] text-[var(--board-ink)]">
-                          {job.problemTitle || "Untitled task"}
-                        </Link>
-                        <p className="mt-3 text-sm leading-7 text-[var(--board-muted)] md:text-base">
-                          {job.estimatedDelivery || job.timeline || "Timeline pending"}
-                        </p>
-                      </div>
-
-                      <div className="md:text-right">
-                        {job.proposedPriceSol ? (
-                          <p className="font-display text-3xl font-semibold tracking-[-0.06em] text-[var(--board-ink)]">
-                            {formatSol(job.proposedPriceSol)} SOL
-                          </p>
-                        ) : null}
-                      </div>
-                    </div>
-                  </article>
-                ))}
-                </div>
-              </div>
-            )}
-          </TabsContent>
-
-          <TabsContent value="signals" className="mt-6">
+          <TabsContent value="notifications" className="mt-6">
             {notifications.length === 0 ? (
-              <EmptyState
-                title="No signals yet."
-                description="Replies, updates, and movement from the board will collect here once your briefs or bids start moving."
-              />
+              <EmptyCard title="No signals yet" copy="Activity updates, replies, and board events will appear here." />
             ) : (
               <div className="board-panel p-6 md:p-8">
-                <div className="flex flex-col gap-3 border-b border-[color:var(--board-line)] pb-5 sm:flex-row sm:items-end sm:justify-between">
-                  <div>
-                    <p className="board-kicker">Signals</p>
-                    <h2 className="board-subtitle mt-3">Updates from the board.</h2>
-                  </div>
-                  <p className="text-sm text-[var(--board-muted)]">Unread items stay obvious without dominating the whole page.</p>
-                </div>
-                <div className="mt-2">
-                {notifications.map((notification) => (
-                  <article key={notification.id} className="board-row">
-                    <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_120px] md:items-start">
-                      <div>
-                        <div className="flex flex-wrap gap-2">
-                          <MetaPill tone={notification.is_read ? "default" : "rust"}>
-                            {notification.is_read ? "Read" : "Unread"}
-                          </MetaPill>
+                <h2 className="font-display text-4xl font-semibold tracking-[-0.05em] text-[var(--board-ink)]">Signals</h2>
+                <div className="mt-5 space-y-3">
+                  {notifications.map((notification) => (
+                    <article key={notification.id} className="rounded-2xl border border-[color:var(--board-line)] bg-[var(--board-panel-strong)] p-5">
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div>
+                          <Pill>{notification.is_read ? "Read" : "Unread"}</Pill>
+                          <p className="mt-3 text-sm leading-7 text-[var(--board-ink)] md:text-base">{notification.message}</p>
+                          <p className="mt-1 text-xs text-[var(--board-muted)]">{new Date(notification.created_at).toLocaleString()}</p>
                         </div>
-                        <p className="mt-4 text-base leading-8 text-[var(--board-ink)]">{notification.message}</p>
-                        <p className="mt-2 text-sm text-[var(--board-muted)]">
-                          {new Date(notification.created_at).toLocaleString()}
-                        </p>
-                      </div>
-                      {notification.link ? (
-                        <Link
-                          to={notification.link}
-                          onClick={() => {
-                            void handleNotificationOpen(notification);
-                          }}
-                          className="font-mono-alt text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-[var(--board-accent)] md:text-right"
-                        >
-                          Open
-                        </Link>
+                        {notification.link ? (
+                          <Link
+                            to={notification.link}
+                            onClick={() => {
+                              if (!notification.is_read) {
+                                void markNotificationRead(notification.id).then(() => {
+                                  setNotifications((current) =>
+                                    current.map((item) =>
+                                      item.id === notification.id ? { ...item, is_read: true } : item
+                                    )
+                                  );
+                                });
+                              }
+                            }}
+                            className="text-[0.72rem] font-semibold uppercase tracking-[0.14em] text-[var(--board-accent)]"
+                          >
+                            Open
+                          </Link>
                         ) : null}
                       </div>
-                  </article>
-                ))}
+                    </article>
+                  ))}
                 </div>
               </div>
             )}
@@ -726,11 +596,12 @@ export function BuilderDashboard() {
       </main>
 
       <PayoutWalletDialog
-        open={walletModalOpen}
-        onOpenChange={setWalletModalOpen}
+        open={walletDialogOpen}
+        onOpenChange={setWalletDialogOpen}
         walletCount={walletCount}
         onWalletsChange={(count) => {
-          void handleWalletsChange(count);
+          setWalletCount(count);
+          void loadDashboard(false);
         }}
       />
     </div>
