@@ -1,6 +1,6 @@
 import { startTransition, useDeferredValue, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router";
-import { ArrowRight, Briefcase, Clock3, Flame, Search, TrendingUp, User2 } from "lucide-react";
+import { ArrowRight, Briefcase, Clock3, Flame, Radar, Search, Signal, TrendingUp, User2 } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Navbar } from "./navbar";
@@ -54,11 +54,7 @@ export function BrowseProblems() {
           `${API_ENDPOINTS.PROBLEMS}?category=${encodeURIComponent(category)}&sortBy=${sortBy}&type=${selectedType}`,
           { headers }
         );
-
-        if (!response.ok) {
-          throw new Error(`API Error ${response.status}: ${await response.text()}`);
-        }
-
+        if (!response.ok) throw new Error(`API Error ${response.status}: ${await response.text()}`);
         const data = await response.json();
         setPosts(Array.isArray(data.problems) ? data.problems : []);
       } catch {
@@ -67,20 +63,14 @@ export function BrowseProblems() {
         setLoading(false);
       }
     };
-
     fetchPosts();
   }, [selectedCategory, selectedType, sortBy]);
 
   const deferredSearchQuery = useDeferredValue(searchQuery);
   const filteredPosts = useMemo(() => {
-    if (!deferredSearchQuery) {
-      return posts;
-    }
-
+    if (!deferredSearchQuery) return posts;
     const query = deferredSearchQuery.toLowerCase();
-    return posts.filter((post) => {
-      return post.title.toLowerCase().includes(query) || post.description.toLowerCase().includes(query);
-    });
+    return posts.filter((post) => post.title.toLowerCase().includes(query) || post.description.toLowerCase().includes(query));
   }, [posts, deferredSearchQuery]);
 
   return (
@@ -88,9 +78,13 @@ export function BrowseProblems() {
       <Navbar />
 
       <main className="board-container py-8 md:py-10">
+        {/* Header */}
         <section className="grid gap-8 border-b border-[color:var(--board-line)] pb-10 lg:grid-cols-[minmax(0,1.05fr)_280px]">
           <div>
-            <p className="board-kicker">Marketplace</p>
+            <div className="flex items-center gap-2">
+              <Radar className="h-4 w-4 text-[var(--board-metal-steel)]" />
+              <p className="board-kicker">Marketplace</p>
+            </div>
             <h1 className="board-title mt-3">Scan live briefs, open tasks, and technical requests.</h1>
             <p className="board-copy mt-5">
               This is the working board: search by signal, narrow by category, and open the brief when something looks worth taking.
@@ -99,7 +93,10 @@ export function BrowseProblems() {
 
           <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-1">
             <div className="board-stat">
-              <div className="board-stat__value">{loading ? "..." : String(posts.length)}</div>
+              <div className="flex items-center gap-2">
+                <Signal className="h-3.5 w-3.5 text-emerald-500/80" />
+                <div className="board-stat__value">{loading ? "..." : String(posts.length)}</div>
+              </div>
               <div className="board-stat__label">Live listings</div>
             </div>
             <div className="board-stat">
@@ -113,6 +110,7 @@ export function BrowseProblems() {
           </div>
         </section>
 
+        {/* Filters */}
         <section className="board-section px-0">
           <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_220px]">
             <div className="grid gap-4">
@@ -121,11 +119,7 @@ export function BrowseProblems() {
                 <Input
                   placeholder="Search by title or description"
                   value={searchQuery}
-                  onChange={(event) => {
-                    startTransition(() => {
-                      setSearchQuery(event.target.value);
-                    });
-                  }}
+                  onChange={(event) => startTransition(() => setSearchQuery(event.target.value))}
                   className="board-field h-12 pl-10"
                 />
               </div>
@@ -135,11 +129,7 @@ export function BrowseProblems() {
                   {TYPE_FILTERS.map((filter) => (
                     <button
                       key={filter.value}
-                      onClick={() => {
-                        startTransition(() => {
-                          setSelectedType(filter.value);
-                        });
-                      }}
+                      onClick={() => startTransition(() => setSelectedType(filter.value))}
                       className={selectedType === filter.value ? "bg-[var(--board-panel-strong)] text-[var(--board-accent)]" : "text-[var(--board-soft)] hover:bg-[var(--board-panel-strong)] hover:text-[var(--board-ink)]"}
                     >
                       {filter.label}
@@ -147,44 +137,26 @@ export function BrowseProblems() {
                   ))}
                 </div>
 
-                <Select
-                  value={selectedCategory}
-                  onValueChange={(value) => {
-                    startTransition(() => {
-                      setSelectedCategory(value);
-                    });
-                  }}
-                >
+                <Select value={selectedCategory} onValueChange={(value) => startTransition(() => setSelectedCategory(value))}>
                   <SelectTrigger className="board-field h-12 text-[var(--board-ink)]">
                     <SelectValue placeholder="Category" />
                   </SelectTrigger>
                   <SelectContent className="border-[color:var(--board-line-strong)] bg-[var(--board-panel-strong)] text-[var(--board-ink)]">
                     {CATEGORIES.map((category) => (
-                      <SelectItem key={category} value={category}>
-                        {category}
-                      </SelectItem>
+                      <SelectItem key={category} value={category}>{category}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
             </div>
 
-            <Select
-              value={sortBy}
-              onValueChange={(value) => {
-                startTransition(() => {
-                  setSortBy(value);
-                });
-              }}
-            >
+            <Select value={sortBy} onValueChange={(value) => startTransition(() => setSortBy(value))}>
               <SelectTrigger className="board-field h-12 text-[var(--board-ink)] lg:self-end">
                 <SelectValue placeholder="Sort by" />
               </SelectTrigger>
               <SelectContent className="border-[color:var(--board-line-strong)] bg-[var(--board-panel-strong)] text-[var(--board-ink)]">
                 {SORT_OPTIONS.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
+                  <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -195,15 +167,13 @@ export function BrowseProblems() {
               {loading ? "Loading the board..." : `${filteredPosts.length} listing${filteredPosts.length === 1 ? "" : "s"}`}
               {deferredSearchQuery ? ` matching "${deferredSearchQuery}"` : ""}
             </p>
-            <Link
-              to="/post"
-              className="inline-flex items-center gap-2 font-mono-alt text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-[var(--board-accent)]"
-            >
+            <Link to="/post" className="inline-flex items-center gap-2 font-mono-alt text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-[var(--board-accent)]">
               Post a brief
               <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
 
+          {/* Listings */}
           <div className="mt-4 border-t border-[color:var(--board-line)]">
             {loading ? (
               Array.from({ length: 4 }).map((_, index) => <LoadingRow key={index} />)
@@ -223,7 +193,7 @@ export function BrowseProblems() {
                 const job = isJobPost(post);
 
                 return (
-                  <Link key={post.id} to={`/problem/${post.id}`} className="board-row">
+                  <Link key={post.id} to={`/problem/${post.id}`} className="board-row group">
                     <article className="grid gap-5 lg:grid-cols-[150px_minmax(0,1fr)_160px] lg:items-start">
                       <div className="space-y-2">
                         <p className="board-eyebrow">{post.category}</p>
@@ -239,7 +209,7 @@ export function BrowseProblems() {
                       </div>
 
                       <div>
-                        <h2 className="board-subtitle text-[1.8rem]">{post.title}</h2>
+                        <h2 className="board-subtitle text-[1.8rem] group-hover:text-[var(--board-accent)] transition-colors">{post.title}</h2>
                         <p className="mt-3 max-w-3xl text-sm leading-7 text-[var(--board-muted)] line-clamp-2 md:text-base">
                           {post.description}
                         </p>

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Link, useNavigate, useParams } from "react-router";
-import { ArrowUp, Calendar, ExternalLink, Loader2, Send, Trash2, Wallet } from "lucide-react";
+import { ArrowUp, Calendar, Clock3, ExternalLink, Loader2, Radar, Send, ShieldCheck, Trash2, User2, Wallet } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Textarea } from "../components/ui/textarea";
@@ -34,6 +34,15 @@ function MetaPill({ children, tone = "default" }: { children: ReactNode; tone?: 
   return <span className={`board-pill ${tone === "accent" ? "board-pill--accent" : tone === "rust" ? "board-pill--rust" : ""}`}>{children}</span>;
 }
 
+function StatusBanner({ children, variant = "info" }: { children: ReactNode; variant?: "info" | "warning" | "success" }) {
+  const styles = {
+    info: "border-[color:rgba(160,168,173,0.22)] bg-[rgba(160,168,173,0.08)] text-[var(--board-metal-steel)]",
+    warning: "border-[color:rgba(201,168,76,0.3)] bg-[rgba(201,168,76,0.08)] text-[var(--board-gold)]",
+    success: "border-[color:rgba(16,185,129,0.25)] bg-[rgba(16,185,129,0.06)] text-emerald-400",
+  };
+  return <div className={`rounded-lg border px-4 py-3 text-sm ${styles[variant]}`}>{children}</div>;
+}
+
 export function ProblemDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -55,7 +64,7 @@ export function ProblemDetail() {
 
   const isJob = isJobPost(problem);
   const isOwner = !!user && !!problem && user.id === problem.authorId;
-  const acceptedProposal = useMemo(() => proposals.find((proposal) => proposal.id === problem?.acceptedProposalId) || null, [problem, proposals]);
+  const acceptedProposal = useMemo(() => proposals.find((p) => p.id === problem?.acceptedProposalId) || null, [problem, proposals]);
   const isAcceptedBuilder = !!user && !!acceptedProposal && acceptedProposal.builderId === user.id;
   const getToken = async () => (await supabase.auth.getSession()).data.session?.access_token;
 
@@ -81,8 +90,8 @@ export function ProblemDetail() {
     }
   };
 
-  useEffect(() => { fetchData(); }, [id]);
-  useEffect(() => { const loadWallet = async () => setMySolanaWallet(user ? await getUserSolanaWallet(user.id) : null); loadWallet(); }, [user]);
+  useEffect(() => { void fetchData(); }, [id]);
+  useEffect(() => { const loadWallet = async () => setMySolanaWallet(user ? await getUserSolanaWallet(user.id) : null); void loadWallet(); }, [user]);
 
   const handleProposalSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -194,27 +203,13 @@ export function ProblemDetail() {
 
   const handleDeleteProblem = async () => {
     if (!id || !user || !problem) return;
-
-    const confirmed = window.confirm(
-      `Delete "${problem.title}"? This will also remove its proposals, upvotes, and tips.`
-    );
-    if (!confirmed) {
-      return;
-    }
-
+    const confirmed = window.confirm(`Delete "${problem.title}"? This will also remove its proposals, upvotes, and tips.`);
+    if (!confirmed) return;
     try {
       setDeletePending(true);
       const token = await getToken();
-      const response = await fetch(API_ENDPOINTS.DELETE_PROBLEM(id), {
-        method: "DELETE",
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
-
-      if (!response.ok) {
-        const message = await response.text();
-        throw new Error(message || "Failed to delete post");
-      }
-
+      const response = await fetch(API_ENDPOINTS.DELETE_PROBLEM(id), { method: "DELETE", headers: token ? { Authorization: `Bearer ${token}` } : {} });
+      if (!response.ok) throw new Error(await response.text());
       navigate("/dashboard", { replace: true });
     } catch (err) {
       setStatusMessage(err instanceof Error ? err.message : "Failed to delete post");
@@ -224,36 +219,54 @@ export function ProblemDetail() {
   };
 
   if (loading) return <div className="board-app"><Navbar /><div className="board-container flex justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-[var(--board-accent)]" /></div></div>;
-  if (error || !problem) return <div className="board-app"><Navbar /><div className="board-container py-16"><div className="rounded-xl border border-[color:rgba(219,84,97,0.34)] bg-[rgba(219,84,97,0.12)] px-6 py-5 text-[var(--board-accent)]">{error || "Post not found"}</div></div></div>;
+  if (error || !problem) return <div className="board-app"><Navbar /><div className="board-container py-16"><div className="rounded-xl border border-[color:rgba(201,84,94,0.34)] bg-[rgba(201,84,94,0.12)] px-6 py-5 text-[var(--board-accent)]">{error || "Post not found"}</div></div></div>;
 
   return (
     <div className="board-app">
       <Navbar />
       <main className="board-container py-8 md:py-10">
+        {/* Header */}
         <section className="grid gap-8 border-b border-[color:var(--board-line)] pb-10 lg:grid-cols-[minmax(0,1fr)_300px]">
           <div>
-            <div className="flex flex-wrap gap-2">
-              <MetaPill>{problem.category}</MetaPill>
-              {isJob ? <MetaPill tone="accent">Paid task</MetaPill> : <MetaPill>Problem brief</MetaPill>}
-              {isJob && problem.jobStatus ? <MetaPill tone="rust">{formatJobStatus(problem.jobStatus)}</MetaPill> : null}
+            <div className="flex flex-wrap items-center gap-2">
+              <Radar className="h-4 w-4 text-[var(--board-metal-steel)]" />
+              <div className="flex flex-wrap gap-2">
+                <MetaPill>{problem.category}</MetaPill>
+                {isJob ? <MetaPill tone="accent">Paid task</MetaPill> : <MetaPill>Problem brief</MetaPill>}
+                {isJob && problem.jobStatus ? <MetaPill tone="rust">{formatJobStatus(problem.jobStatus)}</MetaPill> : null}
+              </div>
             </div>
             <h1 className="board-title mt-5">{problem.title}</h1>
             <p className="mt-5 max-w-4xl whitespace-pre-wrap text-base leading-8 text-[var(--board-muted)]">{problem.description}</p>
             <div className="mt-6 flex flex-wrap gap-x-5 gap-y-2 text-sm text-[var(--board-soft)]">
-              <span>Posted by {problem.author || "Anonymous"}</span>
-              <span>{formatTimeAgo(problem.createdAt)}</span>
+              <span className="inline-flex items-center gap-1.5"><User2 className="h-3.5 w-3.5" />{problem.author || "Anonymous"}</span>
+              <span className="inline-flex items-center gap-1.5"><Clock3 className="h-3.5 w-3.5" />{formatTimeAgo(problem.createdAt)}</span>
               <span>{problem.proposals} proposals</span>
               <span>{problem.upvotes} upvotes</span>
             </div>
-            {statusMessage ? <div className="mt-6 rounded-lg border border-[color:rgba(219,84,97,0.34)] bg-[rgba(219,84,97,0.12)] px-4 py-3 text-sm text-[var(--board-accent)]">{statusMessage}</div> : null}
+            {statusMessage ? <StatusBanner>{statusMessage}</StatusBanner> : null}
           </div>
           <aside className="space-y-5">
-            <div className="board-stat board-stat--spotlight"><div className="board-stat__value">{formatBudget(problem)}</div><div className="board-stat__label">{isJob ? "Budget" : "Bounty"}</div></div>
-            {problem.deadline ? <div className="board-stat"><div className="board-stat__value">{new Date(problem.deadline).toLocaleDateString()}</div><div className="board-stat__label">Deadline</div></div> : null}
-            {isJob && problem.jobType ? <div className="board-stat"><div className="board-stat__value">{problem.jobType}</div><div className="board-stat__label">Job type</div></div> : null}
+            <div className="board-stat board-stat--spotlight">
+              <div className="board-stat__value">{formatBudget(problem)}</div>
+              <div className="board-stat__label">{isJob ? "Budget" : "Bounty"}</div>
+            </div>
+            {problem.deadline ? (
+              <div className="board-stat">
+                <div className="board-stat__value">{new Date(problem.deadline).toLocaleDateString()}</div>
+                <div className="board-stat__label">Deadline</div>
+              </div>
+            ) : null}
+            {isJob && problem.jobType ? (
+              <div className="board-stat">
+                <div className="board-stat__value">{problem.jobType}</div>
+                <div className="board-stat__label">Job type</div>
+              </div>
+            ) : null}
           </aside>
         </section>
 
+        {/* Proposals */}
         <section className="board-section px-0">
           <div className="grid gap-8 lg:grid-cols-[minmax(0,1.55fr)_320px]">
             <div>
@@ -267,19 +280,21 @@ export function ProblemDetail() {
 
               {showProposalForm ? (
                 <form onSubmit={handleProposalSubmit} className="board-panel mt-6 p-6 md:p-8">
-                  {isJob && !mySolanaWallet ? <div className="mb-5 rounded-lg border border-[color:rgba(232,197,71,0.34)] bg-[rgba(232,197,71,0.1)] px-4 py-3 text-sm text-[var(--board-gold)]">Add a Solana wallet in your dashboard before taking on jobs so the requester can pay you directly.</div> : null}
-                  <div className="grid gap-5">
-                    <div><Label className="mb-2 block text-sm text-[var(--board-ink)]">Title</Label><Input value={proposalForm.title} onChange={(event) => setProposalForm({ ...proposalForm, title: event.target.value })} className={field} required /></div>
-                    <div><Label className="mb-2 block text-sm text-[var(--board-ink)]">Proposal</Label><Textarea value={proposalForm.description} onChange={(event) => setProposalForm({ ...proposalForm, description: event.target.value })} className="board-field min-h-[140px]" required /></div>
+                  {isJob && !mySolanaWallet ? (
+                    <StatusBanner variant="warning">Add a Solana wallet in your dashboard before taking on jobs so the requester can pay you directly.</StatusBanner>
+                  ) : null}
+                  <div className="mt-5 grid gap-5">
+                    <div><Label className="mb-2 block text-sm text-[var(--board-ink)]">Title</Label><Input value={proposalForm.title} onChange={(e) => setProposalForm({ ...proposalForm, title: e.target.value })} className={field} required /></div>
+                    <div><Label className="mb-2 block text-sm text-[var(--board-ink)]">Proposal</Label><Textarea value={proposalForm.description} onChange={(e) => setProposalForm({ ...proposalForm, description: e.target.value })} className="board-field min-h-[140px]" required /></div>
                     <div className="grid gap-5 md:grid-cols-2">
-                      <div><Label className="mb-2 block text-sm text-[var(--board-ink)]">Brief solution</Label><Input value={proposalForm.briefSolution} onChange={(event) => setProposalForm({ ...proposalForm, briefSolution: event.target.value })} className={field} /></div>
-                      <div><Label className="mb-2 block text-sm text-[var(--board-ink)]">{isJob ? "Estimated delivery" : "Timeline"}</Label><Input value={isJob ? proposalForm.estimatedDelivery : proposalForm.timeline} onChange={(event) => setProposalForm({ ...proposalForm, [isJob ? "estimatedDelivery" : "timeline"]: event.target.value })} className={field} required={isJob} /></div>
+                      <div><Label className="mb-2 block text-sm text-[var(--board-ink)]">Brief solution</Label><Input value={proposalForm.briefSolution} onChange={(e) => setProposalForm({ ...proposalForm, briefSolution: e.target.value })} className={field} /></div>
+                      <div><Label className="mb-2 block text-sm text-[var(--board-ink)]">{isJob ? "Estimated delivery" : "Timeline"}</Label><Input value={isJob ? proposalForm.estimatedDelivery : proposalForm.timeline} onChange={(e) => setProposalForm({ ...proposalForm, [isJob ? "estimatedDelivery" : "timeline"]: e.target.value })} className={field} required={isJob} /></div>
                     </div>
                     <div className="grid gap-5 md:grid-cols-2">
-                      <div><Label className="mb-2 block text-sm text-[var(--board-ink)]">{isJob ? "Proposed price (SOL)" : "Cost"}</Label><Input type={isJob ? "number" : "text"} step={isJob ? "0.000001" : undefined} value={isJob ? proposalForm.proposedPriceSol : proposalForm.cost} onChange={(event) => setProposalForm({ ...proposalForm, [isJob ? "proposedPriceSol" : "cost"]: event.target.value })} className={field} required={isJob} /></div>
-                      <div><Label className="mb-2 block text-sm text-[var(--board-ink)]">Project URL</Label><Input value={proposalForm.projectUrl} onChange={(event) => setProposalForm({ ...proposalForm, projectUrl: event.target.value })} className={field} /></div>
+                      <div><Label className="mb-2 block text-sm text-[var(--board-ink)]">{isJob ? "Proposed price (SOL)" : "Cost"}</Label><Input type={isJob ? "number" : "text"} step={isJob ? "0.000001" : undefined} value={isJob ? proposalForm.proposedPriceSol : proposalForm.cost} onChange={(e) => setProposalForm({ ...proposalForm, [isJob ? "proposedPriceSol" : "cost"]: e.target.value })} className={field} required={isJob} /></div>
+                      <div><Label className="mb-2 block text-sm text-[var(--board-ink)]">Project URL</Label><Input value={proposalForm.projectUrl} onChange={(e) => setProposalForm({ ...proposalForm, projectUrl: e.target.value })} className={field} /></div>
                     </div>
-                    <div><Label className="mb-2 block text-sm text-[var(--board-ink)]">Skills / expertise</Label><Input value={proposalForm.expertise} onChange={(event) => setProposalForm({ ...proposalForm, expertise: event.target.value })} placeholder="Terraform, AWS, Kubernetes" className={field} /></div>
+                    <div><Label className="mb-2 block text-sm text-[var(--board-ink)]">Skills / expertise</Label><Input value={proposalForm.expertise} onChange={(e) => setProposalForm({ ...proposalForm, expertise: e.target.value })} placeholder="Terraform, AWS, Kubernetes" className={field} /></div>
                     <Button type="submit" disabled={submittingProposal} className={primaryBtn}>{submittingProposal ? "Submitting..." : "Submit proposal"}</Button>
                   </div>
                 </form>
@@ -287,7 +302,10 @@ export function ProblemDetail() {
 
               <div className="mt-6 border-t border-[color:var(--board-line)]">
                 {proposals.length === 0 ? (
-                  <div className="board-empty"><h3 className="board-subtitle">No proposals yet.</h3><p>Be the first builder to respond to this brief.</p></div>
+                  <div className="board-empty">
+                    <h3 className="board-subtitle">No proposals yet.</h3>
+                    <p>Be the first builder to respond to this brief.</p>
+                  </div>
                 ) : (
                   proposals.map((proposal) => (
                     <article key={proposal.id} className="board-row">
@@ -308,12 +326,14 @@ export function ProblemDetail() {
                         </div>
                         <div className="flex flex-col gap-3 md:items-end">
                           <Button variant="outline" onClick={() => { setSelectedTipProposal(proposal); setTipForm(EMPTY_TIP_FORM); }} className={secondaryBtn}>Tip builder</Button>
-                          {isJob && isOwner && problem.jobStatus === "open" ? <Button onClick={() => runAction("accept", async () => {
-                            const token = await getToken();
-                            const response = await fetch(API_ENDPOINTS.ACCEPT_PROPOSAL(id!, proposal.id), { method: "POST", headers: { Authorization: `Bearer ${token}` } });
-                            if (!response.ok) throw new Error(await response.text());
-                            setStatusMessage("Proposal accepted.");
-                          })} disabled={actionPending === "accept"} className={primaryBtn}>{actionPending === "accept" ? "Accepting..." : "Accept proposal"}</Button> : null}
+                          {isJob && isOwner && problem.jobStatus === "open" ? (
+                            <Button onClick={() => runAction("accept", async () => {
+                              const token = await getToken();
+                              const response = await fetch(API_ENDPOINTS.ACCEPT_PROPOSAL(id!, proposal.id), { method: "POST", headers: { Authorization: `Bearer ${token}` } });
+                              if (!response.ok) throw new Error(await response.text());
+                              setStatusMessage("Proposal accepted.");
+                            })} disabled={actionPending === "accept"} className={primaryBtn}>{actionPending === "accept" ? "Accepting..." : "Accept proposal"}</Button>
+                          ) : null}
                         </div>
                       </div>
                     </article>
@@ -321,6 +341,8 @@ export function ProblemDetail() {
                 )}
               </div>
             </div>
+
+            {/* Sidebar */}
             <aside className="space-y-6">
               <section className="board-panel board-panel--command p-6">
                 <p className="board-kicker">Summary</p>
@@ -335,27 +357,25 @@ export function ProblemDetail() {
               <section className="board-panel board-panel--command p-6">
                 <p className="board-kicker">Actions</p>
                 <div className="board-action-cluster mt-5">
-                <Button variant="outline" onClick={handleUpvote} disabled={upvotePending} className={`w-full ${secondaryBtn}`}><ArrowUp className="mr-2 h-4 w-4" />{upvotePending ? "Updating..." : "Upvote"}</Button>
-                {isJob && isAcceptedBuilder && problem.jobStatus === "in_progress" ? <Button onClick={() => runAction("complete", async () => {
-                  const token = await getToken();
-                  const response = await fetch(API_ENDPOINTS.MARK_JOB_COMPLETE(id!), { method: "POST", headers: { Authorization: `Bearer ${token}` } });
-                  if (!response.ok) throw new Error(await response.text());
-                  setStatusMessage("Job marked complete.");
-                })} disabled={actionPending === "complete"} className={`w-full ${primaryBtn}`}>{actionPending === "complete" ? "Marking..." : "Mark complete"}</Button> : null}
-                {isJob && isOwner && problem.jobStatus === "completed" ? <Button onClick={() => runAction("pay", handlePayBuilder)} disabled={actionPending === "pay"} className={`w-full ${primaryBtn}`}><Wallet className="mr-2 h-4 w-4" />{actionPending === "pay" ? "Paying..." : "Pay builder"}</Button> : null}
-                {isOwner ? (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={handleDeleteProblem}
-                    disabled={deletePending}
-                    className="board-danger-btn w-full"
-                  >
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    {deletePending ? "Deleting..." : "Delete post"}
-                  </Button>
-                ) : null}
-                <Link to="/browse" className="block"><Button variant="outline" className={`w-full ${secondaryBtn}`}>Back to browse</Button></Link>
+                  <Button variant="outline" onClick={handleUpvote} disabled={upvotePending} className={`w-full ${secondaryBtn}`}><ArrowUp className="mr-2 h-4 w-4" />{upvotePending ? "Updating..." : "Upvote"}</Button>
+                  {isJob && isAcceptedBuilder && problem.jobStatus === "in_progress" ? (
+                    <Button onClick={() => runAction("complete", async () => {
+                      const token = await getToken();
+                      const response = await fetch(API_ENDPOINTS.MARK_JOB_COMPLETE(id!), { method: "POST", headers: { Authorization: `Bearer ${token}` } });
+                      if (!response.ok) throw new Error(await response.text());
+                      setStatusMessage("Job marked complete.");
+                    })} disabled={actionPending === "complete"} className={`w-full ${primaryBtn}`}>{actionPending === "complete" ? "Marking..." : "Mark complete"}</Button>
+                  ) : null}
+                  {isJob && isOwner && problem.jobStatus === "completed" ? (
+                    <Button onClick={() => runAction("pay", handlePayBuilder)} disabled={actionPending === "pay"} className={`w-full ${primaryBtn}`}><Wallet className="mr-2 h-4 w-4" />{actionPending === "pay" ? "Paying..." : "Pay builder"}</Button>
+                  ) : null}
+                  {isOwner ? (
+                    <Button type="button" variant="outline" onClick={handleDeleteProblem} disabled={deletePending} className="board-danger-btn w-full">
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      {deletePending ? "Deleting..." : "Delete post"}
+                    </Button>
+                  ) : null}
+                  <Link to="/browse" className="block"><Button variant="outline" className={`w-full ${secondaryBtn}`}>Back to browse</Button></Link>
                 </div>
               </section>
 
@@ -364,10 +384,10 @@ export function ProblemDetail() {
                   <p className="board-kicker">Tip builder</p>
                   <h3 className="mt-3 font-display text-2xl font-semibold tracking-[-0.05em] text-[var(--board-ink)]">{selectedTipProposal.builderName}</h3>
                   <div className="mt-5 space-y-4">
-                    <div><Label className="mb-2 block text-sm text-[var(--board-ink)]">Amount</Label><Input type="number" min="0" step="0.000001" value={tipForm.amount} onChange={(event) => setTipForm({ ...tipForm, amount: event.target.value })} className={field} required /></div>
-                    <div><Label className="mb-2 block text-sm text-[var(--board-ink)]">Chain</Label><select value={tipForm.chain} onChange={(event) => setTipForm({ ...tipForm, chain: event.target.value as typeof tipForm.chain })} className="board-field h-12 w-full px-3"><option value="solana">Solana</option><option value="ethereum">Ethereum</option><option value="polygon">Polygon</option><option value="arbitrum">Arbitrum</option></select></div>
-                    <div><Label className="mb-2 block text-sm text-[var(--board-ink)]">Transaction hash</Label><Input value={tipForm.txHash} onChange={(event) => setTipForm({ ...tipForm, txHash: event.target.value })} className={field} required /></div>
-                    <div><Label className="mb-2 block text-sm text-[var(--board-ink)]">Message</Label><Textarea value={tipForm.message} onChange={(event) => setTipForm({ ...tipForm, message: event.target.value })} className="board-field min-h-[110px]" /></div>
+                    <div><Label className="mb-2 block text-sm text-[var(--board-ink)]">Amount</Label><Input type="number" min="0" step="0.000001" value={tipForm.amount} onChange={(e) => setTipForm({ ...tipForm, amount: e.target.value })} className={field} required /></div>
+                    <div><Label className="mb-2 block text-sm text-[var(--board-ink)]">Chain</Label><select value={tipForm.chain} onChange={(e) => setTipForm({ ...tipForm, chain: e.target.value as typeof tipForm.chain })} className="board-field h-12 w-full px-3"><option value="solana">Solana</option><option value="ethereum">Ethereum</option><option value="polygon">Polygon</option><option value="arbitrum">Arbitrum</option></select></div>
+                    <div><Label className="mb-2 block text-sm text-[var(--board-ink)]">Transaction hash</Label><Input value={tipForm.txHash} onChange={(e) => setTipForm({ ...tipForm, txHash: e.target.value })} className={field} required /></div>
+                    <div><Label className="mb-2 block text-sm text-[var(--board-ink)]">Message</Label><Textarea value={tipForm.message} onChange={(e) => setTipForm({ ...tipForm, message: e.target.value })} className="board-field min-h-[110px]" /></div>
                   </div>
                   <div className="mt-5 rounded-lg border border-[color:var(--board-line)] bg-[var(--board-panel)] px-4 py-3 text-sm text-[var(--board-muted)]">Send the tip directly first, then paste the transaction hash here so the payment is attached to the proposal.</div>
                   <div className="mt-5 flex gap-3"><Button type="submit" className={`flex-1 ${primaryBtn}`}>Record tip</Button><Button type="button" variant="outline" onClick={() => setSelectedTipProposal(null)} className={`flex-1 ${secondaryBtn}`}>Cancel</Button></div>
@@ -378,12 +398,12 @@ export function ProblemDetail() {
                 <section className="board-panel p-6">
                   <p className="board-kicker">Payment flow</p>
                   <div className="mt-5 space-y-3 text-sm leading-7 text-[var(--board-muted)]">
-                    <p>1. Owner accepts one proposal.</p>
-                    <p>2. Builder marks the job complete.</p>
-                    <p>3. Owner pays directly from Phantom or Solflare.</p>
-                    <p>4. The transaction hash is recorded and the job is marked paid.</p>
+                    <p className="flex items-start gap-2"><ShieldCheck className="mt-0.5 h-4 w-4 text-emerald-500/70" />1. Owner accepts one proposal.</p>
+                    <p className="flex items-start gap-2"><ShieldCheck className="mt-0.5 h-4 w-4 text-emerald-500/70" />2. Builder marks the job complete.</p>
+                    <p className="flex items-start gap-2"><ShieldCheck className="mt-0.5 h-4 w-4 text-emerald-500/70" />3. Owner pays directly from Phantom or Solflare.</p>
+                    <p className="flex items-start gap-2"><ShieldCheck className="mt-0.5 h-4 w-4 text-emerald-500/70" />4. The transaction hash is recorded and the job is marked paid.</p>
                   </div>
-                  {mySolanaWallet ? <div className="mt-5 rounded-lg border border-[color:rgba(219,84,97,0.34)] bg-[rgba(219,84,97,0.12)] px-4 py-3 text-sm text-[var(--board-accent)]">Your Solana wallet: {shortWallet(mySolanaWallet)}</div> : null}
+                  {mySolanaWallet ? <div className="mt-5 rounded-lg border border-[color:rgba(201,84,94,0.34)] bg-[rgba(201,84,94,0.12)] px-4 py-3 text-sm text-[var(--board-accent)]">Your Solana wallet: {shortWallet(mySolanaWallet)}</div> : null}
                 </section>
               ) : null}
             </aside>

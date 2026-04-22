@@ -2,12 +2,8 @@ import { Link } from "react-router";
 import { ArrowRight, CheckCircle2, ChevronRight } from "lucide-react";
 import { Button } from "./ui/button";
 import { Navbar } from "./navbar";
-
-const ORBITS = [
-  { className: "board-cyber-web__orbit--outer" },
-  { className: "board-cyber-web__orbit--mid" },
-  { className: "board-cyber-web__orbit--inner" },
-];
+import { SpaceVideoBackground } from "./space-video-background";
+import { NetworkGraph } from "./network-graph";
 
 const AUDIENCES = [
   {
@@ -54,73 +50,29 @@ export function LandingPage() {
       <Navbar />
 
       <main>
-        <section className="board-hero">
-          <div className="board-cyber-web board-cyber-web--hero" aria-hidden="true">
-            <div className="board-cyber-web__backdrop" />
-            <div className="board-cyber-web__grid" />
-            <div className="board-cyber-web__halo" />
-            <div className="board-cyber-web__aurora" />
+        <section className="board-hero board-hero--video">
+          <SpaceVideoBackground />
+          <NetworkGraph />
 
-            {ORBITS.map((orbit) => (
-              <div key={orbit.className} className={`board-cyber-web__orbit ${orbit.className}`} />
-            ))}
-
-            <svg viewBox="0 0 520 520" className="board-cyber-web__svg">
-              <defs>
-                <radialGradient id="webGlow" cx="50%" cy="50%" r="60%">
-                  <stop offset="0%" stopColor="rgba(14,226,255,0.38)" />
-                  <stop offset="45%" stopColor="rgba(242,139,148,0.18)" />
-                  <stop offset="100%" stopColor="rgba(14,226,255,0)" />
-                </radialGradient>
-              </defs>
-              <circle cx="260" cy="260" r="188" className="board-cyber-web__ring board-cyber-web__ring--wide" />
-              <circle cx="260" cy="260" r="148" className="board-cyber-web__ring board-cyber-web__ring--drift" />
-              <circle cx="260" cy="260" r="108" className="board-cyber-web__ring" />
-              <circle cx="260" cy="260" r="68" className="board-cyber-web__ring board-cyber-web__ring--inner" />
-              <path d="M260 260 84 100" className="board-cyber-web__line" />
-              <path d="M260 260 356 86" className="board-cyber-web__line" />
-              <path d="M260 260 444 220" className="board-cyber-web__line" />
-              <path d="M260 260 394 422" className="board-cyber-web__line" />
-              <path d="M260 260 170 442" className="board-cyber-web__line" />
-              <path d="M260 260 70 300" className="board-cyber-web__line" />
-              <path d="M84 100 C170 138, 216 172, 260 260" className="board-cyber-web__arc" />
-              <path d="M356 86 C360 156, 316 206, 260 260" className="board-cyber-web__arc" />
-              <path d="M444 220 C382 226, 322 236, 260 260" className="board-cyber-web__arc" />
-              <path d="M394 422 C356 360, 316 306, 260 260" className="board-cyber-web__arc" />
-              <path d="M170 442 C196 370, 222 316, 260 260" className="board-cyber-web__arc" />
-              <path d="M70 300 C132 286, 198 274, 260 260" className="board-cyber-web__arc" />
-              <circle cx="260" cy="260" r="172" className="board-cyber-web__sweep" />
-              <circle cx="260" cy="260" r="128" className="board-cyber-web__sweep board-cyber-web__sweep--inner" />
-              <circle cx="260" cy="260" r="28" className="board-cyber-web__core" />
-              <circle cx="260" cy="260" r="104" fill="url(#webGlow)" />
-              <circle cx="84" cy="100" r="7" className="board-cyber-web__node" />
-              <circle cx="356" cy="86" r="7" className="board-cyber-web__node" />
-              <circle cx="444" cy="220" r="7" className="board-cyber-web__node" />
-              <circle cx="394" cy="422" r="7" className="board-cyber-web__node" />
-              <circle cx="170" cy="442" r="7" className="board-cyber-web__node" />
-              <circle cx="70" cy="300" r="7" className="board-cyber-web__node" />
-              <circle cx="198" cy="154" r="4.8" className="board-cyber-web__node board-cyber-web__node--soft" />
-              <circle cx="332" cy="160" r="4.8" className="board-cyber-web__node board-cyber-web__node--soft" />
-              <circle cx="362" cy="292" r="4.8" className="board-cyber-web__node board-cyber-web__node--soft" />
-              <circle cx="246" cy="364" r="4.8" className="board-cyber-web__node board-cyber-web__node--soft" />
-            </svg>
-          </div>
-
-          <div className="board-container board-hero__grid">
+          <div className="board-container board-hero__grid board-hero__grid--video">
             <div className="max-w-3xl">
-              <h1 className="board-display fade-in stagger-1">
+              <div className="board-hero__eyebrow fade-in stagger-1">
+                <span className="board-hero__status-pip" />
+                SYSTEM OPERATIONAL
+              </div>
+              <h1 className="board-display board-display--metal fade-in stagger-1">
                 Put the work on the board.
               </h1>
-              <h2 className="board-title mt-5 fade-in stagger-2">
+              <h2 className="board-title board-title--metal mt-5 fade-in stagger-2">
                 Find a builder who can actually close it.
               </h2>
-              <p className="board-copy mt-6 fade-in stagger-3">
+              <p className="board-copy board-copy--metal mt-6 fade-in stagger-3">
                 Problem Hunt is a bounty marketplace for technical work that keeps getting delayed. Post a brief, price the ask, review serious responses, and move from backlog to shipped without losing the thread.
               </p>
 
               <div className="mt-8 flex flex-col gap-4 sm:flex-row fade-in stagger-4">
                 <Link to="/browse">
-                  <Button className="board-btn-primary h-12 border-0 bg-[var(--board-accent)] px-6 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-white hover:bg-[var(--color-accent-hover)]">
+                  <Button className="board-btn-primary board-btn-primary--metal h-12 border-0 bg-[var(--board-metal-accent)] px-6 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-[var(--board-metal-dark)] hover:bg-[var(--board-metal-light)]">
                     Browse live work
                     <ArrowRight className="h-4 w-4" />
                   </Button>
@@ -128,39 +80,39 @@ export function LandingPage() {
                 <Link to="/post">
                   <Button
                     variant="outline"
-                    className="board-btn-secondary h-12 border-[color:var(--board-line-strong)] bg-transparent px-6 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-[var(--board-muted)] hover:bg-[var(--board-panel-strong)] hover:text-[var(--board-ink)]"
+                    className="board-btn-secondary board-btn-secondary--metal h-12 border-[color:var(--board-metal-line)] bg-transparent/60 px-6 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-[var(--board-metal-muted)] backdrop-blur-sm hover:bg-[var(--board-metal-panel)] hover:text-[var(--board-metal-ink)]"
                   >
                     Post a brief
                   </Button>
                 </Link>
               </div>
 
-              <div className="mt-10 grid gap-5 border-t border-[color:var(--board-line)] pt-6 sm:grid-cols-3 fade-in stagger-5">
-                <div className="board-stat">
-                  <div className="board-stat__value">One</div>
-                  <div className="board-stat__label">Place for briefs, tasks, and bounties</div>
+              <div className="mt-10 grid gap-5 border-t border-[color:var(--board-metal-line)] pt-6 sm:grid-cols-3 fade-in stagger-5">
+                <div className="board-stat board-stat--metal">
+                  <div className="board-stat__value board-stat__value--metal">One</div>
+                  <div className="board-stat__label board-stat__label--metal">Place for briefs, tasks, and bounties</div>
                 </div>
-                <div className="board-stat">
-                  <div className="board-stat__value">Direct</div>
-                  <div className="board-stat__label">Wallet-aware payout flow</div>
+                <div className="board-stat board-stat--metal">
+                  <div className="board-stat__value board-stat__value--metal">Direct</div>
+                  <div className="board-stat__label board-stat__label--metal">Wallet-aware payout flow</div>
                 </div>
-                <div className="board-stat">
-                  <div className="board-stat__value">Clear</div>
-                  <div className="board-stat__label">Signals, bids, and ownership</div>
+                <div className="board-stat board-stat--metal">
+                  <div className="board-stat__value board-stat__value--metal">Clear</div>
+                  <div className="board-stat__label board-stat__label--metal">Signals, bids, and ownership</div>
                 </div>
               </div>
             </div>
 
-            <div className="board-hero__poster fade-in stagger-2">
-              <div className="board-cyber-web__status">
-                <span className="board-cyber-web__status-dot" />
-                system routing active
+            <div className="board-hero__poster board-hero__poster--metal fade-in stagger-2">
+              <div className="board-hero__status">
+                <span className="board-hero__status-dot" />
+                telemetry active
               </div>
 
-              <div className="board-cyber-web__panel">
-                <p className="board-ticket__label">Future Repair Mesh</p>
-                <p className="board-ticket__title">Map the blocker. Route the fix.</p>
-                <p className="board-ticket__meta">cyber board / live network / payout ready</p>
+              <div className="board-hero__panel">
+                <p className="board-ticket__label board-ticket__label--metal">Mission Control</p>
+                <p className="board-ticket__title board-ticket__title--metal">Map the blocker. Route the fix.</p>
+                <p className="board-ticket__meta board-ticket__meta--metal">live network / payout ready / orbital sync</p>
               </div>
             </div>
           </div>

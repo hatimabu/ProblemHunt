@@ -4,17 +4,26 @@
   --font-weight-normal: 400;
   --radius: 0.75rem;
 
-  --color-bg-page: #1a1220;
-  --color-bg-surface: #2f243a;
-  --color-bg-elevated: #3d2e4f;
-  --color-bg-hover: #52406b;
-  --color-accent: #db5461;
-  --color-accent-hover: #f28b94;
-  --color-gold: #e8c547;
-  --color-text-primary: #f5f0ff;
-  --color-text-muted: #b8a9cc;
-  --color-border: #52406b;
-  --color-border-subtle: #3d2e4f;
+  /* Space / Metal Core Palette */
+  --color-bg-page: #0a0c10;
+  --color-bg-surface: #13161d;
+  --color-bg-elevated: #1a1e28;
+  --color-bg-hover: #242a36;
+  --color-accent: #c9545e;
+  --color-accent-hover: #e0707a;
+  --color-gold: #c9a84c;
+  --color-text-primary: #e8ecf1;
+  --color-text-muted: #8a9199;
+  --color-border: #2a303c;
+  --color-border-subtle: #1e232d;
+
+  /* Metal-specific tokens */
+  --color-metal-silver: #c8cdd0;
+  --color-metal-steel: #a0a8ad;
+  --color-metal-chrome: #e2e6e9;
+  --color-metal-titanium: #8a9196;
+  --color-metal-dark: #070a0f;
+  --color-metal-panel: rgba(14, 18, 26, 0.72);
 
   --background: var(--color-bg-page);
   --foreground: var(--color-text-primary);
@@ -36,12 +45,12 @@
   --input: var(--color-border);
   --input-background: var(--color-bg-elevated);
   --switch-background: var(--color-bg-hover);
-  --ring: rgba(219, 84, 97, 0.4);
+  --ring: rgba(201, 84, 94, 0.4);
   --chart-1: var(--color-accent);
   --chart-2: var(--color-gold);
-  --chart-3: #8f78b4;
-  --chart-4: #f28b94;
-  --chart-5: #6e5a86;
+  --chart-3: #6e7a8a;
+  --chart-4: #e0707a;
+  --chart-5: #4a5568;
   --sidebar: var(--color-bg-surface);
   --sidebar-foreground: var(--color-text-primary);
   --sidebar-primary: var(--color-accent);
@@ -49,7 +58,7 @@
   --sidebar-accent: var(--color-bg-hover);
   --sidebar-accent-foreground: var(--color-text-primary);
   --sidebar-border: var(--color-border-subtle);
-  --sidebar-ring: rgba(219, 84, 97, 0.4);
+  --sidebar-ring: rgba(201, 84, 94, 0.4);
 
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -110,7 +119,7 @@
   --destructive-foreground: #ffffff;
   --border: var(--color-border);
   --input: var(--color-border);
-  --ring: rgba(219, 84, 97, 0.4);
+  --ring: rgba(201, 84, 94, 0.4);
   --sidebar: var(--color-bg-surface);
   --sidebar-foreground: var(--color-text-primary);
   --sidebar-primary: var(--color-accent);
@@ -118,13 +127,13 @@
   --sidebar-accent: var(--color-bg-hover);
   --sidebar-accent-foreground: var(--color-text-primary);
   --sidebar-border: var(--color-border-subtle);
-  --sidebar-ring: rgba(219, 84, 97, 0.4);
+  --sidebar-ring: rgba(201, 84, 94, 0.4);
 }
 
 @layer base {
   * {
     border-color: var(--color-border);
-    outline-color: rgba(219, 84, 97, 0.4);
+    outline-color: rgba(201, 84, 94, 0.4);
   }
 
   html {
