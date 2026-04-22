@@ -4,6 +4,7 @@ import { Button } from "./ui/button";
 import { Navbar } from "./navbar";
 import { SpaceVideoBackground } from "./space-video-background";
 import { NetworkGraph } from "./network-graph";
+import { LandingBackground } from "./landing-background";
 
 const AUDIENCES = [
   {
@@ -47,6 +48,7 @@ const SIGNALS = [
 export function LandingPage() {
   return (
     <div className="board-app">
+      <LandingBackground />
       <Navbar />
 
       <main>
