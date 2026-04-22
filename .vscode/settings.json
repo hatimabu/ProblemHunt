@@ -1,8 +1,0 @@
-{
-  "azureFunctions.deploySubpath": "problem-hunt\\python-function",
-  "azureFunctions.preDeployTask": "pip install (functions)",
-  "azureFunctions.projectLanguage": "Python",
-  "azureFunctions.projectRuntime": "~4",
-  "debug.internalConsoleOptions": "neverOpen",
-  "azureFunctions.projectSubpath": "problem-hunt\\python-function"
-}
