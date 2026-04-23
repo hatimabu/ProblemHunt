@@ -49,10 +49,7 @@ html {
 
 body {
   min-height: 100vh;
-  background:
-    radial-gradient(circle at top left, rgba(160, 168, 173, 0.06), transparent 30%),
-    radial-gradient(circle at 80% 15%, rgba(201, 168, 76, 0.04), transparent 20%),
-    linear-gradient(180deg, #0a0c10 0%, #070a0f 100%);
+  background: #070a0f;
   color: var(--board-ink);
   font-family: var(--font-body);
   line-height: 1.65;
@@ -289,9 +286,9 @@ samp,
   inset: -12%;
   pointer-events: none;
   background:
-    radial-gradient(circle at 20% 20%, rgba(160, 168, 173, 0.08), transparent 22%),
-    radial-gradient(circle at 78% 18%, rgba(201, 168, 76, 0.06), transparent 18%),
-    radial-gradient(circle at 62% 70%, rgba(42, 48, 60, 0.22), transparent 26%);
+    radial-gradient(circle at 20% 20%, rgba(160, 168, 173, 0.03), transparent 22%),
+    radial-gradient(circle at 78% 18%, rgba(160, 168, 173, 0.02), transparent 18%),
+    radial-gradient(circle at 62% 70%, rgba(42, 48, 60, 0.06), transparent 26%);
   filter: blur(56px);
 }
 
@@ -377,30 +374,26 @@ samp,
   border: 1px solid color-mix(in srgb, var(--board-metal-steel) 36%, var(--board-line));
   border-radius: 0.95rem;
   background:
-    radial-gradient(circle at 30% 30%, rgba(200, 205, 208, 0.18), transparent 46%),
-    linear-gradient(145deg, rgba(201, 84, 94, 0.1), rgba(200, 205, 208, 0.06)),
+    radial-gradient(circle at 30% 30%, rgba(212, 160, 90, 0.18), transparent 46%),
+    linear-gradient(145deg, rgba(212, 160, 90, 0.1), rgba(200, 205, 208, 0.06)),
     var(--board-panel-strong);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.05),
     0 10px 24px rgba(0, 0, 0, 0.28);
 }
 
-.board-brand-mark__wrench,
-.board-brand-mark__spark,
-.board-brand-mark__core {
-  stroke: var(--board-metal-steel);
-}
-
 .board-brand-mark__wrench {
-  fill: rgba(200, 205, 208, 0.08);
+  stroke: #d4a05a;
+  fill: rgba(212, 160, 90, 0.12);
 }
 
 .board-brand-mark__spark {
-  opacity: 0.7;
+  stroke: #8a9199;
+  opacity: 0.85;
 }
 
 .board-brand-mark__core {
-  fill: var(--board-accent);
+  fill: #a0a8ad;
   stroke: none;
 }
 
@@ -1331,7 +1324,7 @@ button:focus-visible,
   min-height: 100svh;
   padding: 2rem 0 3rem;
   overflow: clip;
-  background: var(--board-metal-dark);
+  background: transparent;
 }
 
 .board-hero__grid--video {
@@ -1365,14 +1358,14 @@ button:focus-visible,
   width: 0.4rem;
   height: 0.4rem;
   border-radius: 999px;
-  background: var(--board-metal-accent);
-  box-shadow: 0 0 0 4px rgba(200, 205, 208, 0.12);
+  background: #22c55e;
+  box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.18);
   animation: pipPulse 2.8s ease-in-out infinite;
 }
 
 @keyframes pipPulse {
-  0%, 100% { opacity: 1; box-shadow: 0 0 0 4px rgba(200, 205, 208, 0.12); }
-  50% { opacity: 0.6; box-shadow: 0 0 0 7px rgba(200, 205, 208, 0.05); }
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.18); }
+  50% { opacity: 0.55; box-shadow: 0 0 0 8px rgba(34, 197, 94, 0.06); }
 }
 
 /* ---- Metal Typography ---- */

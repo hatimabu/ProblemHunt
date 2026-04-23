@@ -74,8 +74,7 @@ export function SpaceVideoBackground({
         inset: 0,
         overflow: "hidden",
         zIndex: 0,
-        background:
-          "radial-gradient(ellipse at center, #0d1117 0%, #070a0f 60%, #000000 100%)",
+        background: "#070a0f",
       }}
     >
       {/* Starfield CSS fallback - always visible behind/around video */}
