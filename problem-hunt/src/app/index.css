@@ -216,6 +216,43 @@ samp,
   }
 }
 
+@keyframes navShine {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+.nav-link-shine {
+  position: relative;
+  overflow: hidden;
+}
+
+.nav-link-shine::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.10), transparent);
+  background-size: 200% 100%;
+  background-position: -200% center;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.nav-link-shine:hover::before {
+  animation: navShine 0.4s ease-out forwards;
+  opacity: 1;
+}
+
+@keyframes sunPulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.03); opacity: 0.95; }
+}
+
+@keyframes planetOrbit {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 @keyframes pulseLine {
   0%,
   100% {

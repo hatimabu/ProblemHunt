@@ -66,7 +66,7 @@ export function Navbar() {
             <Link
               key={link.path}
               to={link.path}
-              className={`relative px-4 py-2 font-mono-alt text-[0.72rem] font-semibold uppercase tracking-[0.14em] transition-colors ${
+              className={`nav-link-shine relative rounded-md px-4 py-2 font-mono-alt text-[0.72rem] font-semibold uppercase tracking-[0.14em] transition-colors ${
                 isActive(link.path)
                   ? "text-[var(--board-accent)]"
                   : "text-[var(--board-soft)] hover:text-[var(--board-ink)]"

@@ -111,6 +111,24 @@ export function LandingPage() {
                 telemetry active
               </div>
 
+              {/* Huge 2D sun with orbiting planet */}
+              <div className="relative flex flex-1 items-center justify-center">
+                {/* Orbit ring */}
+                <div className="absolute h-64 w-64 rounded-full border border-white/10 md:h-80 md:w-80" />
+                {/* Planet orbit */}
+                <div className="absolute h-64 w-64 animate-[planetOrbit_10s_linear_infinite] md:h-80 md:w-80">
+                  <div className="absolute -top-1.5 left-1/2 h-3 w-3 -translate-x-1/2 rounded-full bg-white shadow-[0_0_12px_rgba(255,255,255,0.9)]" />
+                </div>
+                {/* Sun */}
+                <div
+                  className="relative h-40 w-40 animate-[sunPulse_4s_ease-in-out_infinite] rounded-full md:h-52 md:w-52"
+                  style={{
+                    background: 'radial-gradient(circle at 35% 35%, #fde047, #f59e0b 45%, #b45309 85%)',
+                    boxShadow: '0 0 60px 24px rgba(245, 158, 11, 0.35), inset 0 0 40px rgba(253, 224, 71, 0.35)',
+                  }}
+                />
+              </div>
+
               <div className="board-hero__panel">
                 <p className="board-ticket__label board-ticket__label--metal">Mission Control</p>
                 <p className="board-ticket__title board-ticket__title--metal">Map the blocker. Route the fix.</p>

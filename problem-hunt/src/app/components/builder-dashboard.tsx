@@ -1,11 +1,19 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router";
-import { Camera, Cpu, Loader2, Rocket, Signal, User, Wallet, ArrowRight, AlertCircle, BarChart3 } from "lucide-react";
+import { Camera, Cpu, Loader2, Rocket, Signal, User, Wallet, Search, AlertCircle, BarChart3 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { Navbar } from "./navbar";
 import { Button } from "./ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
-import { PayoutWalletDialog } from "./payout-wallet-dialog";
+import { Input } from "./ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "./ui/select";
+import { upsertPrimaryWalletApi, type WalletChainDto } from "../../lib/user-wallets-api";
 import { fetchDashboardSnapshot, uploadDashboardAvatar, type DashboardProfile } from "../../lib/user-dashboard-api";
 import { type ProblemPost, type ProposalRecord } from "../../lib/marketplace";
 
@@ -19,7 +27,10 @@ export function BuilderDashboard() {
   const [proposals, setProposals] = useState<ProposalRecord[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [walletCount, setWalletCount] = useState(0);
-  const [walletDialogOpen, setWalletDialogOpen] = useState(false);
+  const [walletChain, setWalletChain] = useState<WalletChainDto>("solana");
+  const [walletAddress, setWalletAddress] = useState("");
+  const [walletSaving, setWalletSaving] = useState(false);
+  const [walletError, setWalletError] = useState<string | null>(null);
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [avatarError, setAvatarError] = useState<string | null>(null);
   const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null);
@@ -69,6 +80,30 @@ export function BuilderDashboard() {
     }
   };
 
+  const handleSaveWallet = async () => {
+    setWalletError(null);
+    const trimmed = walletAddress.trim();
+    if (!trimmed) { setWalletError("Address is required."); return; }
+
+    if (walletChain === "solana") {
+      if (trimmed.length < 32 || trimmed.length > 44) { setWalletError("Invalid Solana address (32–44 chars)."); return; }
+    } else {
+      if (!/^0x[a-fA-F0-9]{40}$/.test(trimmed)) { setWalletError("Invalid EVM address (0x + 40 hex chars)."); return; }
+    }
+
+    setWalletSaving(true);
+    try {
+      await upsertPrimaryWalletApi(walletChain, trimmed);
+      setWalletAddress("");
+      setActionMessage("Wallet saved.");
+      void loadDashboard(false);
+    } catch (err) {
+      setWalletError(err instanceof Error ? err.message : "Failed to save wallet.");
+    } finally {
+      setWalletSaving(false);
+    }
+  };
+
   const displayName = profile?.full_name || profile?.username || user?.username || "Builder";
 
   if (loading) {
@@ -104,10 +139,12 @@ export function BuilderDashboard() {
               </p>
 
               <div className="mt-7 flex flex-col gap-3 sm:flex-row">
-                <Button onClick={() => setWalletDialogOpen(true)} className="h-11 border-0 bg-[var(--board-accent)] px-5 text-[0.75rem] font-semibold uppercase tracking-[0.14em] text-white hover:bg-[var(--color-accent-hover)]">
-                  <Wallet className="mr-2 h-4 w-4" />
-                  Add wallet
-                </Button>
+                <Link to="/browse">
+                  <Button className="h-11 border-0 bg-[var(--board-accent)] px-5 text-[0.75rem] font-semibold uppercase tracking-[0.14em] text-white hover:bg-[var(--color-accent-hover)]">
+                    <Search className="mr-2 h-4 w-4" />
+                    Browse
+                  </Button>
+                </Link>
                 <Link to="/post">
                   <Button variant="outline" className="h-11 border-[color:var(--board-line-strong)] bg-transparent px-5 text-[0.75rem] font-semibold uppercase tracking-[0.14em] text-[var(--board-muted)] hover:bg-[var(--board-panel-strong)] hover:text-[var(--board-ink)]">
                     <Rocket className="mr-2 h-4 w-4" />
@@ -179,10 +216,41 @@ export function BuilderDashboard() {
               </div>
             ) : null}
 
-            <button type="button" onClick={() => setWalletDialogOpen(true)} className="mt-4 flex w-full items-center justify-between rounded-xl border border-[color:var(--board-line)] bg-[var(--board-panel)] px-4 py-3 text-sm text-[var(--board-ink)] hover:bg-[var(--board-panel-strong)]">
-              <span>Manage wallets</span>
-              <ArrowRight className="h-4 w-4 text-[var(--board-accent)]" />
-            </button>
+            {/* Inline wallet input */}
+            <div className="mt-4 space-y-3 rounded-xl border border-[color:var(--board-line)] bg-[var(--board-panel)] p-4">
+              <p className="board-eyebrow">Add payout wallet</p>
+              <Select value={walletChain} onValueChange={(v) => setWalletChain(v as WalletChainDto)}>
+                <SelectTrigger className="board-field h-10 text-[var(--board-ink)]">
+                  <SelectValue placeholder="Chain" />
+                </SelectTrigger>
+                <SelectContent className="border-[color:var(--board-line-strong)] bg-[var(--board-panel-strong)] text-[var(--board-ink)]">
+                  <SelectItem value="solana">Solana</SelectItem>
+                  <SelectItem value="ethereum">Ethereum</SelectItem>
+                  <SelectItem value="polygon">Polygon</SelectItem>
+                  <SelectItem value="arbitrum">Arbitrum</SelectItem>
+                </SelectContent>
+              </Select>
+              <Input
+                placeholder="Wallet address"
+                value={walletAddress}
+                onChange={(e) => { setWalletAddress(e.target.value); setWalletError(null); }}
+                className="board-field h-10"
+              />
+              {walletError ? (
+                <div className="flex items-center gap-2 text-xs text-[var(--board-accent)]">
+                  <AlertCircle className="h-3.5 w-3.5" />
+                  {walletError}
+                </div>
+              ) : null}
+              <Button
+                onClick={() => void handleSaveWallet()}
+                disabled={walletSaving || !walletAddress.trim()}
+                className="h-10 w-full border-0 bg-[var(--board-accent)] text-[0.72rem] font-semibold uppercase tracking-[0.14em] text-white hover:bg-[var(--color-accent-hover)]"
+              >
+                {walletSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wallet className="mr-2 h-4 w-4" />}
+                Save wallet
+              </Button>
+            </div>
           </aside>
         </section>
 
@@ -190,7 +258,7 @@ export function BuilderDashboard() {
         {actionMessage ? <div className="board-inline-note mt-6">{actionMessage}</div> : null}
       </main>
 
-      <PayoutWalletDialog open={walletDialogOpen} onOpenChange={setWalletDialogOpen} walletCount={walletCount} onWalletsChange={(count) => { setWalletCount(count); void loadDashboard(false); }} />
+
     </div>
   );
 }
