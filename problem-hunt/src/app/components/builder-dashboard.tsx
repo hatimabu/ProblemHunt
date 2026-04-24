@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router";
-import { Camera, Cpu, Loader2, Rocket, Signal, User, Wallet, Search, AlertCircle, BarChart3 } from "lucide-react";
+import { Camera, Cpu, Loader2, Rocket, Signal, User, Wallet, Search, AlertCircle, BarChart3, ArrowRight, Trash2, X } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { Navbar } from "./navbar";
 import { Button } from "./ui/button";
@@ -13,9 +13,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "./ui/select";
-import { upsertPrimaryWalletApi, type WalletChainDto } from "../../lib/user-wallets-api";
+import { supabase } from "../../../lib/supabaseClient";
+import {
+  upsertPrimaryWalletApi,
+  listUserWalletsApi,
+  deleteUserWalletApi,
+  type WalletChainDto,
+  type UserWalletApiRow,
+} from "../../lib/user-wallets-api";
 import { fetchDashboardSnapshot, uploadDashboardAvatar, type DashboardProfile } from "../../lib/user-dashboard-api";
-import { type ProblemPost, type ProposalRecord } from "../../lib/marketplace";
+import { formatTimeAgo, type ProblemPost, type ProposalRecord } from "../../lib/marketplace";
 
 export function BuilderDashboard() {
   const { user } = useAuth();
@@ -31,6 +38,9 @@ export function BuilderDashboard() {
   const [walletAddress, setWalletAddress] = useState("");
   const [walletSaving, setWalletSaving] = useState(false);
   const [walletError, setWalletError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<"overview" | "posted" | "wallets">("overview");
+  const [wallets, setWallets] = useState<UserWalletApiRow[]>([]);
+  const [walletsLoading, setWalletsLoading] = useState(false);
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [avatarError, setAvatarError] = useState<string | null>(null);
   const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null);
@@ -104,6 +114,50 @@ export function BuilderDashboard() {
     }
   };
 
+  const fetchWalletsList = async () => {
+    if (!user) return;
+    setWalletsLoading(true);
+    try {
+      try {
+        const rows = await listUserWalletsApi();
+        setWallets(rows);
+        setWalletCount(rows.length);
+      } catch (apiErr) {
+        console.warn("[dashboard] API list failed, using Supabase", apiErr);
+        const { data, error } = await supabase
+          .from("wallets")
+          .select("*")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: true });
+        if (error) throw error;
+        const rows = (data ?? []) as UserWalletApiRow[];
+        setWallets(rows);
+        setWalletCount(rows.length);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load wallets.");
+    } finally {
+      setWalletsLoading(false);
+    }
+  };
+
+  const handleDeleteWallet = async (walletId: string) => {
+    try {
+      try {
+        await deleteUserWalletApi(walletId);
+      } catch (apiErr) {
+        console.warn("[dashboard] API delete failed, using Supabase", apiErr);
+        const { error } = await supabase.from("wallets").delete().eq("id", walletId);
+        if (error) throw error;
+      }
+      await fetchWalletsList();
+      setActionMessage("Wallet removed.");
+      void loadDashboard(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to remove wallet.");
+    }
+  };
+
   const displayName = profile?.full_name || profile?.username || user?.username || "Builder";
 
   if (loading) {
@@ -154,13 +208,17 @@ export function BuilderDashboard() {
               </div>
 
               <div className="mt-8 grid gap-3 border-t border-[color:var(--board-line)] pt-5 sm:grid-cols-2 xl:grid-cols-4">
-                <div className="rounded-xl border border-[color:var(--board-line)] bg-[var(--board-panel-strong)] p-4">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("posted")}
+                  className="nav-link-shine rounded-xl border border-[color:var(--board-line)] bg-[var(--board-panel-strong)] p-4 text-left transition-colors hover:border-[color:var(--board-accent)] hover:bg-[var(--board-panel)]"
+                >
                   <div className="flex items-center gap-2">
                     <BarChart3 className="h-3.5 w-3.5 text-[var(--board-metal-steel)]" />
                     <p className="board-eyebrow">Posted</p>
                   </div>
                   <p className="mt-2 text-sm text-[var(--board-muted)]">{posts.length} brief{posts.length === 1 ? "" : "s"}</p>
-                </div>
+                </button>
                 <div className="rounded-xl border border-[color:var(--board-line)] bg-[var(--board-panel-strong)] p-4">
                   <div className="flex items-center gap-2">
                     <Signal className="h-3.5 w-3.5 text-[var(--board-metal-steel)]" />
@@ -168,13 +226,17 @@ export function BuilderDashboard() {
                   </div>
                   <p className="mt-2 text-sm text-[var(--board-muted)]">{proposals.length} proposal{proposals.length === 1 ? "" : "s"}</p>
                 </div>
-                <div className="rounded-xl border border-[color:var(--board-line)] bg-[var(--board-panel-strong)] p-4">
+                <button
+                  type="button"
+                  onClick={() => { setActiveTab("wallets"); void fetchWalletsList(); }}
+                  className="nav-link-shine rounded-xl border border-[color:var(--board-line)] bg-[var(--board-panel-strong)] p-4 text-left transition-colors hover:border-[color:var(--board-accent)] hover:bg-[var(--board-panel)]"
+                >
                   <div className="flex items-center gap-2">
                     <Wallet className="h-3.5 w-3.5 text-[var(--board-metal-steel)]" />
                     <p className="board-eyebrow">Wallets</p>
                   </div>
                   <p className="mt-2 text-sm text-[var(--board-muted)]">{walletCount} linked wallet{walletCount === 1 ? "" : "s"}</p>
-                </div>
+                </button>
                 <div className="rounded-xl border border-[color:var(--board-line)] bg-[var(--board-panel-strong)] p-4">
                   <div className="flex items-center gap-2">
                     <Cpu className="h-3.5 w-3.5 text-[var(--board-metal-steel)]" />
@@ -253,6 +315,95 @@ export function BuilderDashboard() {
             </div>
           </aside>
         </section>
+
+        {/* Bottom tabbed section */}
+        {activeTab === "posted" && (
+          <section className="board-panel mt-6 p-6 md:p-8">
+            <div className="flex items-center justify-between border-b border-[color:var(--board-line)] pb-4">
+              <h2 className="board-subtitle text-[1.4rem]">Posted briefs</h2>
+              <button
+                type="button"
+                onClick={() => setActiveTab("overview")}
+                className="flex h-8 w-8 items-center justify-center rounded-lg border border-[color:var(--board-line)] text-[var(--board-muted)] hover:bg-[var(--board-panel-strong)] hover:text-[var(--board-ink)]"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="mt-4 space-y-3">
+              {posts.length === 0 ? (
+                <p className="text-sm text-[var(--board-muted)]">No briefs posted yet.</p>
+              ) : (
+                posts.map((post) => (
+                  <Link
+                    key={post.id}
+                    to={`/problem/${post.id}`}
+                    className="flex items-center justify-between rounded-lg border border-[color:var(--board-line)] bg-[var(--board-panel)] p-4 transition-colors hover:bg-[var(--board-panel-strong)]"
+                  >
+                    <div>
+                      <p className="text-sm font-medium text-[var(--board-ink)]">{post.title}</p>
+                      <p className="mt-1 text-xs text-[var(--board-muted)]">
+                        {post.category} • {formatTimeAgo(post.createdAt)}
+                      </p>
+                    </div>
+                    <ArrowRight className="h-4 w-4 text-[var(--board-accent)]" />
+                  </Link>
+                ))
+              )}
+            </div>
+          </section>
+        )}
+
+        {activeTab === "wallets" && (
+          <section className="board-panel mt-6 p-6 md:p-8">
+            <div className="flex items-center justify-between border-b border-[color:var(--board-line)] pb-4">
+              <h2 className="board-subtitle text-[1.4rem]">Linked wallets</h2>
+              <button
+                type="button"
+                onClick={() => setActiveTab("overview")}
+                className="flex h-8 w-8 items-center justify-center rounded-lg border border-[color:var(--board-line)] text-[var(--board-muted)] hover:bg-[var(--board-panel-strong)] hover:text-[var(--board-ink)]"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="mt-4 space-y-3">
+              {walletsLoading ? (
+                <div className="flex justify-center py-6">
+                  <Loader2 className="h-5 w-5 animate-spin text-[var(--board-accent)]" />
+                </div>
+              ) : wallets.length === 0 ? (
+                <p className="text-sm text-[var(--board-muted)]">No wallets linked.</p>
+              ) : (
+                wallets.map((w) => (
+                  <div
+                    key={w.id}
+                    className="flex items-center justify-between gap-4 rounded-lg border border-[color:var(--board-line)] bg-[var(--board-panel)] p-4"
+                  >
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="board-pill text-[0.65rem]">{w.chain}</span>
+                        {w.is_primary && (
+                          <span className="board-pill board-pill--accent text-[0.65rem]">Primary</span>
+                        )}
+                      </div>
+                      <p className="mt-2 font-mono text-xs text-[var(--board-ink)] break-all">{w.address}</p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => void handleDeleteWallet(w.id)}
+                      className="shrink-0 border-[color:var(--board-line)] text-[var(--board-muted)] hover:border-[color:rgba(201,84,94,0.34)] hover:bg-[rgba(201,84,94,0.12)] hover:text-[var(--board-accent)]"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))
+              )}
+            </div>
+            <p className="mt-4 text-sm text-[var(--board-muted)]">
+              {wallets.length} linked wallet{wallets.length === 1 ? "" : "s"}
+            </p>
+          </section>
+        )}
 
         {error ? <div className="board-inline-note mt-6">{error}</div> : null}
         {actionMessage ? <div className="board-inline-note mt-6">{actionMessage}</div> : null}

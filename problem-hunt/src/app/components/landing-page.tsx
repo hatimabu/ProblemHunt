@@ -111,6 +111,30 @@ export function LandingPage() {
                 telemetry active
               </div>
 
+              {/* 9 imploding/exploding orbits around a central dot */}
+              <div className="absolute left-1/2 top-[5%] h-[260px] w-[260px] -translate-x-1/2 md:h-[320px] md:w-[320px]">
+                {/* Center dot (planet) */}
+                <div className="absolute left-1/2 top-1/2 z-10 h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white shadow-[0_0_24px_rgba(255,255,255,0.95)]" />
+                {/* 9 orbital rings */}
+                {Array.from({ length: 9 }).map((_, i) => {
+                  const size = 70 + i * 22;
+                  return (
+                    <div
+                      key={i}
+                      className="orbit-ring absolute left-1/2 top-1/2 rounded-full"
+                      style={{
+                        width: size,
+                        height: size,
+                        transform: 'translate(-50%, -50%)',
+                        border: '2.5px solid rgba(255, 255, 255, 0.22)',
+                        animation: 'orbitImplodeExplode 3s ease-in-out infinite',
+                        animationDelay: `${i * 0.12}s`,
+                      }}
+                    />
+                  );
+                })}
+              </div>
+
               {/* Huge 2D sun with orbiting planet */}
               <div className="relative flex flex-1 items-center justify-center">
                 {/* Orbit ring */}

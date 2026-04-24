@@ -336,9 +336,11 @@ export function LandingBackground() {
 
       ctx.clearRect(0, 0, width, height);
       const { storyNodes, hubs, travelers, pulseRings } = scene;
+      const HIDDEN_NODE = 5; // Live Signal node and its travelers hidden
 
       // ---- Spawn pulse rings from nodes periodically ----
       storyNodes.forEach((node, i) => {
+        if (i === HIDDEN_NODE) return;
         const interval = 4000 + i * 800;
         const offset = i * 1200;
         if (elapsed > offset && Math.floor((elapsed - offset) / interval) > Math.floor((elapsed - offset - dt) / interval)) {
@@ -373,7 +375,9 @@ export function LandingBackground() {
 
       // ---- Connection lines between nearby story nodes ----
       for (let i = 0; i < storyNodes.length; i++) {
+        if (i === HIDDEN_NODE) continue;
         for (let j = i + 1; j < storyNodes.length; j++) {
+          if (j === HIDDEN_NODE) continue;
           const a = storyNodes[i];
           const b = storyNodes[j];
           const dx = a.x - b.x;
@@ -396,7 +400,8 @@ export function LandingBackground() {
 
       // ---- Connections from hubs to nearby story nodes ----
       hubs.forEach((hub) => {
-        storyNodes.forEach((node) => {
+        storyNodes.forEach((node, ni) => {
+          if (ni === HIDDEN_NODE) return;
           const dx = hub.x - node.x;
           const dy = hub.y - node.y;
           const dist = Math.sqrt(dx * dx + dy * dy);
@@ -418,6 +423,7 @@ export function LandingBackground() {
       // ---- Update and draw travelers ----
       travelers.forEach((traveler) => {
         if (!traveler.active || elapsed < traveler.delay) return;
+        if (traveler.fromNode === HIDDEN_NODE || traveler.toNode === HIDDEN_NODE) return;
 
         const from = storyNodes[traveler.fromNode];
         const to = storyNodes[traveler.toNode];
@@ -572,6 +578,7 @@ export function LandingBackground() {
 
       // ---- Story nodes ----
       storyNodes.forEach((node, ni) => {
+        if (ni === HIDDEN_NODE) return;
         node.pulsePhase += 0.0015 * dt;
         node.lit += (node.litTarget - node.lit) * 0.025 * dt;
         if (node.litTarget > 0 && Math.abs(node.litTarget - node.lit) < 0.02) {
