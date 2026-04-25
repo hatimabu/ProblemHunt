@@ -89,8 +89,6 @@ This is the product flow in plain English:
 8. Users can record tips.
 9. The owner can delete their own post.
 
-image.png
-
 ## 5. Signal Flow
 
 Think of signal flow as “which service talks to which other service.”
@@ -121,6 +119,8 @@ Example actions: create post, submit proposal, upvote, delete.
 3. API validates auth and payload.
 4. Handler writes to Cosmos DB.
 5. Frontend refreshes state and updates the UI.
+
+<img width="1422" height="789" alt="signal flow" src="https://github.com/user-attachments/assets/deddcc93-14e8-4498-8d34-033f9cf080e6" />
 
 ## 6. Services You Need
 
