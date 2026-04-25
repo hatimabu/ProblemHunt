@@ -213,13 +213,13 @@ export function BuilderDashboard() {
                 <button
                   type="button"
                   onClick={() => setActiveTab("posted")}
-                  className="group nav-link-shine rounded-xl border border-[color:var(--board-line)] bg-[var(--board-panel-strong)] p-4 text-left transition-colors hover:border-[color:var(--board-accent)] hover:bg-[var(--board-panel)]"
+                  className="group nav-link-shine-teal rounded-xl border border-[color:var(--board-line)] bg-[var(--board-panel-strong)] p-4 text-left transition-colors"
                 >
                   <div className="flex items-center gap-2">
-                    <BarChart3 className="h-3.5 w-3.5 text-[var(--board-metal-steel)] transition-all duration-300 group-hover:text-[#e8c547] group-hover:drop-shadow-[0_0_6px_rgba(232,197,71,0.6)]" />
-                    <p className="board-eyebrow transition-colors duration-300 group-hover:text-[#e8c547]">Posted</p>
+                    <BarChart3 className="h-3.5 w-3.5 text-[var(--board-metal-steel)] transition-all duration-300 group-hover:text-white group-hover:drop-shadow-[0_0_6px_rgba(255,255,255,0.6)]" />
+                    <p className="board-eyebrow transition-colors duration-300 group-hover:text-white">Posted</p>
                   </div>
-                  <p className="mt-2 text-sm text-[var(--board-muted)]">{posts.length} brief{posts.length === 1 ? "" : "s"}</p>
+                  <p className="mt-2 text-sm text-[var(--board-muted)] transition-colors duration-300 group-hover:text-white">{posts.length} brief{posts.length === 1 ? "" : "s"}</p>
                 </button>
                 <div className="rounded-xl border border-[color:var(--board-line)] bg-[var(--board-panel-strong)] p-4">
                   <div className="flex items-center gap-2">
@@ -231,13 +231,13 @@ export function BuilderDashboard() {
                 <button
                   type="button"
                   onClick={() => { setActiveTab("wallets"); void fetchWalletsList(); }}
-                  className="group nav-link-shine rounded-xl border border-[color:var(--board-line)] bg-[var(--board-panel-strong)] p-4 text-left transition-colors hover:border-[color:var(--board-accent)] hover:bg-[var(--board-panel)]"
+                  className="group nav-link-shine-teal rounded-xl border border-[color:var(--board-line)] bg-[var(--board-panel-strong)] p-4 text-left transition-colors"
                 >
                   <div className="flex items-center gap-2">
-                    <Wallet className="h-3.5 w-3.5 text-[var(--board-metal-steel)] transition-all duration-300 group-hover:text-[#e8c547] group-hover:drop-shadow-[0_0_6px_rgba(232,197,71,0.6)]" />
-                    <p className="board-eyebrow transition-colors duration-300 group-hover:text-[#e8c547]">Wallets</p>
+                    <Wallet className="h-3.5 w-3.5 text-[var(--board-metal-steel)] transition-all duration-300 group-hover:text-white group-hover:drop-shadow-[0_0_6px_rgba(255,255,255,0.6)]" />
+                    <p className="board-eyebrow transition-colors duration-300 group-hover:text-white">Wallets</p>
                   </div>
-                  <p className="mt-2 text-sm text-[var(--board-muted)]">{walletCount} linked wallet{walletCount === 1 ? "" : "s"}</p>
+                  <p className="mt-2 text-sm text-[var(--board-muted)] transition-colors duration-300 group-hover:text-white">{walletCount} linked wallet{walletCount === 1 ? "" : "s"}</p>
                 </button>
                 <div className="rounded-xl border border-[color:var(--board-line)] bg-[var(--board-panel-strong)] p-4">
                   <div className="flex items-center gap-2">

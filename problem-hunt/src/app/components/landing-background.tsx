@@ -110,17 +110,6 @@ function buildScene(width: number, height: number) {
       pulsePhase: Math.random() * Math.PI * 2,
     },
     {
-      x: width * 0.16,
-      y: height * 0.47,
-      label: "Who It Serves",
-      color: METAL.steel.main,
-      glowColor: METAL.steel.glow,
-      radius: 4,
-      lit: 0,
-      litTarget: 0,
-      pulsePhase: Math.random() * Math.PI * 2,
-    },
-    {
       x: width * 0.74,
       y: height * 0.61,
       label: "How It Moves",
@@ -213,8 +202,8 @@ function buildScene(width: number, height: number) {
   ];
 
   const routes: [number, number][] = [
-    [0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 6],
-    [0, 3], [1, 4], [2, 5], [3, 6], [0, 2], [4, 6],
+    [0, 1], [1, 2], [2, 3], [3, 4], [4, 5],
+    [1, 3], [2, 4], [0, 2], [3, 5],
   ];
 
   const travelers: Traveler[] = [];
@@ -246,7 +235,7 @@ function buildScene(width: number, height: number) {
       color: METAL.goldBright.main,
       glowColor: METAL.goldBright.glow,
       fromNode: 0,
-      toNode: [1, 3, 2, 4][i],
+      toNode: [1, 2, 3, 4][i],
       active: true,
       trail: [],
       trailLength: 10 + Math.floor(Math.random() * 6),
@@ -336,7 +325,7 @@ export function LandingBackground() {
 
       ctx.clearRect(0, 0, width, height);
       const { storyNodes, hubs, travelers, pulseRings } = scene;
-      const HIDDEN_NODE = 5; // Live Signal node and its travelers hidden
+      const HIDDEN_NODE = 4; // Live Signal node and its travelers hidden
 
       // ---- Spawn pulse rings from nodes periodically ----
       storyNodes.forEach((node, i) => {

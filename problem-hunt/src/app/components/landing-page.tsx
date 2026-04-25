@@ -1,48 +1,32 @@
 import { Link } from "react-router";
-import { ArrowRight, CheckCircle2, ChevronRight } from "lucide-react";
+import { ArrowRight, Globe, Shield, Zap, Wallet } from "lucide-react";
 import { Button } from "./ui/button";
 import { Navbar } from "./navbar";
 import { SpaceVideoBackground } from "./space-video-background";
 import { NetworkGraph } from "./network-graph";
 import { LandingBackground } from "./landing-background";
 
-const AUDIENCES = [
+const DECENTRALIZED_FEATURES = [
   {
-    title: "For founders and operators",
-    copy: "Put the real blocker on the board, set the reward, and stop carrying the task from sprint to sprint.",
+    icon: Globe,
+    title: "Borderless Bounties",
+    copy: "Post work from anywhere. Builders from any timezone can bid, ship, and get paid — no bank account required.",
   },
   {
-    title: "For builders",
-    copy: "Find briefs with enough context to price properly, reply with a plan, and get paid for doing the work.",
+    icon: Shield,
+    title: "Trustless Escrow",
+    copy: "Funds lock on-chain when a brief is accepted. Payout releases only when work is verified and approved.",
   },
   {
-    title: "For teams in the middle",
-    copy: "Use one marketplace for one-off technical rescues, scoped implementation, and open-ended problem solving.",
-  },
-];
-
-const FLOW = [
-  {
-    step: "01",
-    title: "Post what actually needs to move",
-    copy: "Describe the problem, the scope, or the deliverable and attach a bounty that makes the work worth taking.",
+    icon: Zap,
+    title: "Direct Settlement",
+    copy: "No middlemen, no holding periods. Wallet-to-wallet settlement in seconds, not business days.",
   },
   {
-    step: "02",
-    title: "Review the builders who show up",
-    copy: "Compare bids, timelines, experience, and links. Pick the person who sounds ready to ship instead of guess.",
+    icon: Wallet,
+    title: "Multi-Chain Ready",
+    copy: "Solana, Ethereum, Polygon, Arbitrum. Connect the wallet that matches your stack and keep everything in one place.",
   },
-  {
-    step: "03",
-    title: "Track it through to payout",
-    copy: "Accepted work, direct tips, and wallet-based payment all live in the same flow once the build starts moving.",
-  },
-];
-
-const SIGNALS = [
-  { type: "Paid task", title: "Refactor our Supabase auth recovery flow", budget: "2.4 SOL", detail: "Identity, session repair, rollout notes" },
-  { type: "Problem brief", title: "Need a saner dashboard for proposal review", budget: "$650", detail: "Design system cleanup, better scanning" },
-  { type: "Paid task", title: "Automate stale issue triage in GitHub", budget: "$900", detail: "Actions, labels, notification rules" },
 ];
 
 export function LandingPage() {
@@ -74,7 +58,7 @@ export function LandingPage() {
 
               <div className="mt-8 flex flex-col gap-4 sm:flex-row fade-in stagger-4">
                 <Link to="/browse">
-                  <Button className="board-btn-primary board-btn-primary--metal h-12 border-0 bg-[var(--board-metal-accent)] px-6 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-[var(--board-metal-dark)] hover:bg-[var(--board-metal-light)]">
+                  <Button className="board-btn-primary board-btn-primary--metal h-12 border-0 bg-[var(--board-metal-accent)] px-6 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-[var(--board-metal-dark)] transition-all hover:bg-[var(--board-metal-light)] hover:shadow-[0_0_20px_rgba(200,205,208,0.35)] hover:scale-[1.02]">
                     Browse live work
                     <ArrowRight className="h-4 w-4" />
                   </Button>
@@ -82,7 +66,7 @@ export function LandingPage() {
                 <Link to="/post">
                   <Button
                     variant="outline"
-                    className="board-btn-secondary board-btn-secondary--metal h-12 border-[color:var(--board-metal-line)] bg-transparent/60 px-6 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-[var(--board-metal-muted)] backdrop-blur-sm hover:bg-[var(--board-metal-panel)] hover:text-[var(--board-metal-ink)]"
+                    className="board-btn-secondary board-btn-secondary--metal h-12 border-[color:var(--board-metal-line)] bg-transparent/60 px-6 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-[var(--board-metal-muted)] backdrop-blur-sm transition-all hover:bg-[var(--board-metal-panel)] hover:text-[var(--board-metal-ink)] hover:shadow-[0_0_20px_rgba(200,205,208,0.2)] hover:scale-[1.02]"
                   >
                     Post a brief
                   </Button>
@@ -148,95 +132,26 @@ export function LandingPage() {
         <section className="board-section">
           <div className="board-container">
             <div className="max-w-2xl">
-              <p className="board-kicker">Who It Serves</p>
-              <h2 className="board-title mt-3">Built for people with work in front of them, not just ideas about work.</h2>
+              <p className="board-kicker">Decentralized</p>
+              <h2 className="board-title mt-3">No gatekeepers. Just work and wallets.</h2>
             </div>
 
-            <div className="mt-12 grid gap-8 lg:grid-cols-3">
-              {AUDIENCES.map((item, index) => (
-                <div key={item.title} className={`border-t border-[color:var(--board-line)] pt-6 fade-in stagger-${Math.min(index + 1, 5)}`}>
-                  <h3 className="board-subtitle text-[1.65rem]">{item.title}</h3>
-                  <p className="board-copy mt-4 text-base">{item.copy}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <section className="board-section">
-          <div className="board-container grid gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(280px,0.8fr)]">
-            <div>
-              <p className="board-kicker">How It Moves</p>
-              <h2 className="board-title mt-3">One loop from post to payout.</h2>
-
-              <div className="mt-10">
-                {FLOW.map((item, index) => (
-                  <div key={item.step} className={`board-row fade-in stagger-${Math.min(index + 1, 5)}`}>
-                    <div className="grid gap-4 md:grid-cols-[100px_minmax(0,1fr)]">
-                      <p className="board-eyebrow">{item.step}</p>
-                      <div>
-                        <h3 className="board-subtitle text-[1.8rem]">{item.title}</h3>
-                        <p className="board-copy mt-3 text-base">{item.copy}</p>
-                      </div>
+            <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+              {DECENTRALIZED_FEATURES.map((item, index) => {
+                const Icon = item.icon;
+                return (
+                  <div
+                    key={item.title}
+                    className={`feature-box-navy rounded-2xl border p-6 fade-in stagger-${Math.min(index + 1, 5)}`}
+                  >
+                    <div className="feature-box-navy__icon-wrap flex h-10 w-10 items-center justify-center rounded-xl border">
+                      <Icon className="feature-box-navy__icon h-4 w-4" />
                     </div>
+                    <h3 className="feature-box-navy__title board-subtitle mt-5 text-[1.25rem]">{item.title}</h3>
+                    <p className="feature-box-navy__copy board-copy mt-3 text-sm leading-7">{item.copy}</p>
                   </div>
-                ))}
-              </div>
-            </div>
-
-            <aside className="board-panel board-panel--soft p-6 md:p-8">
-              <p className="board-kicker">What Good Looks Like</p>
-              <div className="mt-6 space-y-5">
-                {[
-                  "Enough context to price the work properly",
-                  "A clear deadline or decision window",
-                  "Builder responses that sound operational, not speculative",
-                  "One place to track accepted work and payment",
-                ].map((item) => (
-                  <div key={item} className="flex items-start gap-3">
-                    <CheckCircle2 className="mt-1 h-4 w-4 text-[var(--board-accent)]" />
-                    <p className="text-sm leading-7 text-[var(--board-muted)]">{item}</p>
-                  </div>
-                ))}
-              </div>
-            </aside>
-          </div>
-        </section>
-
-        <section className="board-section">
-          <div className="board-container">
-            <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
-              <div className="max-w-2xl">
-                <p className="board-kicker">Live Signal</p>
-                <h2 className="board-title mt-3">The marketplace should scan like a board, not a dashboard mosaic.</h2>
-              </div>
-              <Link
-                to="/browse"
-                className="inline-flex items-center gap-2 font-mono-alt text-[0.74rem] font-semibold uppercase tracking-[0.18em] text-[var(--board-accent)]"
-              >
-                Open marketplace
-                <ChevronRight className="h-4 w-4" />
-              </Link>
-            </div>
-
-            <div className="mt-10 border-t border-[color:var(--board-line)]">
-              {SIGNALS.map((signal) => (
-                <div key={signal.title} className="board-row">
-                  <div className="grid gap-5 md:grid-cols-[160px_minmax(0,1fr)_140px] md:items-start">
-                    <div className="board-eyebrow">{signal.type}</div>
-                    <div>
-                      <h3 className="board-subtitle text-[1.9rem]">{signal.title}</h3>
-                      <p className="mt-3 text-sm leading-7 text-[var(--board-muted)]">{signal.detail}</p>
-                    </div>
-                    <div className="md:text-right">
-                      <p className="board-eyebrow">Budget</p>
-                      <p className="mt-2 font-display text-2xl font-semibold tracking-[-0.05em] text-[var(--board-ink)]">
-                        {signal.budget}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </section>
@@ -255,7 +170,7 @@ export function LandingPage() {
                   Post a brief
                 </Button>
               </Link>
-              <Link to="/browse">
+              <Link to="/leaderboard">
                 <Button
                   variant="outline"
                   className="board-btn-secondary h-12 border-[color:var(--board-line-strong)] bg-transparent px-6 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-[var(--board-muted)] hover:bg-[var(--board-panel-strong)] hover:text-[var(--board-ink)]"
@@ -273,7 +188,7 @@ export function LandingPage() {
           <div>
             <p className="board-eyebrow">Problem Hunt</p>
             <p className="mt-2 text-sm text-[var(--board-muted)]">
-              A clearer market for technical work, scoped tasks, and bounty-backed problem solving.
+              A decentralized marketplace for technical work, scoped tasks, and bounty-backed problem solving.
             </p>
           </div>
 

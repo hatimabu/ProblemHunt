@@ -87,8 +87,8 @@ export function AuthPage() {
           <div className="board-panel p-6 md:p-8">
             <Tabs defaultValue="login" className="space-y-6">
               <TabsList className="board-tabs grid h-auto w-full grid-cols-2 p-1">
-                <TabsTrigger value="login">Login</TabsTrigger>
-                <TabsTrigger value="signup">Sign up</TabsTrigger>
+                <TabsTrigger value="login" className="transition-all duration-200">Login</TabsTrigger>
+                <TabsTrigger value="signup" className="transition-all duration-200">Sign up</TabsTrigger>
               </TabsList>
 
               <TabsContent value="login">
@@ -107,7 +107,7 @@ export function AuthPage() {
                     </Label>
                     <Input id="login-password" type="password" placeholder="••••••••" value={loginData.password} onChange={(e) => setLoginData({ ...loginData, password: e.target.value })} className="board-field" required />
                   </div>
-                  {loginError ? <div className="rounded-lg border border-[color:rgba(201,84,94,0.34)] bg-[rgba(201,84,94,0.12)] px-4 py-3 text-sm text-[var(--board-accent)]">{loginError}</div> : null}
+                  {loginError ? <div className="rounded-lg border border-[color:rgba(201,84,94,0.5)] bg-[rgba(201,84,94,0.18)] px-4 py-3 text-sm font-semibold text-white shadow-[0_0_12px_rgba(201,84,94,0.25)]">{loginError}</div> : null}
                   <Button type="submit" disabled={isSubmitting} className="board-btn-primary h-12 w-full border-0 bg-[var(--board-accent)] text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-white hover:bg-[var(--color-accent-hover)]">
                     {isSubmitting ? "Logging in..." : "Login"}
                   </Button>
@@ -160,7 +160,7 @@ export function AuthPage() {
                       </button>
                     </div>
                   </div>
-                  {signupError ? <div className="rounded-lg border border-[color:rgba(201,84,94,0.34)] bg-[rgba(201,84,94,0.12)] px-4 py-3 text-sm text-[var(--board-accent)]">{signupError}</div> : null}
+                  {signupError ? <div className="rounded-lg border border-[color:rgba(201,84,94,0.5)] bg-[rgba(201,84,94,0.18)] px-4 py-3 text-sm font-semibold text-white shadow-[0_0_12px_rgba(201,84,94,0.25)]">{signupError}</div> : null}
                   <Button type="submit" disabled={isSubmitting} className="board-btn-primary h-12 w-full border-0 bg-[var(--board-accent)] text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-white hover:bg-[var(--color-accent-hover)]">
                     {isSubmitting ? "Creating account..." : "Create account"}
                   </Button>

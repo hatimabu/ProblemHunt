@@ -1000,9 +1000,15 @@ button:focus-visible,
 }
 
 .board-tabs [data-state='active'] {
-  background: var(--board-panel-strong);
-  border-color: rgba(219, 84, 97, 0.36);
-  color: var(--board-accent);
+  background: rgba(6, 167, 125, 0.14);
+  border-color: #06A77D;
+  color: #fff;
+}
+
+.board-tabs [data-slot='tabs-trigger']:not([data-state='active']):hover {
+  background: rgba(6, 167, 125, 0.08);
+  border-color: rgba(6, 167, 125, 0.4);
+  color: #06A77D;
 }
 
 .board-nav,
@@ -1437,6 +1443,51 @@ button:focus-visible,
 @keyframes cpuPulse {
   0%, 100% { transform: scale(1); filter: drop-shadow(0 0 2px rgba(232,197,71,0.3)); }
   50% { transform: scale(1.15); filter: drop-shadow(0 0 8px rgba(232,197,71,0.6)); }
+}
+
+.nav-link-shine-teal {
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.nav-link-shine-teal:hover {
+  border-color: #06A77D !important;
+  background: rgba(6, 167, 125, 0.18) !important;
+}
+
+.feature-box-navy {
+  border-color: #33658A !important;
+  background: rgba(51, 101, 138, 0.14) !important;
+}
+
+.feature-box-navy .feature-box-navy__icon-wrap {
+  border-color: #33658A;
+  background: rgba(51, 101, 138, 0.2);
+}
+
+.feature-box-navy .feature-box-navy__icon {
+  color: #fff;
+}
+
+.feature-box-navy .feature-box-navy__title {
+  color: #fff;
+}
+
+.feature-box-navy .feature-box-navy__copy {
+  color: var(--board-soft);
+}
+
+.nav-link-shine-yellow {
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.2s ease, background 0.2s ease, color 0.2s ease;
+}
+
+.nav-link-shine-yellow:hover {
+  border-color: #e8c547 !important;
+  background: rgba(232, 197, 71, 0.14) !important;
+  color: #e8c547 !important;
 }
 
 /* ---- Metal Typography ---- */
