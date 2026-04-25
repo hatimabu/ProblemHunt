@@ -89,7 +89,7 @@ This is the product flow in plain English:
 8. Users can record tips.
 9. The owner can delete their own post.
 
-image.png
+
 
 ## 5. Signal Flow
 

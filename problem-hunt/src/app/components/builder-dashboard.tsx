@@ -3,6 +3,7 @@ import { Link } from "react-router";
 import { Camera, Cpu, Loader2, Rocket, Signal, User, Wallet, Search, AlertCircle, BarChart3, ArrowRight, Trash2, X } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { Navbar } from "./navbar";
+import { DashboardBackground } from "./dashboard-background";
 import { Button } from "./ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { Input } from "./ui/input";
@@ -177,14 +178,15 @@ export function BuilderDashboard() {
     <div className="board-app">
       <Navbar />
 
-      <main className="board-container py-8 md:py-10">
+      <main className="board-container relative py-8 md:py-10">
+        <DashboardBackground />
         <section className="grid gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(300px,0.8fr)]">
           {/* Main panel */}
           <div className="board-panel relative overflow-hidden p-6 md:p-8">
             <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(160,168,173,0.08),transparent_45%)]" />
             <div className="relative">
               <div className="flex items-center gap-2">
-                <Cpu className="h-4 w-4 text-[var(--board-metal-steel)]" />
+                <Cpu className="h-4 w-4 animate-[cpuPulse_3s_ease-in-out_infinite] text-[#e8c547]" />
                 <p className="board-kicker">Mission Control</p>
               </div>
               <h1 className="mt-3 font-display text-6xl font-semibold tracking-[-0.06em] text-[var(--board-ink)]">{displayName}</h1>
@@ -211,11 +213,11 @@ export function BuilderDashboard() {
                 <button
                   type="button"
                   onClick={() => setActiveTab("posted")}
-                  className="nav-link-shine rounded-xl border border-[color:var(--board-line)] bg-[var(--board-panel-strong)] p-4 text-left transition-colors hover:border-[color:var(--board-accent)] hover:bg-[var(--board-panel)]"
+                  className="group nav-link-shine rounded-xl border border-[color:var(--board-line)] bg-[var(--board-panel-strong)] p-4 text-left transition-colors hover:border-[color:var(--board-accent)] hover:bg-[var(--board-panel)]"
                 >
                   <div className="flex items-center gap-2">
-                    <BarChart3 className="h-3.5 w-3.5 text-[var(--board-metal-steel)]" />
-                    <p className="board-eyebrow">Posted</p>
+                    <BarChart3 className="h-3.5 w-3.5 text-[var(--board-metal-steel)] transition-all duration-300 group-hover:text-[#e8c547] group-hover:drop-shadow-[0_0_6px_rgba(232,197,71,0.6)]" />
+                    <p className="board-eyebrow transition-colors duration-300 group-hover:text-[#e8c547]">Posted</p>
                   </div>
                   <p className="mt-2 text-sm text-[var(--board-muted)]">{posts.length} brief{posts.length === 1 ? "" : "s"}</p>
                 </button>
@@ -229,11 +231,11 @@ export function BuilderDashboard() {
                 <button
                   type="button"
                   onClick={() => { setActiveTab("wallets"); void fetchWalletsList(); }}
-                  className="nav-link-shine rounded-xl border border-[color:var(--board-line)] bg-[var(--board-panel-strong)] p-4 text-left transition-colors hover:border-[color:var(--board-accent)] hover:bg-[var(--board-panel)]"
+                  className="group nav-link-shine rounded-xl border border-[color:var(--board-line)] bg-[var(--board-panel-strong)] p-4 text-left transition-colors hover:border-[color:var(--board-accent)] hover:bg-[var(--board-panel)]"
                 >
                   <div className="flex items-center gap-2">
-                    <Wallet className="h-3.5 w-3.5 text-[var(--board-metal-steel)]" />
-                    <p className="board-eyebrow">Wallets</p>
+                    <Wallet className="h-3.5 w-3.5 text-[var(--board-metal-steel)] transition-all duration-300 group-hover:text-[#e8c547] group-hover:drop-shadow-[0_0_6px_rgba(232,197,71,0.6)]" />
+                    <p className="board-eyebrow transition-colors duration-300 group-hover:text-[#e8c547]">Wallets</p>
                   </div>
                   <p className="mt-2 text-sm text-[var(--board-muted)]">{walletCount} linked wallet{walletCount === 1 ? "" : "s"}</p>
                 </button>
@@ -405,7 +407,6 @@ export function BuilderDashboard() {
           </section>
         )}
 
-        {error ? <div className="board-inline-note mt-6">{error}</div> : null}
         {actionMessage ? <div className="board-inline-note mt-6">{actionMessage}</div> : null}
       </main>
 

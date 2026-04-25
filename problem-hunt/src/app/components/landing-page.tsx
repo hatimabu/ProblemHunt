@@ -112,21 +112,22 @@ export function LandingPage() {
               </div>
 
               {/* 9 imploding/exploding orbits around a central dot */}
-              <div className="absolute left-1/2 top-[5%] h-[260px] w-[260px] -translate-x-1/2 md:h-[320px] md:w-[320px]">
+              <div className="absolute left-1/2 top-4 aspect-square h-[280px] w-[280px] -translate-x-1/2 z-[5] md:h-[380px] md:w-[380px] xl:h-[460px] xl:w-[460px]">
                 {/* Center dot (planet) */}
-                <div className="absolute left-1/2 top-1/2 z-10 h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white shadow-[0_0_24px_rgba(255,255,255,0.95)]" />
+                <div className="absolute left-1/2 top-1/2 z-10 h-6 w-6 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white shadow-[0_0_28px_rgba(255,255,255,0.95)] md:h-8 md:w-8 md:shadow-[0_0_44px_rgba(255,255,255,0.95)] xl:h-9 xl:w-9 xl:shadow-[0_0_52px_rgba(255,255,255,0.95)]" />
                 {/* 9 orbital rings */}
                 {Array.from({ length: 9 }).map((_, i) => {
-                  const size = 70 + i * 22;
+                  const pct = [22, 30, 38, 46, 54, 62, 70, 80, 90][i];
                   return (
                     <div
                       key={i}
                       className="orbit-ring absolute left-1/2 top-1/2 rounded-full"
                       style={{
-                        width: size,
-                        height: size,
-                        transform: 'translate(-50%, -50%)',
-                        border: '2.5px solid rgba(255, 255, 255, 0.22)',
+                        width: `${pct}%`,
+                        height: `${pct}%`,
+                        marginLeft: `-${pct / 2}%`,
+                        marginTop: `-${pct / 2}%`,
+                        border: '4px solid rgba(255, 255, 255, 0.28)',
                         animation: 'orbitImplodeExplode 3s ease-in-out infinite',
                         animationDelay: `${i * 0.12}s`,
                       }}
@@ -135,25 +136,7 @@ export function LandingPage() {
                 })}
               </div>
 
-              {/* Huge 2D sun with orbiting planet */}
-              <div className="relative flex flex-1 items-center justify-center">
-                {/* Orbit ring */}
-                <div className="absolute h-64 w-64 rounded-full border border-white/10 md:h-80 md:w-80" />
-                {/* Planet orbit */}
-                <div className="absolute h-64 w-64 animate-[planetOrbit_10s_linear_infinite] md:h-80 md:w-80">
-                  <div className="absolute -top-1.5 left-1/2 h-3 w-3 -translate-x-1/2 rounded-full bg-white shadow-[0_0_12px_rgba(255,255,255,0.9)]" />
-                </div>
-                {/* Sun */}
-                <div
-                  className="relative h-40 w-40 animate-[sunPulse_4s_ease-in-out_infinite] rounded-full md:h-52 md:w-52"
-                  style={{
-                    background: 'radial-gradient(circle at 35% 35%, #fde047, #f59e0b 45%, #b45309 85%)',
-                    boxShadow: '0 0 60px 24px rgba(245, 158, 11, 0.35), inset 0 0 40px rgba(253, 224, 71, 0.35)',
-                  }}
-                />
-              </div>
-
-              <div className="board-hero__panel">
+              <div className="board-hero__panel z-[10]">
                 <p className="board-ticket__label board-ticket__label--metal">Mission Control</p>
                 <p className="board-ticket__title board-ticket__title--metal">Map the blocker. Route the fix.</p>
                 <p className="board-ticket__meta board-ticket__meta--metal">live network / payout ready / orbital sync</p>

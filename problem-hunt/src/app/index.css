@@ -1434,6 +1434,11 @@ button:focus-visible,
   50% { opacity: 0.55; box-shadow: 0 0 0 8px rgba(34, 197, 94, 0.06); }
 }
 
+@keyframes cpuPulse {
+  0%, 100% { transform: scale(1); filter: drop-shadow(0 0 2px rgba(232,197,71,0.3)); }
+  50% { transform: scale(1.15); filter: drop-shadow(0 0 8px rgba(232,197,71,0.6)); }
+}
+
 /* ---- Metal Typography ---- */
 .board-display--metal {
   color: var(--board-metal-ink);
