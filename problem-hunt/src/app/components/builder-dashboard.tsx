@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router";
-import { Camera, Cpu, Loader2, Rocket, Signal, User, Wallet, Search, AlertCircle, BarChart3, ArrowRight, Trash2, X, Crown } from "lucide-react";
+import { Camera, Cpu, Loader2, Rocket, Signal, User, Wallet, Search, AlertCircle, BarChart3, ArrowRight, Trash2, X, Crown, Eye, EyeOff } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { Navbar } from "./navbar";
 import { DashboardBackground } from "./dashboard-background";
@@ -50,6 +50,12 @@ export function BuilderDashboard() {
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [avatarError, setAvatarError] = useState<string | null>(null);
   const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null);
+  const [showAddresses, setShowAddresses] = useState(false);
+
+  function maskAddress(address: string) {
+    if (address.length <= 12) return address;
+    return `${address.slice(0, 6)}...${address.slice(-4)}`;
+  }
 
   const loadDashboard = async (showSpinner = false) => {
     if (!user) return;
@@ -408,13 +414,23 @@ export function BuilderDashboard() {
           <section className="board-panel mt-6 p-6 md:p-8">
             <div className="flex items-center justify-between border-b border-[color:var(--board-line)] pb-4">
               <h2 className="board-subtitle text-[1.4rem]">Linked wallets</h2>
-              <button
-                type="button"
-                onClick={() => setActiveTab("overview")}
-                className="flex h-8 w-8 items-center justify-center rounded-lg border border-[color:var(--board-line)] text-[var(--board-muted)] hover:bg-[var(--board-panel-strong)] hover:text-[var(--board-ink)]"
-              >
-                <X className="h-4 w-4" />
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowAddresses((s) => !s)}
+                  className="flex items-center gap-2 rounded-lg border border-[color:var(--board-line)] px-3 py-1.5 text-xs font-medium text-[var(--board-muted)] hover:bg-[var(--board-panel-strong)] hover:text-[var(--board-ink)]"
+                >
+                  {showAddresses ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                  {showAddresses ? "Hide" : "Reveal"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("overview")}
+                  className="flex h-8 w-8 items-center justify-center rounded-lg border border-[color:var(--board-line)] text-[var(--board-muted)] hover:bg-[var(--board-panel-strong)] hover:text-[var(--board-ink)]"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
             </div>
             <div className="mt-4 space-y-3">
               {walletsLoading ? (
@@ -438,7 +454,9 @@ export function BuilderDashboard() {
                           </span>
                         )}
                       </div>
-                      <p className="mt-2 font-mono text-xs text-[var(--board-ink)] break-all">{w.address}</p>
+                      <p className="mt-2 font-mono text-xs text-[var(--board-ink)] break-all">
+                        {showAddresses ? w.address : maskAddress(w.address)}
+                      </p>
                     </div>
                     <div className="flex items-center gap-2">
                       {!w.is_primary && (

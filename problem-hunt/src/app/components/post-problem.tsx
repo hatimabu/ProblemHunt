@@ -68,7 +68,15 @@ export function PostProblem() {
       const problem = await handleResponse(response);
       navigate(`/problem/${problem.id}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to create post");
+      let msg = err instanceof Error ? err.message : "Failed to create post";
+      if (msg.includes("401") || msg.toLowerCase().includes("authentication required")) {
+        msg =
+          "Authentication failed (401). The API couldn't validate your session token. Common fixes:\n" +
+          "1. Make sure your backend SUPABASE_URL, SUPABASE_ANON_KEY and SUPABASE_JWT_SECRET match the frontend values.\n" +
+          "2. If running locally, set VITE_API_BASE_URL=http://localhost:7071 in problem-hunt/.env and start the Functions app (func start in python-function/).\n" +
+          "3. Check the browser console and the Azure Function logs for the exact auth failure.";
+      }
+      setError(msg);
     } finally {
       setIsSubmitting(false);
     }
@@ -82,7 +90,7 @@ export function PostProblem() {
         <section className="grid gap-8 border-b border-[color:var(--board-line)] pb-10 lg:grid-cols-[minmax(0,1fr)_320px]">
           <div>
             <div className="flex items-center gap-2">
-              <Rocket className="h-4 w-4 text-[var(--board-metal-steel)]" />
+              <Rocket className="h-4 w-4 text-white" />
               <p className="board-kicker">New Listing</p>
             </div>
             <h1 className="board-title mt-3">Post a brief, a scoped task, or a bounty.</h1>
@@ -144,7 +152,7 @@ export function PostProblem() {
                 <div className="grid gap-6">
                   <div>
                     <Label htmlFor="title" className="mb-2 flex items-center gap-2 text-sm text-[var(--board-ink)]">
-                      <FileText className="h-4 w-4 text-[var(--board-accent)]" />
+                      <FileText className="h-4 w-4 text-white" />
                       {isJob ? "Task title" : "Brief title"}
                     </Label>
                     <Input id="title" placeholder={isJob ? "Harden our CI deployment workflow" : "Need a better Terraform drift workflow"} value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} className="board-field" required />
@@ -164,7 +172,7 @@ export function PostProblem() {
                 <div className={`grid gap-6 ${isJob ? "md:grid-cols-2" : "md:grid-cols-3"}`}>
                   <div>
                     <Label htmlFor="category" className="mb-2 flex items-center gap-2 text-sm text-[var(--board-ink)]">
-                      <Tag className="h-4 w-4 text-[var(--board-accent)]" />
+                      <Tag className="h-4 w-4 text-white" />
                       Category
                     </Label>
                     <Select value={formData.category} onValueChange={(value) => setFormData({ ...formData, category: value })}>
@@ -176,14 +184,14 @@ export function PostProblem() {
                   </div>
                   <div>
                     <Label htmlFor={isJob ? "budgetSol" : "budget"} className="mb-2 flex items-center gap-2 text-sm text-[var(--board-ink)]">
-                      <Coins className="h-4 w-4 text-[#e8c547]" />
+                      <Coins className="h-4 w-4 text-white" />
                       {isJob ? "Budget (SOL)" : "Bounty"}
                     </Label>
                     <Input id={isJob ? "budgetSol" : "budget"} type={isJob ? "number" : "text"} step={isJob ? "0.000001" : undefined} placeholder={isJob ? "3.5" : "$900 / 1.25 SOL / fixed fee"} value={isJob ? formData.budgetSol : formData.budget} onChange={(e) => setFormData({ ...formData, [isJob ? "budgetSol" : "budget"]: e.target.value })} className="board-field" required />
                   </div>
                   <div>
                     <Label htmlFor="deadline" className="mb-2 flex items-center gap-2 text-sm text-[var(--board-ink)]">
-                      <Calendar className="h-4 w-4 text-[var(--board-accent)]" />
+                      <Calendar className="h-4 w-4 text-white" />
                       Deadline
                     </Label>
                     <Input id="deadline" type="date" value={formData.deadline} onChange={(e) => setFormData({ ...formData, deadline: e.target.value })} className="board-field" required={isJob} />
@@ -193,7 +201,7 @@ export function PostProblem() {
                   <div className="mt-6 grid gap-6 md:grid-cols-2">
                     <div>
                       <Label htmlFor="jobType" className="mb-2 flex items-center gap-2 text-sm text-[var(--board-ink)]">
-                        <Briefcase className="h-4 w-4 text-[var(--board-accent)]" />
+                        <Briefcase className="h-4 w-4 text-white" />
                         Job type
                       </Label>
                       <Select value={formData.jobType} onValueChange={(value) => setFormData({ ...formData, jobType: value })}>
