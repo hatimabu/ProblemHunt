@@ -488,6 +488,7 @@ export function BuilderDashboard() {
           </section>
         )}
 
+        {error ? <div className="board-inline-note mt-6">{error}</div> : null}
         {actionMessage ? <div className="board-inline-note mt-6">{actionMessage}</div> : null}
       </main>
 
