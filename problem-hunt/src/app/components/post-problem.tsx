@@ -1,18 +1,18 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { Briefcase, Calendar, Coins, FileText, Rocket, Tag } from "lucide-react";
+import { authenticatedFetch, handleResponse } from "../../lib/auth-helper";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Textarea } from "../components/ui/textarea";
 import { Label } from "../components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import { useAuth } from "../contexts/AuthContext";
-import { supabase } from "../../../lib/supabaseClient";
 import { API_ENDPOINTS } from "../../lib/api-config";
 import { Navbar } from "./navbar";
 import { splitListInput } from "../../lib/marketplace";
 
-const CATEGORIES = ["AI/ML", "Web3", "Finance", "Governance", "Trading", "Infrastructure"];
+const CATEGORIES = ["AI/ML", "Web3", "Finance", "Governance", "Trading", "Infrastructure", "Security", "Data Engineering", "DevOps", "Backend", "Frontend", "Mobile", "Automation"];
 const JOB_TYPES = [
   { value: "one-time", label: "One-time" },
   { value: "contract", label: "Contract" },
@@ -49,8 +49,6 @@ export function PostProblem() {
     setError(null);
 
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const token = sessionData.session?.access_token;
       const payload = {
         type: formData.type,
         title: formData.title,
@@ -63,13 +61,11 @@ export function PostProblem() {
           ? { budget: `${formData.budgetSol} SOL`, budgetSol: Number(formData.budgetSol), jobType: formData.jobType, skillsRequired: splitListInput(formData.skillsRequired) }
           : { budget: formData.budget }),
       };
-      const response = await fetch(API_ENDPOINTS.PROBLEMS, {
+      const response = await authenticatedFetch(API_ENDPOINTS.PROBLEMS, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify(payload),
+        body: payload,
       });
-      if (!response.ok) throw new Error(`API Error ${response.status}: ${await response.text()}`);
-      const problem = await response.json();
+      const problem = await handleResponse(response);
       navigate(`/problem/${problem.id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create post");
@@ -147,8 +143,8 @@ export function PostProblem() {
               <section className="board-panel p-6 md:p-8">
                 <div className="grid gap-6">
                   <div>
-                    <Label htmlFor="title" className="mb-2 block text-sm text-[var(--board-ink)]">
-                      <FileText className="mr-2 inline h-4 w-4 text-[var(--board-accent)]" />
+                    <Label htmlFor="title" className="mb-2 flex items-center gap-2 text-sm text-[var(--board-ink)]">
+                      <FileText className="h-4 w-4 text-[var(--board-accent)]" />
                       {isJob ? "Task title" : "Brief title"}
                     </Label>
                     <Input id="title" placeholder={isJob ? "Harden our CI deployment workflow" : "Need a better Terraform drift workflow"} value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} className="board-field" required />
@@ -167,8 +163,8 @@ export function PostProblem() {
               <section className="board-panel p-6 md:p-8">
                 <div className={`grid gap-6 ${isJob ? "md:grid-cols-2" : "md:grid-cols-3"}`}>
                   <div>
-                    <Label htmlFor="category" className="mb-2 block text-sm text-[var(--board-ink)]">
-                      <Tag className="mr-2 inline h-4 w-4 text-[var(--board-accent)]" />
+                    <Label htmlFor="category" className="mb-2 flex items-center gap-2 text-sm text-[var(--board-ink)]">
+                      <Tag className="h-4 w-4 text-[var(--board-accent)]" />
                       Category
                     </Label>
                     <Select value={formData.category} onValueChange={(value) => setFormData({ ...formData, category: value })}>
@@ -179,15 +175,15 @@ export function PostProblem() {
                     </Select>
                   </div>
                   <div>
-                    <Label htmlFor={isJob ? "budgetSol" : "budget"} className="mb-2 block text-sm text-[var(--board-ink)]">
-                      <Coins className="mr-2 inline h-4 w-4 text-[var(--board-accent)]" />
+                    <Label htmlFor={isJob ? "budgetSol" : "budget"} className="mb-2 flex items-center gap-2 text-sm text-[var(--board-ink)]">
+                      <Coins className="h-4 w-4 text-[#e8c547]" />
                       {isJob ? "Budget (SOL)" : "Bounty"}
                     </Label>
                     <Input id={isJob ? "budgetSol" : "budget"} type={isJob ? "number" : "text"} step={isJob ? "0.000001" : undefined} placeholder={isJob ? "3.5" : "$900 / 1.25 SOL / fixed fee"} value={isJob ? formData.budgetSol : formData.budget} onChange={(e) => setFormData({ ...formData, [isJob ? "budgetSol" : "budget"]: e.target.value })} className="board-field" required />
                   </div>
                   <div>
-                    <Label htmlFor="deadline" className="mb-2 block text-sm text-[var(--board-ink)]">
-                      <Calendar className="mr-2 inline h-4 w-4 text-[var(--board-accent)]" />
+                    <Label htmlFor="deadline" className="mb-2 flex items-center gap-2 text-sm text-[var(--board-ink)]">
+                      <Calendar className="h-4 w-4 text-[var(--board-accent)]" />
                       Deadline
                     </Label>
                     <Input id="deadline" type="date" value={formData.deadline} onChange={(e) => setFormData({ ...formData, deadline: e.target.value })} className="board-field" required={isJob} />
@@ -196,8 +192,8 @@ export function PostProblem() {
                 {isJob ? (
                   <div className="mt-6 grid gap-6 md:grid-cols-2">
                     <div>
-                      <Label htmlFor="jobType" className="mb-2 block text-sm text-[var(--board-ink)]">
-                        <Briefcase className="mr-2 inline h-4 w-4 text-[var(--board-accent)]" />
+                      <Label htmlFor="jobType" className="mb-2 flex items-center gap-2 text-sm text-[var(--board-ink)]">
+                        <Briefcase className="h-4 w-4 text-[var(--board-accent)]" />
                         Job type
                       </Label>
                       <Select value={formData.jobType} onValueChange={(value) => setFormData({ ...formData, jobType: value })}>
@@ -237,9 +233,9 @@ export function PostProblem() {
 
               <div className="flex flex-col gap-3">
                 <Link to="/browse">
-                  <Button variant="outline" className="board-btn-secondary h-11 w-full border-[color:var(--board-line-strong)] bg-transparent text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-[var(--board-muted)] hover:bg-[var(--board-panel-strong)] hover:text-[var(--board-ink)]">Cancel</Button>
+                  <Button variant="outline" className="h-11 w-full border-[color:var(--board-line-strong)] bg-transparent text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-[var(--board-muted)] transition-all hover:bg-[var(--board-panel-strong)] hover:text-[var(--board-ink)] hover:shadow-[0_0_20px_rgba(200,205,208,0.35)] hover:scale-[1.02]">Cancel</Button>
                 </Link>
-                <Button type="submit" disabled={isSubmitting || isLoading || !user} className="board-btn-primary h-11 border-0 bg-[var(--board-accent)] text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-white hover:bg-[var(--color-accent-hover)] disabled:opacity-50">
+                <Button type="submit" disabled={isSubmitting || isLoading || !user} className="h-11 border-0 bg-[var(--board-accent)] text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-white transition-all hover:bg-[var(--color-accent-hover)] hover:shadow-[0_0_20px_rgba(200,205,208,0.35)] hover:scale-[1.02] disabled:opacity-50">
                   {isSubmitting ? "Posting..." : isJob ? "Post job" : "Post brief"}
                 </Button>
               </div>

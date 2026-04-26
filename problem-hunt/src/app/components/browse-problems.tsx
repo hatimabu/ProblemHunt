@@ -9,7 +9,7 @@ import { API_ENDPOINTS } from "../../lib/api-config";
 import { formatBudget, formatJobStatus, formatTimeAgo, isJobPost, type ProblemPost } from "../../lib/marketplace";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 
-const CATEGORIES = ["All", "AI/ML", "Web3", "Finance", "Governance", "Trading", "Infrastructure"];
+const CATEGORIES = ["All", "AI/ML", "Web3", "Finance", "Governance", "Trading", "Infrastructure", "Security", "Data Engineering", "DevOps", "Backend", "Frontend", "Mobile", "Automation"];
 const TYPE_FILTERS = [
   { value: "all", label: "All briefs" },
   { value: "problem", label: "Problems" },
@@ -82,7 +82,7 @@ export function BrowseProblems() {
         <section className="grid gap-8 border-b border-[color:var(--board-line)] pb-10 lg:grid-cols-[minmax(0,1.05fr)_280px]">
           <div>
             <div className="flex items-center gap-2">
-              <Radar className="h-4 w-4 text-[var(--board-metal-steel)]" />
+              <Radar className="h-4 w-4 animate-[cpuPulse_3s_ease-in-out_infinite] text-[#e8c547]" />
               <p className="board-kicker">Marketplace</p>
             </div>
             <h1 className="board-title mt-3">Scan live briefs, open tasks, and technical requests.</h1>
@@ -130,7 +130,7 @@ export function BrowseProblems() {
                     <button
                       key={filter.value}
                       onClick={() => startTransition(() => setSelectedType(filter.value))}
-                      className={selectedType === filter.value ? "bg-[var(--board-panel-strong)] text-[var(--board-accent)]" : "text-[var(--board-soft)] hover:bg-[var(--board-panel-strong)] hover:text-[var(--board-ink)]"}
+                      className={selectedType === filter.value ? "bg-[rgba(6,167,125,0.14)] text-white border-[#06A77D]" : "text-[var(--board-soft)] transition-all duration-200 hover:bg-[rgba(6,167,125,0.08)] hover:text-[#06A77D] hover:border-[rgba(6,167,125,0.4)]"}
                     >
                       {filter.label}
                     </button>
@@ -167,9 +167,11 @@ export function BrowseProblems() {
               {loading ? "Loading the board..." : `${filteredPosts.length} listing${filteredPosts.length === 1 ? "" : "s"}`}
               {deferredSearchQuery ? ` matching "${deferredSearchQuery}"` : ""}
             </p>
-            <Link to="/post" className="inline-flex items-center gap-2 font-mono-alt text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-[var(--board-accent)]">
-              Post a brief
-              <ArrowRight className="h-4 w-4" />
+            <Link to="/post" className="inline-flex">
+              <Button className="h-10 border-0 bg-[var(--board-accent)] px-4 text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-white transition-all hover:bg-[var(--color-accent-hover)] hover:shadow-[0_0_20px_rgba(200,205,208,0.35)] hover:scale-[1.02]">
+                Post a brief
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
             </Link>
           </div>
 
@@ -182,7 +184,7 @@ export function BrowseProblems() {
                 <h2 className="board-subtitle">Nothing matches this slice of the board.</h2>
                 <p>Try another category, loosen the search, or post the first brief for this niche yourself.</p>
                 <Link to="/post" className="inline-flex">
-                  <Button className="board-btn-primary mt-6 h-11 border-0 bg-[var(--board-accent)] px-5 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-white hover:bg-[var(--color-accent-hover)]">
+                  <Button className="mt-6 h-11 border-0 bg-[var(--board-accent)] px-5 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-white transition-all hover:bg-[var(--color-accent-hover)] hover:shadow-[0_0_20px_rgba(200,205,208,0.35)] hover:scale-[1.02]">
                     Post a brief
                   </Button>
                 </Link>

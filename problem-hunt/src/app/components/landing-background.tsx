@@ -32,6 +32,10 @@ interface YellowHub {
 }
 
 interface Orbiter {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
   angle: number;
   speed: number;
   distance: number;
@@ -65,6 +69,10 @@ const METAL = {
 function createOrbiters(count: number, distances: number[], speeds: number[]): Orbiter[] {
   const colors = [METAL.chrome, METAL.silver, METAL.goldBright, METAL.steel];
   return Array.from({ length: count }, (_, i) => ({
+    x: 0,
+    y: 0,
+    vx: (Math.random() - 0.5) * 0.06,
+    vy: (Math.random() - 0.5) * 0.06,
     angle: (Math.PI * 2 * i) / count + Math.random() * 0.5,
     speed: speeds[i % speeds.length] * (0.8 + Math.random() * 0.4),
     distance: distances[i % distances.length],
@@ -105,17 +113,6 @@ function buildScene(width: number, height: number) {
       color: METAL.silver.main,
       glowColor: METAL.silver.glow,
       radius: 4.5,
-      lit: 0,
-      litTarget: 0,
-      pulsePhase: Math.random() * Math.PI * 2,
-    },
-    {
-      x: width * 0.74,
-      y: height * 0.61,
-      label: "How It Moves",
-      color: METAL.silver.main,
-      glowColor: METAL.silver.glow,
-      radius: 4,
       lit: 0,
       litTarget: 0,
       pulsePhase: Math.random() * Math.PI * 2,
@@ -202,8 +199,8 @@ function buildScene(width: number, height: number) {
   ];
 
   const routes: [number, number][] = [
-    [0, 1], [1, 2], [2, 3], [3, 4], [4, 5],
-    [1, 3], [2, 4], [0, 2], [3, 5],
+    [0, 1], [1, 2], [2, 3], [3, 4],
+    [1, 3], [2, 3], [0, 2],
   ];
 
   const travelers: Traveler[] = [];
@@ -244,6 +241,14 @@ function buildScene(width: number, height: number) {
   }
 
   const pulseRings: PulseRing[] = [];
+
+  // Initialize orbiter absolute positions near their hubs
+  hubs.forEach((hub) => {
+    hub.orbiters.forEach((orbiter) => {
+      orbiter.x = hub.x + Math.cos(orbiter.angle) * orbiter.distance;
+      orbiter.y = hub.y + Math.sin(orbiter.angle) * orbiter.distance;
+    });
+  });
 
   return { storyNodes, hubs, travelers, pulseRings };
 }
@@ -325,7 +330,7 @@ export function LandingBackground() {
 
       ctx.clearRect(0, 0, width, height);
       const { storyNodes, hubs, travelers, pulseRings } = scene;
-      const HIDDEN_NODE = 4; // Live Signal node and its travelers hidden
+      const HIDDEN_NODE = 3; // Live Signal node and its travelers hidden
 
       // ---- Spawn pulse rings from nodes periodically ----
       storyNodes.forEach((node, i) => {
@@ -531,11 +536,35 @@ export function LandingBackground() {
         ctx.arc(hub.x - hub.radius * 0.2, hub.y - hub.radius * 0.2, hub.radius * 0.25 * pulse, 0, Math.PI * 2);
         ctx.fill();
 
-        // Orbiters
+        // Orbiters — random wandering across canvas
         hub.orbiters.forEach((orbiter) => {
-          orbiter.angle += orbiter.speed * dt;
-          const ox = hub.x + Math.cos(orbiter.angle) * orbiter.distance * pulse;
-          const oy = hub.y + Math.sin(orbiter.angle) * orbiter.distance * pulse;
+          orbiter.x += orbiter.vx * dt;
+          orbiter.y += orbiter.vy * dt;
+
+          // Bounce off canvas edges
+          if (orbiter.x < 0 || orbiter.x > width) {
+            orbiter.vx *= -1;
+            orbiter.x = Math.max(0, Math.min(width, orbiter.x));
+          }
+          if (orbiter.y < 0 || orbiter.y > height) {
+            orbiter.vy *= -1;
+            orbiter.y = Math.max(0, Math.min(height, orbiter.y));
+          }
+
+          // Occasional random direction change
+          if (Math.random() < 0.003) {
+            orbiter.vx += (Math.random() - 0.5) * 0.02;
+            orbiter.vy += (Math.random() - 0.5) * 0.02;
+            const speed = Math.sqrt(orbiter.vx * orbiter.vx + orbiter.vy * orbiter.vy);
+            const maxSpeed = 0.06;
+            if (speed > maxSpeed) {
+              orbiter.vx = (orbiter.vx / speed) * maxSpeed;
+              orbiter.vy = (orbiter.vy / speed) * maxSpeed;
+            }
+          }
+
+          const ox = orbiter.x;
+          const oy = orbiter.y;
           const isGold = orbiter.color === METAL.goldBright.main || orbiter.color === METAL.gold.main;
 
           orbiter.trail.push({ x: ox, y: oy });

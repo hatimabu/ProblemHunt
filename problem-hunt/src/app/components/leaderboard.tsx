@@ -64,7 +64,7 @@ export function Leaderboard() {
         <section className="grid gap-8 border-b border-[color:var(--board-line)] pb-10 lg:grid-cols-[minmax(0,1fr)_240px]">
           <div>
             <div className="flex items-center gap-2">
-              <Radar className="h-4 w-4 text-[var(--board-metal-steel)]" />
+              <Radar className="h-4 w-4 animate-[cpuPulse_3s_ease-in-out_infinite] text-[#e8c547]" />
               <p className="board-kicker">Leaderboard</p>
             </div>
             <h1 className="board-title mt-3">Who is earning trust on the board.</h1>
@@ -83,12 +83,16 @@ export function Leaderboard() {
         </section>
 
         <section className="board-section px-0">
-          <div className="mb-8 flex flex-wrap gap-2">
+          <div className="board-segment mb-8 grid grid-cols-2">
             {[
               { value: "alltime" as const, label: "All time" },
               { value: "week" as const, label: "This week" },
             ].map((item) => (
-              <button key={item.value} onClick={() => setPeriod(item.value)} className={`board-pill ${period === item.value ? "board-pill--accent" : ""}`}>
+              <button
+                key={item.value}
+                onClick={() => setPeriod(item.value)}
+                className={period === item.value ? "bg-[rgba(232,197,71,0.14)] text-white border-[#e8c547]" : "text-[var(--board-soft)] transition-all duration-200 hover:bg-[rgba(232,197,71,0.08)] hover:text-[#e8c547] hover:border-[rgba(232,197,71,0.4)]"}
+              >
                 {item.label}
               </button>
             ))}

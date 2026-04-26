@@ -26,8 +26,8 @@ import { getUserSolanaWallet, syncUserSolanaWallet } from "../../lib/wallets";
 
 const EMPTY_PROPOSAL_FORM = { title: "", description: "", briefSolution: "", timeline: "", estimatedDelivery: "", cost: "", proposedPriceSol: "", projectUrl: "", expertise: "" };
 const EMPTY_TIP_FORM = { amount: "", chain: "solana", txHash: "", message: "" };
-const primaryBtn = "board-btn-primary h-11 border-0 bg-[var(--board-accent)] px-5 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-white hover:bg-[var(--color-accent-hover)]";
-const secondaryBtn = "board-btn-secondary h-11 border-[color:var(--board-line-strong)] bg-transparent px-5 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-[var(--board-muted)] hover:bg-[var(--board-panel-strong)] hover:text-[var(--board-ink)]";
+const primaryBtn = "h-11 border-0 bg-[var(--board-accent)] px-5 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-white transition-all hover:bg-[var(--color-accent-hover)] hover:shadow-[0_0_20px_rgba(200,205,208,0.35)] hover:scale-[1.02]";
+const secondaryBtn = "h-11 border-[color:var(--board-line-strong)] bg-transparent px-5 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-[var(--board-muted)] transition-all hover:bg-[var(--board-panel-strong)] hover:text-[var(--board-ink)] hover:shadow-[0_0_20px_rgba(200,205,208,0.35)] hover:scale-[1.02]";
 const field = "board-field";
 
 function MetaPill({ children, tone = "default" }: { children: ReactNode; tone?: "default" | "accent" | "rust" }) {

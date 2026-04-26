@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router";
-import { Camera, Cpu, Loader2, Rocket, Signal, User, Wallet, Search, AlertCircle, BarChart3, ArrowRight, Trash2, X } from "lucide-react";
+import { Camera, Cpu, Loader2, Rocket, Signal, User, Wallet, Search, AlertCircle, BarChart3, ArrowRight, Trash2, X, Crown } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { Navbar } from "./navbar";
 import { DashboardBackground } from "./dashboard-background";
@@ -24,6 +24,11 @@ import {
 } from "../../lib/user-wallets-api";
 import { fetchDashboardSnapshot, uploadDashboardAvatar, type DashboardProfile } from "../../lib/user-dashboard-api";
 import { formatTimeAgo, type ProblemPost, type ProposalRecord } from "../../lib/marketplace";
+
+function isNetworkError(err: unknown): boolean {
+  const msg = err instanceof Error ? err.message : String(err);
+  return msg.includes("Failed to fetch") || msg.includes("NetworkError") || msg.includes("ECONNREFUSED") || msg.includes("Could not connect");
+}
 
 export function BuilderDashboard() {
   const { user } = useAuth();
@@ -104,10 +109,29 @@ export function BuilderDashboard() {
 
     setWalletSaving(true);
     try {
-      await upsertPrimaryWalletApi(walletChain, trimmed);
+      try {
+        await upsertPrimaryWalletApi(walletChain, trimmed);
+      } catch (apiErr) {
+        if (!isNetworkError(apiErr)) console.warn("[dashboard] API save failed, using Supabase fallback", apiErr);
+        if (!user) throw new Error("Not authenticated");
+        // Mimic server-side upsert: delete existing wallet for this chain, then insert
+        const { error: deleteErr } = await supabase
+          .from("wallets")
+          .delete()
+          .eq("user_id", user.id)
+          .eq("chain", walletChain);
+        if (deleteErr) throw deleteErr;
+        const { error: insertErr } = await supabase
+          .from("wallets")
+          .insert({ user_id: user.id, chain: walletChain, address: trimmed, is_primary: true });
+        if (insertErr) throw insertErr;
+      }
       setWalletAddress("");
       setActionMessage("Wallet saved.");
       void loadDashboard(false);
+      if (activeTab === "wallets") {
+        void fetchWalletsList();
+      }
     } catch (err) {
       setWalletError(err instanceof Error ? err.message : "Failed to save wallet.");
     } finally {
@@ -124,7 +148,7 @@ export function BuilderDashboard() {
         setWallets(rows);
         setWalletCount(rows.length);
       } catch (apiErr) {
-        console.warn("[dashboard] API list failed, using Supabase", apiErr);
+        if (!isNetworkError(apiErr)) console.warn("[dashboard] API list failed, using Supabase", apiErr);
         const { data, error } = await supabase
           .from("wallets")
           .select("*")
@@ -147,7 +171,7 @@ export function BuilderDashboard() {
       try {
         await deleteUserWalletApi(walletId);
       } catch (apiErr) {
-        console.warn("[dashboard] API delete failed, using Supabase", apiErr);
+        if (!isNetworkError(apiErr)) console.warn("[dashboard] API delete failed, using Supabase", apiErr);
         const { error } = await supabase.from("wallets").delete().eq("id", walletId);
         if (error) throw error;
       }
@@ -156,6 +180,31 @@ export function BuilderDashboard() {
       void loadDashboard(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to remove wallet.");
+    }
+  };
+
+  const handleMakePrimary = async (walletId: string, chain: string) => {
+    if (!user) return;
+    try {
+      const { error: clearErr } = await supabase
+        .from("wallets")
+        .update({ is_primary: false })
+        .eq("user_id", user.id)
+        .eq("chain", chain);
+      if (clearErr) throw clearErr;
+
+      const { error: setErr } = await supabase
+        .from("wallets")
+        .update({ is_primary: true })
+        .eq("id", walletId)
+        .eq("user_id", user.id);
+      if (setErr) throw setErr;
+
+      await fetchWalletsList();
+      setActionMessage("Primary wallet updated.");
+      void loadDashboard(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to update primary wallet.");
     }
   };
 
@@ -196,13 +245,13 @@ export function BuilderDashboard() {
 
               <div className="mt-7 flex flex-col gap-3 sm:flex-row">
                 <Link to="/browse">
-                  <Button className="h-11 border-0 bg-[var(--board-accent)] px-5 text-[0.75rem] font-semibold uppercase tracking-[0.14em] text-white hover:bg-[var(--color-accent-hover)]">
+                  <Button className="h-11 border-0 bg-[var(--board-metal-accent)] px-5 text-[0.75rem] font-semibold uppercase tracking-[0.14em] text-[var(--board-metal-dark)] transition-all hover:bg-[var(--board-metal-light)] hover:shadow-[0_0_20px_rgba(200,205,208,0.35)] hover:scale-[1.02]">
                     <Search className="mr-2 h-4 w-4" />
                     Browse
                   </Button>
                 </Link>
                 <Link to="/post">
-                  <Button variant="outline" className="h-11 border-[color:var(--board-line-strong)] bg-transparent px-5 text-[0.75rem] font-semibold uppercase tracking-[0.14em] text-[var(--board-muted)] hover:bg-[var(--board-panel-strong)] hover:text-[var(--board-ink)]">
+                  <Button className="h-11 border-0 bg-[var(--board-accent)] px-5 text-[0.75rem] font-semibold uppercase tracking-[0.14em] text-white transition-all hover:bg-[var(--color-accent-hover)] hover:shadow-[0_0_20px_rgba(200,205,208,0.35)] hover:scale-[1.02]">
                     <Rocket className="mr-2 h-4 w-4" />
                     Post brief
                   </Button>
@@ -384,19 +433,33 @@ export function BuilderDashboard() {
                       <div className="flex items-center gap-2">
                         <span className="board-pill text-[0.65rem]">{w.chain}</span>
                         {w.is_primary && (
-                          <span className="board-pill board-pill--accent text-[0.65rem]">Primary</span>
+                          <span className="inline-flex items-center text-[#e8c547]" title="Primary">
+                            <Crown className="h-3.5 w-3.5" />
+                          </span>
                         )}
                       </div>
                       <p className="mt-2 font-mono text-xs text-[var(--board-ink)] break-all">{w.address}</p>
                     </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => void handleDeleteWallet(w.id)}
-                      className="shrink-0 border-[color:var(--board-line)] text-[var(--board-muted)] hover:border-[color:rgba(201,84,94,0.34)] hover:bg-[rgba(201,84,94,0.12)] hover:text-[var(--board-accent)]"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      {!w.is_primary && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => void handleMakePrimary(w.id, w.chain)}
+                          className="shrink-0 border-[color:var(--board-line)] text-[0.65rem] font-semibold uppercase tracking-[0.1em] text-[var(--board-muted)] hover:border-[color:rgba(6,167,125,0.4)] hover:bg-[rgba(6,167,125,0.12)] hover:text-[#06A77D]"
+                        >
+                          Make primary
+                        </Button>
+                      )}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => void handleDeleteWallet(w.id)}
+                        className="shrink-0 border-[color:var(--board-line)] text-[var(--board-muted)] hover:border-[color:rgba(201,84,94,0.34)] hover:bg-[rgba(201,84,94,0.12)] hover:text-[var(--board-accent)]"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                 ))
               )}

@@ -58,16 +58,13 @@ export function LandingPage() {
 
               <div className="mt-8 flex flex-col gap-4 sm:flex-row fade-in stagger-4">
                 <Link to="/browse">
-                  <Button className="board-btn-primary board-btn-primary--metal h-12 border-0 bg-[var(--board-metal-accent)] px-6 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-[var(--board-metal-dark)] transition-all hover:bg-[var(--board-metal-light)] hover:shadow-[0_0_20px_rgba(200,205,208,0.35)] hover:scale-[1.02]">
+                  <Button className="h-12 border-0 bg-[var(--board-metal-accent)] px-6 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-[var(--board-metal-dark)] transition-all hover:bg-[var(--board-metal-light)] hover:shadow-[0_0_20px_rgba(200,205,208,0.35)] hover:scale-[1.02]">
                     Browse live work
                     <ArrowRight className="h-4 w-4" />
                   </Button>
                 </Link>
                 <Link to="/post">
-                  <Button
-                    variant="outline"
-                    className="board-btn-secondary board-btn-secondary--metal h-12 border-[color:var(--board-metal-line)] bg-transparent/60 px-6 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-[var(--board-metal-muted)] backdrop-blur-sm transition-all hover:bg-[var(--board-metal-panel)] hover:text-[var(--board-metal-ink)] hover:shadow-[0_0_20px_rgba(200,205,208,0.2)] hover:scale-[1.02]"
-                  >
+                  <Button className="h-12 border-0 bg-[var(--board-accent)] px-6 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-white transition-all hover:bg-[var(--color-accent-hover)] hover:shadow-[0_0_20px_rgba(200,205,208,0.35)] hover:scale-[1.02]">
                     Post a brief
                   </Button>
                 </Link>
@@ -166,14 +163,14 @@ export function LandingPage() {
 
             <div className="mt-8 flex flex-col gap-4 sm:flex-row">
               <Link to="/post">
-                <Button className="board-btn-primary h-12 border-0 bg-[var(--board-accent)] px-6 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-white hover:bg-[var(--color-accent-hover)]">
+                <Button className="h-12 border-0 bg-[var(--board-accent)] px-6 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-white transition-all hover:bg-[var(--color-accent-hover)] hover:shadow-[0_0_20px_rgba(200,205,208,0.35)] hover:scale-[1.02]">
                   Post a brief
                 </Button>
               </Link>
               <Link to="/leaderboard">
                 <Button
                   variant="outline"
-                  className="board-btn-secondary h-12 border-[color:var(--board-line-strong)] bg-transparent px-6 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-[var(--board-muted)] hover:bg-[var(--board-panel-strong)] hover:text-[var(--board-ink)]"
+                  className="h-12 border-[color:var(--board-line-strong)] bg-transparent px-6 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-[var(--board-muted)] transition-all hover:bg-[var(--board-panel-strong)] hover:text-[var(--board-ink)] hover:shadow-[0_0_20px_rgba(200,205,208,0.35)] hover:scale-[1.02]"
                 >
                   Browse builders
                 </Button>

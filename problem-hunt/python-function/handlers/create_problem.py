@@ -13,15 +13,18 @@ from handlers.marketplace_helpers import (
     parse_string_list,
     sol_amount_to_string,
 )
-from utils import generate_id, get_authenticated_user_id, get_timestamp, parse_budget_value, parse_requirements, validate_required
+from utils import generate_id, get_timestamp, parse_budget_value, parse_requirements, validate_required
+from shared.auth import authenticate_request, AuthError
 
 
 def handle(req: func.HttpRequest) -> func.HttpResponse:
     """Create a new problem or job."""
     try:
-        user_id = get_authenticated_user_id(req)
-        if not user_id:
-            return json_response({"error": "Authentication required"}, 401)
+        user_id, _ = authenticate_request(req)
+    except AuthError as e:
+        return json_response({"error": str(e)}, 401)
+
+    try:
 
         try:
             data = req.get_json()
@@ -33,7 +36,7 @@ def handle(req: func.HttpRequest) -> func.HttpResponse:
         if validation_error:
             return json_response({'error': validation_error}, 400)
 
-        valid_categories = ['AI/ML', 'Web3', 'Finance', 'Governance', 'Trading', 'Infrastructure']
+        valid_categories = ['AI/ML', 'Web3', 'Finance', 'Governance', 'Trading', 'Infrastructure', 'Security', 'Data Engineering', 'DevOps', 'Backend', 'Frontend', 'Mobile', 'Automation']
         if data['category'] not in valid_categories:
             return json_response({'error': 'Invalid category'}, 400)
 

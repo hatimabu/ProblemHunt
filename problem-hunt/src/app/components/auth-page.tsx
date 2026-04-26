@@ -108,7 +108,7 @@ export function AuthPage() {
                     <Input id="login-password" type="password" placeholder="••••••••" value={loginData.password} onChange={(e) => setLoginData({ ...loginData, password: e.target.value })} className="board-field" required />
                   </div>
                   {loginError ? <div className="rounded-lg border border-[color:rgba(201,84,94,0.5)] bg-[rgba(201,84,94,0.18)] px-4 py-3 text-sm font-semibold text-white shadow-[0_0_12px_rgba(201,84,94,0.25)]">{loginError}</div> : null}
-                  <Button type="submit" disabled={isSubmitting} className="board-btn-primary h-12 w-full border-0 bg-[var(--board-accent)] text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-white hover:bg-[var(--color-accent-hover)]">
+                  <Button type="submit" disabled={isSubmitting} className="h-12 w-full border-0 bg-[var(--board-accent)] text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-white transition-all hover:bg-[var(--color-accent-hover)] hover:shadow-[0_0_20px_rgba(200,205,208,0.35)] hover:scale-[1.02]">
                     {isSubmitting ? "Logging in..." : "Login"}
                   </Button>
                 </form>
@@ -161,7 +161,7 @@ export function AuthPage() {
                     </div>
                   </div>
                   {signupError ? <div className="rounded-lg border border-[color:rgba(201,84,94,0.5)] bg-[rgba(201,84,94,0.18)] px-4 py-3 text-sm font-semibold text-white shadow-[0_0_12px_rgba(201,84,94,0.25)]">{signupError}</div> : null}
-                  <Button type="submit" disabled={isSubmitting} className="board-btn-primary h-12 w-full border-0 bg-[var(--board-accent)] text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-white hover:bg-[var(--color-accent-hover)]">
+                  <Button type="submit" disabled={isSubmitting} className="h-12 w-full border-0 bg-[var(--board-accent)] text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-white transition-all hover:bg-[var(--color-accent-hover)] hover:shadow-[0_0_20px_rgba(200,205,208,0.35)] hover:scale-[1.02]">
                     {isSubmitting ? "Creating account..." : "Create account"}
                   </Button>
                 </form>
