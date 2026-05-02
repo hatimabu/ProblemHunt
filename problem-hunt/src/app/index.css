@@ -317,6 +317,172 @@ samp,
   animation-delay: 0.15s;
 }
 
+/* =========================================================
+   SCROLL-DRIVEN REVEALS — respond to viewport position, not time
+   ========================================================= */
+
+.sr {
+  opacity: 0;
+  transform: translateY(24px);
+  transition:
+    opacity 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.sr.sr-on {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.sr.sr-d1 { transition-delay: 0s; }
+.sr.sr-d2 { transition-delay: 0.08s; }
+.sr.sr-d3 { transition-delay: 0.16s; }
+.sr.sr-d4 { transition-delay: 0.24s; }
+.sr.sr-d5 { transition-delay: 0.32s; }
+
+@supports (animation-timeline: view()) {
+  .sr {
+    opacity: 1;
+    transform: none;
+    transition: none;
+    animation: srReveal linear both;
+    animation-timeline: view();
+  }
+
+  .sr.sr-d1 { animation-range: entry 0% cover 28%; }
+  .sr.sr-d2 { animation-range: entry 0% cover 36%; }
+  .sr.sr-d3 { animation-range: entry 0% cover 44%; }
+  .sr.sr-d4 { animation-range: entry 0% cover 52%; }
+  .sr.sr-d5 { animation-range: entry 0% cover 60%; }
+
+  @keyframes srReveal {
+    from {
+      opacity: 0;
+      transform: translateY(24px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sr {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+/* =========================================================
+   BUTTON ANIMATIONS — glow, shine sweep, scale on hover
+   ========================================================= */
+
+.btn-glow {
+  position: relative;
+  overflow: hidden;
+  transition:
+    transform 0.25s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.35s ease,
+    background-color 0.2s ease;
+}
+
+.btn-glow::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.18) 50%, transparent 70%);
+  background-size: 200% 100%;
+  background-position: -100% center;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.btn-glow:hover::before {
+  opacity: 1;
+  animation: btnShineSweep 0.7s ease forwards;
+}
+
+.btn-glow:hover {
+  transform: translateY(-1px) scale(1.02);
+  box-shadow:
+    0 0 0 1px rgba(200, 205, 208, 0.25),
+    0 6px 28px rgba(0, 0, 0, 0.3),
+    0 0 24px rgba(201, 84, 94, 0.15);
+}
+
+.btn-glow:active {
+  transform: translateY(0) scale(0.98);
+}
+
+@keyframes btnShineSweep {
+  0% { background-position: -100% center; }
+  100% { background-position: 200% center; }
+}
+
+.btn-glow-metal {
+  position: relative;
+  overflow: hidden;
+  transition:
+    transform 0.25s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.35s ease,
+    background-color 0.2s ease;
+}
+
+.btn-glow-metal::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.22) 50%, transparent 70%);
+  background-size: 200% 100%;
+  background-position: -100% center;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.btn-glow-metal:hover::before {
+  opacity: 1;
+  animation: btnShineSweep 0.7s ease forwards;
+}
+
+.btn-glow-metal:hover {
+  transform: translateY(-1px) scale(1.02);
+  box-shadow:
+    0 0 0 1px rgba(200, 205, 208, 0.35),
+    0 6px 28px rgba(0, 0, 0, 0.3),
+    0 0 24px rgba(200, 205, 208, 0.12);
+}
+
+.btn-glow-metal:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.btn-outline-animated {
+  position: relative;
+  overflow: hidden;
+  transition:
+    transform 0.25s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.35s ease,
+    border-color 0.2s ease,
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.btn-outline-animated:hover {
+  transform: translateY(-1px) scale(1.02);
+  border-color: rgba(200, 205, 208, 0.35);
+  background: rgba(22, 28, 38, 0.72);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.2);
+}
+
+.btn-outline-animated:active {
+  transform: translateY(0) scale(0.98);
+}
+
 .skeleton {
   background: linear-gradient(90deg, rgba(61, 46, 79, 0.7) 20%, rgba(82, 64, 107, 0.95) 50%, rgba(61, 46, 79, 0.7) 80%);
   background-size: 200% 100%;
