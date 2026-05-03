@@ -6,7 +6,6 @@ import {
   Briefcase,
   ChevronRight,
   Globe,
-  LayoutDashboard,
   LogIn,
   LogOut,
   Radar,
@@ -381,60 +380,18 @@ export function LandingPage() {
               {/* CTA buttons */}
               <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
                 <Link to="/browse">
-                  <Button className="btn-glow h-12 border-0 bg-[var(--board-accent)] px-7 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-white hover:bg-[var(--color-accent-hover)]">
+                  <Button className="h-12 border-0 bg-[var(--board-metal-accent)] px-7 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-[var(--board-metal-dark)] transition-all hover:bg-[var(--board-metal-light)] hover:shadow-[0_0_20px_rgba(200,205,208,0.35)] hover:scale-[1.02]">
                     Browse live work
                     <ArrowRight className="h-4 w-4" />
                   </Button>
                 </Link>
 
                 <Link to="/post">
-                  <Button className="btn-glow-metal h-12 border-0 bg-[var(--board-metal-accent)] px-7 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-[var(--board-metal-dark)] hover:bg-[var(--board-metal-light)]">
+                  <Button className="h-12 border-0 bg-[var(--board-accent)] px-7 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-white transition-all hover:bg-[var(--color-accent-hover)] hover:shadow-[0_0_20px_rgba(200,205,208,0.35)] hover:scale-[1.02]">
                     <Rocket className="h-4 w-4" />
                     Post a brief
                   </Button>
                 </Link>
-
-                <Link to="/leaderboard">
-                  <Button
-                    variant="outline"
-                    className="btn-outline-animated h-12 border-[color:var(--board-line-strong)] bg-transparent px-6 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-[var(--board-muted)]"
-                  >
-                    <Trophy className="h-4 w-4" />
-                    Leaderboard
-                  </Button>
-                </Link>
-
-                {user ? (
-                  <>
-                    <Link to="/dashboard">
-                      <Button
-                        variant="outline"
-                        className="btn-outline-animated h-12 border-[color:var(--board-line-strong)] bg-transparent px-6 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-[var(--board-muted)]"
-                      >
-                        <LayoutDashboard className="h-4 w-4" />
-                        Dashboard
-                      </Button>
-                    </Link>
-                    <Button
-                      variant="outline"
-                      onClick={handleSignOut}
-                      className="btn-outline-animated h-12 border-[color:var(--board-line-strong)] bg-transparent px-6 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-[var(--board-muted)] hover:border-[color:rgba(219,84,97,0.4)] hover:text-[var(--board-accent)]"
-                    >
-                      <LogOut className="h-4 w-4" />
-                      Sign out
-                    </Button>
-                  </>
-                ) : (
-                  <Link to="/auth">
-                    <Button
-                      variant="outline"
-                      className="btn-outline-animated h-12 border-[color:var(--board-line-strong)] bg-transparent px-6 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-[var(--board-muted)]"
-                    >
-                      <LogIn className="h-4 w-4" />
-                      Sign in
-                    </Button>
-                  </Link>
-                )}
               </div>
 
               {/* stats */}
@@ -579,60 +536,18 @@ export function LandingPage() {
               </p>
 
               <div className="mt-8 flex flex-wrap gap-3">
-                {user ? (
-                  <>
-                    <Link to="/post">
-                      <Button className="btn-glow h-12 border-0 bg-[var(--board-accent)] px-6 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-white hover:bg-[var(--color-accent-hover)]">
-                        <Rocket className="h-4 w-4" />
-                        Post a brief
-                      </Button>
-                    </Link>
-                    <Link to="/dashboard">
-                      <Button
-                        variant="outline"
-                        className="btn-outline-animated h-12 border-[color:var(--board-line-strong)] bg-transparent px-6 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-[var(--board-muted)]"
-                      >
-                        <LayoutDashboard className="h-4 w-4" />
-                        Dashboard
-                      </Button>
-                    </Link>
-                    <Button
-                      variant="outline"
-                      onClick={handleSignOut}
-                      className="btn-outline-animated h-12 border-[color:var(--board-line-strong)] bg-transparent px-6 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-[var(--board-muted)] hover:border-[color:rgba(219,84,97,0.4)] hover:text-[var(--board-accent)]"
-                    >
-                      <LogOut className="h-4 w-4" />
-                      Sign out
-                    </Button>
-                  </>
-                ) : (
-                  <>
-                    <Link to="/auth">
-                      <Button className="btn-glow h-12 border-0 bg-[var(--board-accent)] px-6 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-white hover:bg-[var(--color-accent-hover)]">
-                        <LogIn className="h-4 w-4" />
-                        Join the board
-                      </Button>
-                    </Link>
-                    <Link to="/browse">
-                      <Button
-                        variant="outline"
-                        className="btn-outline-animated h-12 border-[color:var(--board-line-strong)] bg-transparent px-6 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-[var(--board-muted)]"
-                      >
-                        Browse live work
-                        <ArrowRight className="h-4 w-4" />
-                      </Button>
-                    </Link>
-                    <Link to="/leaderboard">
-                      <Button
-                        variant="outline"
-                        className="btn-outline-animated h-12 border-[color:var(--board-line-strong)] bg-transparent px-6 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-[var(--board-muted)]"
-                      >
-                        <Trophy className="h-4 w-4" />
-                        Leaderboard
-                      </Button>
-                    </Link>
-                  </>
-                )}
+                <Link to="/post">
+                  <Button className="h-12 border-0 bg-[var(--board-accent)] px-6 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-white transition-all hover:bg-[var(--color-accent-hover)] hover:shadow-[0_0_20px_rgba(200,205,208,0.35)] hover:scale-[1.02]">
+                    <Rocket className="h-4 w-4" />
+                    Post a brief
+                  </Button>
+                </Link>
+                <Link to="/browse">
+                  <Button className="h-12 border-0 bg-[var(--board-metal-accent)] px-6 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-[var(--board-metal-dark)] transition-all hover:bg-[var(--board-metal-light)] hover:shadow-[0_0_20px_rgba(200,205,208,0.35)] hover:scale-[1.02]">
+                    Browse live work
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </Link>
               </div>
             </div>
           </div>
