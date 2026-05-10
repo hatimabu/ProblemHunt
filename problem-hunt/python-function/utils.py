@@ -6,6 +6,11 @@ from typing import Optional, Dict, Any, List
 from shared.auth import authenticate_request, AuthError
 
 
+def _utc_now() -> datetime.datetime:
+    """Return timezone-aware UTC datetime."""
+    return datetime.datetime.now(datetime.timezone.utc)
+
+
 def create_response(status_code: int, body: Any, headers: Dict = None) -> Dict:
     """Create a standardized API response"""
     if headers is None:
@@ -26,7 +31,7 @@ def error_response(status_code: int, message: str) -> Dict:
     """Create error response"""
     return create_response(status_code, {
         'error': message,
-        'timestamp': datetime.datetime.utcnow().isoformat() + 'Z'
+        'timestamp': _utc_now().isoformat().replace('+00:00', 'Z')
     })
 
 
@@ -90,14 +95,14 @@ def parse_budget_value(budget_string: str) -> int:
 
 def get_timestamp() -> str:
     """Get current timestamp"""
-    return datetime.datetime.utcnow().isoformat() + 'Z'
+    return _utc_now().isoformat().replace('+00:00', 'Z')
 
 
 def time_ago(date_string: str) -> str:
     """Calculate time ago string"""
     try:
         date = datetime.datetime.fromisoformat(date_string.replace('Z', '+00:00'))
-        now = datetime.datetime.utcnow().replace(tzinfo=None)
+        now = _utc_now().replace(tzinfo=None)
         date_no_tz = date.replace(tzinfo=None)
         seconds = int((now - date_no_tz).total_seconds())
         

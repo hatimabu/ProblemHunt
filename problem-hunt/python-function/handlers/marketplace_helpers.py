@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import logging
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 from typing import Any, Dict, Iterable, List, Optional
 
@@ -11,6 +12,9 @@ import azure.functions as func
 from cosmos import containers
 from supabase_client import get_supabase_client
 from utils import get_timestamp
+
+
+logger = logging.getLogger(__name__)
 
 
 PROBLEM_TYPE_PROBLEM = "problem"
@@ -228,89 +232,109 @@ def normalize_proposal(proposal: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def get_profile(user_id: str) -> Optional[Dict[str, Any]]:
-    sb = get_supabase_client()
-    response = (
-        sb.table("profiles")
-        .select("user_id, username, full_name, wallet_address")
-        .eq("user_id", user_id)
-        .limit(1)
-        .execute()
-    )
-    return response.data[0] if response.data else None
+    try:
+        sb = get_supabase_client()
+        response = (
+            sb.table("profiles")
+            .select("user_id, username, full_name, wallet_address")
+            .eq("user_id", user_id)
+            .limit(1)
+            .execute()
+        )
+        return response.data[0] if response.data else None
+    except Exception as e:
+        logger.warning("Supabase get_profile failed for %s: %s", user_id, e)
+        return None
 
 
 def get_display_name(user_id: str, fallback: Optional[str] = None) -> str:
-    profile = get_profile(user_id)
-    if profile:
-        return profile.get("full_name") or profile.get("username") or fallback or "Anonymous Builder"
+    try:
+        profile = get_profile(user_id)
+        if profile:
+            return profile.get("full_name") or profile.get("username") or fallback or "Anonymous Builder"
+    except Exception as e:
+        logger.warning("Supabase get_display_name failed for %s: %s", user_id, e)
     return fallback or "Anonymous Builder"
 
 
 def get_primary_wallet_address(user_id: str, chain: str = "solana") -> Optional[str]:
-    profile = get_profile(user_id)
-    if chain == "solana" and profile and profile.get("wallet_address"):
-        return profile["wallet_address"]
+    try:
+        profile = get_profile(user_id)
+        if chain == "solana" and profile and profile.get("wallet_address"):
+            return profile["wallet_address"]
 
-    sb = get_supabase_client()
-    response = (
-        sb.table("wallets")
-        .select("address, is_primary, created_at")
-        .eq("user_id", user_id)
-        .eq("chain", chain)
-        .order("is_primary", desc=True)
-        .order("created_at", desc=False)
-        .limit(1)
-        .execute()
-    )
-    return response.data[0]["address"] if response.data else None
+        sb = get_supabase_client()
+        response = (
+            sb.table("wallets")
+            .select("address, is_primary, created_at")
+            .eq("user_id", user_id)
+            .eq("chain", chain)
+            .order("is_primary", desc=True)
+            .order("created_at", desc=False)
+            .limit(1)
+            .execute()
+        )
+        return response.data[0]["address"] if response.data else None
+    except Exception as e:
+        logger.warning("Supabase get_primary_wallet_address failed for %s (%s): %s", user_id, chain, e)
+        return None
 
 
 def get_wallet_addresses(user_id: str) -> Dict[str, str]:
     wallets: Dict[str, str] = {}
-    profile = get_profile(user_id)
-    if profile and profile.get("wallet_address"):
-        wallets["solana"] = profile["wallet_address"]
+    try:
+        profile = get_profile(user_id)
+        if profile and profile.get("wallet_address"):
+            wallets["solana"] = profile["wallet_address"]
 
-    sb = get_supabase_client()
-    response = (
-        sb.table("wallets")
-        .select("chain, address, is_primary, created_at")
-        .eq("user_id", user_id)
-        .order("is_primary", desc=True)
-        .order("created_at", desc=False)
-        .execute()
-    )
+        sb = get_supabase_client()
+        response = (
+            sb.table("wallets")
+            .select("chain, address, is_primary, created_at")
+            .eq("user_id", user_id)
+            .order("is_primary", desc=True)
+            .order("created_at", desc=False)
+            .execute()
+        )
 
-    for wallet in response.data or []:
-        wallets.setdefault(wallet["chain"], wallet["address"])
+        for wallet in response.data or []:
+            wallets.setdefault(wallet["chain"], wallet["address"])
+    except Exception as e:
+        logger.warning("Supabase get_wallet_addresses failed for %s: %s", user_id, e)
 
     return wallets
 
 
 def sync_profile_wallet_address(user_id: str, wallet_address: Optional[str]) -> None:
-    sb = get_supabase_client()
-    (
-        sb.table("profiles")
-        .update({"wallet_address": wallet_address})
-        .eq("user_id", user_id)
-        .execute()
-    )
+    try:
+        sb = get_supabase_client()
+        (
+            sb.table("profiles")
+            .update({"wallet_address": wallet_address})
+            .eq("user_id", user_id)
+            .execute()
+        )
+    except Exception as e:
+        logger.warning("Supabase sync_profile_wallet_address failed for %s: %s", user_id, e)
 
 
 def create_notification(user_id: str, message: str, link: Optional[str] = None) -> None:
     # TODO: Add email notifications
-    sb = get_supabase_client()
-    (
-        sb.table("notifications")
-        .insert(
-            {
-                "user_id": user_id,
-                "message": message,
-                "link": link,
-            }
+    try:
+        sb = get_supabase_client()
+        (
+            sb.table("notifications")
+            .insert(
+                {
+                    "user_id": user_id,
+                    "message": message,
+                    "link": link,
+                }
+            )
+            .execute()
         )
-        .execute()
-    )
+    except Exception as e:
+        logger.warning("Supabase create_notification failed for %s: %s", user_id, e)
 
 
 def insert_payment_record(
@@ -323,23 +347,35 @@ def insert_payment_record(
     from_wallet_address: Optional[str],
     to_wallet_address: Optional[str],
 ) -> Dict[str, Any]:
-    sb = get_supabase_client()
-    response = (
-        sb.table("payments")
-        .insert(
-            {
-                "job_id": job_id,
-                "from_user_id": from_user_id,
-                "to_user_id": to_user_id,
-                "amount_sol": amount_sol,
-                "tx_hash": tx_hash,
-                "from_wallet_address": from_wallet_address,
-                "to_wallet_address": to_wallet_address,
-            }
+    try:
+        sb = get_supabase_client()
+        response = (
+            sb.table("payments")
+            .insert(
+                {
+                    "job_id": job_id,
+                    "from_user_id": from_user_id,
+                    "to_user_id": to_user_id,
+                    "amount_sol": amount_sol,
+                    "tx_hash": tx_hash,
+                    "from_wallet_address": from_wallet_address,
+                    "to_wallet_address": to_wallet_address,
+                }
+            )
+            .execute()
         )
-        .execute()
-    )
-    return response.data[0] if response.data else {}
+        return response.data[0] if response.data else {}
+    except Exception as e:
+        logger.warning("Supabase insert_payment_record failed: %s", e)
+        return {
+            "job_id": job_id,
+            "from_user_id": from_user_id,
+            "to_user_id": to_user_id,
+            "amount_sol": amount_sol,
+            "tx_hash": tx_hash,
+            "from_wallet_address": from_wallet_address,
+            "to_wallet_address": to_wallet_address,
+        }
 
 
 def insert_tip_transaction_record(
@@ -358,26 +394,30 @@ def insert_tip_transaction_record(
     if not tx_hash:
         return None
 
-    sb = get_supabase_client()
-    response = (
-        sb.table("tip_transactions")
-        .insert(
-            {
-                "proposal_id": proposal_id,
-                "problem_id": problem_id,
-                "builder_id": builder_id,
-                "tipper_id": tipper_id,
-                "amount": amount,
-                "currency": currency,
-                "chain": chain,
-                "tx_hash": tx_hash,
-                "to_wallet_address": to_wallet_address,
-                "message": message,
-            }
+    try:
+        sb = get_supabase_client()
+        response = (
+            sb.table("tip_transactions")
+            .insert(
+                {
+                    "proposal_id": proposal_id,
+                    "problem_id": problem_id,
+                    "builder_id": builder_id,
+                    "tipper_id": tipper_id,
+                    "amount": amount,
+                    "currency": currency,
+                    "chain": chain,
+                    "tx_hash": tx_hash,
+                    "to_wallet_address": to_wallet_address,
+                    "message": message,
+                }
+            )
+            .execute()
         )
-        .execute()
-    )
-    return response.data[0] if response.data else None
+        return response.data[0] if response.data else None
+    except Exception as e:
+        logger.warning("Supabase insert_tip_transaction_record failed: %s", e)
+        return None
 
 
 def get_tip_totals_for_proposals(proposal_ids: Iterable[str]) -> Dict[str, float]:

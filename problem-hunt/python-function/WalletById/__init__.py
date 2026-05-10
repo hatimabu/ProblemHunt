@@ -5,10 +5,6 @@ Removes a wallet that belongs to the authenticated user.
 Only the owner can delete their own wallet (enforced server-side).
 """
 
-import sys
-import os
-sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-
 import json
 import azure.functions as func
 from handlers.marketplace_helpers import sync_profile_wallet_address

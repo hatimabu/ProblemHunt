@@ -50,3 +50,5 @@ auth_user_response.txt
 sample_jwt.txt
 jwt.txt
 token.txt
+ProblemHunt/problem-hunt/python-function/debug_test.py
+ProblemHunt/problem-hunt/python-function/test_all.py

@@ -1,7 +1,7 @@
 """
 Shared utilities module for Azure Functions.
 
-Exports commonly used functions and classes for authentication and database operations.
+Exports commonly used functions and classes for authentication.
 """
 
 from .auth import (
@@ -12,11 +12,6 @@ from .auth import (
     auth_required,
     AuthError,
 )
-from .db import (
-    CosmosDBClient,
-    get_db_client,
-    CosmosDBError,
-)
 
 __all__ = [
     "authenticate_request",
@@ -25,7 +20,4 @@ __all__ = [
     "get_user_id_from_token",
     "auth_required",
     "AuthError",
-    "CosmosDBClient",
-    "get_db_client",
-    "CosmosDBError",
 ]
