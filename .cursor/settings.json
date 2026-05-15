@@ -1,0 +1,7 @@
+{
+  "plugins": {
+    "grafana-frontend-observability/faro-setup": {
+      "enabled": true
+    }
+  }
+}

@@ -9,12 +9,15 @@
     "server": "cd problem-hunt && npm run server"
   },
   "dependencies": {
+    "@grafana/faro-web-sdk": "^2.4.0",
+    "@grafana/faro-web-tracing": "^2.4.0",
     "@sentry/react": "^10.49.0",
     "@supabase/supabase-js": "^2.105.4",
     "@types/react": "^19.2.10",
     "jose": "^6.2.1"
   },
   "devDependencies": {
+    "@grafana/faro-webpack-plugin": "^0.11.1",
     "@tailwindcss/vite": "^4.1.12",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "4.7.0",
