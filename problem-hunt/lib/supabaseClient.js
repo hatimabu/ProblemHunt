@@ -34,7 +34,6 @@ function createMissingConfigClient() {
   const notConfiguredError = () => new Error('Supabase is not configured. Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.');
   const emptySubscription = { unsubscribe: () => {} };
 
-  const resolveNull = () => Promise.resolve({ data: null, error: null });
   const rejectConfigured = () => Promise.resolve({ data: null, error: notConfiguredError() });
 
   const chainable = {
@@ -91,14 +90,14 @@ function createMissingConfigClient() {
 
   return {
     auth: {
-      getSession: resolveNull,
-      getUser: resolveNull,
+      getSession: () => Promise.resolve({ data: { session: null }, error: null }),
+      getUser: () => Promise.resolve({ data: { user: null }, error: null }),
       signInWithPassword: rejectConfigured,
       signInWithOAuth: rejectConfigured,
       signUp: rejectConfigured,
-      signOut: resolveNull,
+      signOut: () => Promise.resolve({ error: null }),
       onAuthStateChange: () => ({ data: { subscription: emptySubscription } }),
-      refreshSession: resolveNull,
+      refreshSession: () => Promise.resolve({ data: { session: null }, error: null }),
       updateUser: rejectConfigured,
       linkIdentity: rejectConfigured,
       resend: rejectConfigured,
