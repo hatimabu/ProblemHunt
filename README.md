@@ -141,134 +141,75 @@ Recommended:
 
 ## 7. Deploy to Azure (Production)
 
-This is a **fully automated** deployment. One script sets up Azure, then every push to `main` automatically creates infrastructure and deploys code.
+One workflow provisions infrastructure and deploys code automatically on every push to `main`.
 
 ### 7.1 What Gets Deployed
 
 | Resource | Azure Service | Purpose |
 |----------|--------------|---------|
-| Frontend | Static Web Apps (manual) | Your existing `problemhunt` SWA hosts the Vite/React build |
-| Backend API | Function App (Linux, Python 3.11) | Terraform creates this; workflow deploys Python code |
-| Database | Cosmos DB (Free Tier) | **1000 RU/s and 25 GB free for life** |
-| Secrets | Key Vault | Stores credentials |
+| Frontend | Static Web Apps (already exists) | Your `problemhunt` SWA |
+| Backend API | Function App (Linux, Python 3.11) | Terraform creates this; workflow deploys code |
+| Database | Cosmos DB (Free Tier) | **1000 RU/s + 25 GB free for life** |
 | Monitoring | Application Insights | Logs and telemetry |
 
-### 7.2 One-Time Setup (run locally)
+### 7.2 One-Time Setup
 
-You only do this once.
-
-#### Prerequisites
-
-- Azure subscription
-- [Azure CLI](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli) installed
-- [PowerShell](https://learn.microsoft.com/en-us/powershell/scripting/install/installing-powershell) installed
-- Logged into Azure: `az login`
-
-#### Step 1 — Run the bootstrap script
+Run these commands **once** on your local machine:
 
 ```powershell
-.\scripts\setup-azure.ps1
+# 1. Log into Azure
+az login
+
+# 2. Create a Service Principal for GitHub Actions
+az ad sp create-for-rbac `
+  --name "problemhunt-gha" `
+  --role contributor `
+  --scopes "/subscriptions/$(az account show --query id -o tsv)/resourceGroups/problemhunt" `
+  --sdk-auth
 ```
 
-This script does three things:
-1. Creates the `problemhunt` resource group (if missing)
-2. Creates a **Storage Account** for Terraform state (`problemhunttfstate`)
-3. Creates a **Service Principal** for GitHub Actions with Contributor access
+Copy the JSON output. Then go to **GitHub → Settings → Secrets → Actions** and add:
 
-At the end it prints a JSON block. **Copy that JSON**.
+| Secret | Value |
+|--------|-------|
+| `AZURE_CREDENTIALS` | The JSON from above |
+| `AZURE_STATIC_WEB_APPS_API_TOKEN` | Azure Portal → SWA `problemhunt` → Manage deployment token |
+| `AZURE_FUNCTIONAPP_NAME` | The name you want for your Function App (e.g. `problemhunt-api`) |
+| `VITE_SUPABASE_URL` | From Supabase Dashboard |
+| `VITE_SUPABASE_ANON_KEY` | From Supabase Dashboard |
+| `VITE_ALCHEMY_SOLANA_RPC_URL` | From Alchemy Dashboard |
+| `VITE_FARO_URL` | *(optional)* From Grafana Cloud |
+| `SUPABASE_JWT_SECRET` | Supabase Dashboard → Settings → API |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase Dashboard → Settings → API |
 
-#### Step 2 — Save the JSON as a GitHub Secret
+### 7.3 Deploy
 
-Go to **GitHub → Settings → Secrets and variables → Actions → New repository secret**
-
-| Name | Value |
-|------|-------|
-| `AZURE_CREDENTIALS` | Paste the entire JSON from the script |
-
-#### Step 3 — Add your Static Web App token
-
-Your SWA `problemhunt` already exists. Get its deployment token:
-
-**Azure Portal** → Static Web Apps → `problemhunt` → Overview → **Manage deployment token** → Copy
-
-Create another secret:
-
-| Name | Value |
-|------|-------|
-| `AZURE_STATIC_WEB_APPS_API_TOKEN` | The token you just copied |
-
-#### Step 4 — Add Supabase secrets (for the build)
-
-| Name | Value | Source |
-|------|-------|--------|
-| `VITE_SUPABASE_URL` | `https://your-project-ref.supabase.co` | Supabase Dashboard → Settings → API |
-| `VITE_SUPABASE_ANON_KEY` | `eyJ...` | Supabase Dashboard → Settings → API → anon/public |
-| `VITE_ALCHEMY_SOLANA_RPC_URL` | `https://solana-mainnet.g.alchemy.com/v2/YOUR_KEY` | Alchemy Dashboard |
-| `VITE_FARO_URL` *(optional)* | Grafana collector URL | Grafana Cloud |
-
-And for the Function App runtime:
-
-| Name | Value | Source |
-|------|-------|--------|
-| `SUPABASE_JWT_SECRET` | Your JWT secret | Supabase Dashboard → Settings → API → JWT Settings |
-| `SUPABASE_SERVICE_ROLE_KEY` | Your service role key | Supabase Dashboard → Settings → API → service_role |
-
----
-
-### 7.3 The Unified Workflow
-
-The file `.github/workflows/deploy-azure.yml` runs automatically on every push to `main`. It does **everything** in order:
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│  1. Terraform                                               │
-│     → Creates Function App, Cosmos DB, Key Vault, App Insights│
-│     → Configures Function App settings (Cosmos + Supabase)  │
-├─────────────────────────────────────────────────────────────┤
-│  2. Build Frontend                                          │
-│     → npm ci + vite build                                   │
-│     → VITE_API_BASE_URL is set automatically from Terraform │
-├─────────────────────────────────────────────────────────────┤
-│  3. Deploy Frontend                                         │
-│     → Uploads dist/ to your existing SWA 'problemhunt'      │
-├─────────────────────────────────────────────────────────────┤
-│  4. Deploy Backend                                          │
-│     → Deploys python-function/ to the new Function App      │
-└─────────────────────────────────────────────────────────────┘
-```
-
-**To deploy:** just push to `main`.
+Push to `main`. That's it.
 
 ```powershell
 git add .
-git commit -m "deploy to azure"
+git commit -m "deploy"
 git push origin main
 ```
 
-Then watch it run at **GitHub → Actions → Deploy ProblemHunt to Azure**.
+The workflow `.github/workflows/deploy-azure.yml` runs four jobs in order:
 
----
+1. **Terraform** — creates Function App, Cosmos DB, App Insights (if they don't exist)
+2. **Build Frontend** — `npm ci` + `vite build` with the Function App URL injected automatically
+3. **Deploy Frontend** — uploads `dist/` to your existing SWA
+4. **Deploy Backend** — deploys `python-function/` to the Function App
 
-### 7.4 Verify the Deployment
+Watch it at **GitHub → Actions**.
 
-1. Open your SWA URL (`https://problemhunt.azurestaticapps.net` or whatever custom domain you have)
-2. Confirm the landing page loads
-3. Open browser DevTools → Network
-4. Sign in and browse problems — API calls should hit the Function App and return `200`
-5. Check **Application Insights** (Azure Portal) for live telemetry
+### 7.4 Troubleshooting
 
----
-
-### 7.5 Troubleshooting Production
-
-| Symptom | Fix |
-|---------|-----|
-| Workflow fails at "Azure Login" | `AZURE_CREDENTIALS` secret is missing or invalid. Re-run `setup-azure.ps1` and copy the JSON again. |
-| Workflow fails at "Terraform Init" | The storage account `problemhunttfstate` doesn't exist. Run `setup-azure.ps1` first. |
-| Frontend loads but API calls fail (CORS) | The `allowed_origins` in `infra/terraform.tfvars` doesn't include your SWA URL. Update it and push. |
-| `401 Unauthorized` from API | `SUPABASE_JWT_SECRET` doesn't match your Supabase project. Check Supabase Dashboard → Settings → API. |
-| Cosmos errors | The Function App settings are populated automatically by the workflow. If you see errors, re-run the workflow. |
-| Function App won't start | Check the workflow logs for Python build errors. Make sure `requirements.txt` includes `azure-functions`. |
+| Error | Fix |
+|-------|-----|
+| `AZURE_CREDENTIALS` invalid | Re-run the `az ad sp create-for-rbac` command and update the secret |
+| Terraform backend missing | The workflow auto-creates the storage account on first run; if it fails, run: `az storage account create -n problemhunttfstate -g problemhunt -l eastus --sku Standard_LRS` |
+| CORS errors | Edit `infra/main.tf` → `var.swa_url` and push |
+| `401` from API | Check `SUPABASE_JWT_SECRET` matches your Supabase project |
+| Cosmos errors | Re-run the workflow; it auto-configures the Function App with fresh Cosmos credentials from Terraform |
 
 ## 8. Recommended Local Mode
 

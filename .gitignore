@@ -1,13 +1,9 @@
-# Terraform (provider plugins are downloaded by terraform init — do not commit)
+# Terraform
 **/.terraform/
 *.tfstate
 *.tfstate.*
 crash.log
 crash.*.log
-override.tf
-override.tf.json
-*_override.tf
-*_override.tf.json
 
 # Dependencies
 node_modules/
@@ -27,7 +23,6 @@ obj/
 
 # Built files with secrets
 problem-hunt/lib/config.js
-# Keep the template file: problem-hunt/lib/config.template.js
 
 # Mock database (local development only)
 problem-hunt/mock-db-data.json
@@ -54,12 +49,3 @@ problem-hunt/python-function/func-host*.log
 problem-hunt/supabase/.temp/
 supabase/.temp/
 diagnosis_report.txt
-jwks.json
-jwks_error.txt
-jwt_decoded.json
-auth_user_response.txt
-sample_jwt.txt
-jwt.txt
-token.txt
-ProblemHunt/problem-hunt/python-function/debug_test.py
-ProblemHunt/problem-hunt/python-function/test_all.py

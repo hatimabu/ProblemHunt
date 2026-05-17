@@ -16,14 +16,10 @@ terraform {
     resource_group_name  = "problemhunt"
     storage_account_name = "problemhunttfstate"
     container_name       = "tfstate"
-    key                  = "problemhunt.terraform.tfstate"
+    key                  = "problemhunt.tfstate"
   }
 }
 
 provider "azurerm" {
-  features {
-    resource_group {
-      prevent_deletion_if_contains_resources = false
-    }
-  }
+  features {}
 }

@@ -1,47 +1,23 @@
 variable "resource_group_name" {
-  description = "Existing Azure resource group name where all resources will be deployed"
+  description = "Existing Azure resource group"
   type        = string
   default     = "problemhunt"
-}
-
-variable "prefix" {
-  description = "Prefix for all resources"
-  type        = string
-  default     = "problemhunt"
-}
-
-variable "environment" {
-  description = "Environment name (prod, staging, dev)"
-  type        = string
-  default     = "prod"
 }
 
 variable "location" {
-  description = "Azure region for resources"
+  description = "Azure region"
   type        = string
   default     = "eastus"
 }
 
-variable "allowed_origins" {
-  description = "List of allowed CORS origins for the Function App (include your Static Web App URL)"
-  type        = list(string)
-  default     = ["https://problemhunt.azurestaticapps.net"]
-}
-
-variable "cosmos_db_offer_type" {
-  description = "Cosmos DB offer type"
+variable "function_app_name" {
+  description = "Name of the Function App to create"
   type        = string
-  default     = "Standard"
+  default     = "problemhunt-api"
 }
 
-variable "cosmos_db_enable_free_tier" {
-  description = "Enable Cosmos DB free tier (first 1000 RU/s and 25 GB free for the lifetime of the account). Cannot be used with serverless."
-  type        = bool
-  default     = true
-}
-
-variable "cosmos_db_throughput" {
-  description = "Shared database throughput in RU/s. Free tier covers the first 1000 RU/s. Use 400 for lowest cost."
-  type        = number
-  default     = 400
+variable "swa_url" {
+  description = "Your Static Web App URL for CORS"
+  type        = string
+  default     = "https://problemhunt.azurestaticapps.net"
 }
