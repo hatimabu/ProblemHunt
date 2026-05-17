@@ -13,7 +13,7 @@ variable "location" {
 variable "function_app_name" {
   description = "Name of the Function App to create"
   type        = string
-  default     = "problemhunt-api"
+  default     = "problemhunt"
 }
 
 variable "swa_url" {

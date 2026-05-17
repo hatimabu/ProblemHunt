@@ -9,7 +9,7 @@ data "azurerm_resource_group" "main" {
 # Application Insights
 # ---------------------------------------------------------------------------
 resource "azurerm_application_insights" "main" {
-  name                = "${var.function_app_name}-insights"
+  name                = var.function_app_name
   location            = data.azurerm_resource_group.main.location
   resource_group_name = data.azurerm_resource_group.main.name
   application_type    = "web"
@@ -25,7 +25,7 @@ resource "random_string" "storage_suffix" {
 }
 
 resource "azurerm_storage_account" "functions" {
-  name                     = "${var.function_app_name}sa${random_string.storage_suffix.result}"
+  name                     = "${var.function_app_name}${random_string.storage_suffix.result}"
   resource_group_name      = data.azurerm_resource_group.main.name
   location                 = data.azurerm_resource_group.main.location
   account_tier             = "Standard"
@@ -37,7 +37,7 @@ resource "azurerm_storage_account" "functions" {
 # Function App Plan + App
 # ---------------------------------------------------------------------------
 resource "azurerm_service_plan" "functions" {
-  name                = "${var.function_app_name}-plan"
+  name                = var.function_app_name
   location            = data.azurerm_resource_group.main.location
   resource_group_name = data.azurerm_resource_group.main.name
   os_type             = "Linux"
@@ -89,7 +89,7 @@ resource "azurerm_linux_function_app" "api" {
 # Cosmos DB (Free Tier)
 # ---------------------------------------------------------------------------
 resource "azurerm_cosmosdb_account" "main" {
-  name                = "${var.function_app_name}-cosmos"
+  name                = var.function_app_name
   location            = data.azurerm_resource_group.main.location
   resource_group_name = data.azurerm_resource_group.main.name
   offer_type          = "Standard"

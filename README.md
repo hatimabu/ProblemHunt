@@ -174,7 +174,7 @@ Copy the JSON output. Then go to **GitHub → Settings → Secrets → Actions**
 |--------|-------|
 | `AZURE_CREDENTIALS` | The JSON from above |
 | `AZURE_STATIC_WEB_APPS_API_TOKEN` | Azure Portal → SWA `problemhunt` → Manage deployment token |
-| `AZURE_FUNCTIONAPP_NAME` | The name you want for your Function App (e.g. `problemhunt-api`) |
+| `AZURE_FUNCTIONAPP_NAME` | The name you want for your Function App (`problemhunt`) |
 | `VITE_SUPABASE_URL` | From Supabase Dashboard |
 | `VITE_SUPABASE_ANON_KEY` | From Supabase Dashboard |
 | `VITE_ALCHEMY_SOLANA_RPC_URL` | From Alchemy Dashboard |
@@ -206,7 +206,7 @@ Watch it at **GitHub → Actions**.
 | Error | Fix |
 |-------|-----|
 | `AZURE_CREDENTIALS` invalid | Re-run the `az ad sp create-for-rbac` command and update the secret |
-| Terraform backend missing | The workflow auto-creates the storage account on first run; if it fails, run: `az storage account create -n problemhunttfstate -g problemhunt -l eastus --sku Standard_LRS` |
+| Terraform backend missing | The workflow auto-creates the storage account on first run; if it fails, run: `az storage account create -n problemhunttfstate -g problemhunt -l eastus --sku Standard_LRS --min-tls-version TLS1_2` |
 | CORS errors | Edit `infra/main.tf` → `var.swa_url` and push |
 | `401` from API | Check `SUPABASE_JWT_SECRET` matches your Supabase project |
 | Cosmos errors | Re-run the workflow; it auto-configures the Function App with fresh Cosmos credentials from Terraform |
