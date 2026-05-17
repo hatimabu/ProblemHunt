@@ -1,3 +1,14 @@
+# Terraform (provider plugins are downloaded by terraform init — do not commit)
+**/.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
 # Dependencies
 node_modules/
 .parcel-cache/
