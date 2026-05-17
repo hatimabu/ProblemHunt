@@ -1,8 +1,14 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
 import * as Sentry from "@sentry/react";
-import { getWebInstrumentations, initializeFaro } from "@grafana/faro-web-sdk";
+import {
+  getWebInstrumentations,
+  initializeFaro,
+  ReactIntegration,
+  createReactRouterV7DataOptions,
+} from "@grafana/faro-react";
 import { TracingInstrumentation } from "@grafana/faro-web-tracing";
+import { matchRoutes } from "react-router";
 import App from "./app/App";
 import "./app/index.css";
 
@@ -65,6 +71,13 @@ initializeFaro({
 
     // Tracing package to get end-to-end visibility for HTTP requests.
     new TracingInstrumentation(),
+
+    // React integration for React applications.
+    new ReactIntegration({
+      router: createReactRouterV7DataOptions({
+        matchRoutes,
+      }),
+    }),
   ],
 });
 

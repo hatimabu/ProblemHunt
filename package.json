@@ -9,6 +9,7 @@
     "server": "cd problem-hunt && npm run server"
   },
   "dependencies": {
+    "@grafana/faro-react": "^2.6.3",
     "@grafana/faro-web-sdk": "^2.4.0",
     "@grafana/faro-web-tracing": "^2.4.0",
     "@sentry/react": "^10.49.0",
