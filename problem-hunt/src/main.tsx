@@ -1,14 +1,7 @@
+import "./faro";
 import React from "react";
 import { createRoot } from "react-dom/client";
 import * as Sentry from "@sentry/react";
-import {
-  getWebInstrumentations,
-  initializeFaro,
-  ReactIntegration,
-  createReactRouterV7DataOptions,
-} from "@grafana/faro-react";
-import { TracingInstrumentation } from "@grafana/faro-web-tracing";
-import { matchRoutes } from "react-router";
 import App from "./app/App";
 import "./app/index.css";
 
@@ -57,29 +50,6 @@ if (sentryDsn) {
     console.warn("Failed to initialize Sentry:", sentryError);
   }
 }
-
-initializeFaro({
-  url: "https://faro-collector-prod-ca-east-0.grafana.net/collect/08946c172e29481d0eb75bce198498e7",
-  app: {
-    name: "problemhunt",
-    version: "1.0.0",
-    environment: "production",
-  },
-  instrumentations: [
-    // Mandatory, omits default instrumentations otherwise.
-    ...getWebInstrumentations(),
-
-    // Tracing package to get end-to-end visibility for HTTP requests.
-    new TracingInstrumentation(),
-
-    // React integration for React applications.
-    new ReactIntegration({
-      router: createReactRouterV7DataOptions({
-        matchRoutes,
-      }),
-    }),
-  ],
-});
 
 createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
