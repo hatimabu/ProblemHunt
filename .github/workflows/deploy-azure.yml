@@ -31,16 +31,34 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # ------------------------------------------------------------------------
+      # Azure Auth
+      # If your AZURE_CREDENTIALS JSON has a bad subscriptionId, add a
+      # AZURE_SUBSCRIPTION_ID secret with the correct one and the step below
+      # will switch to it after login.
+      # ------------------------------------------------------------------------
       - name: Azure Login
         uses: azure/login@v2
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Ensure Terraform Backend Exists
+      - name: Set Active Subscription (override if needed)
         run: |
-          az group show -n problemhunt >/dev/null 2>&1 || az group create -n problemhunt -l eastus
-          az storage account show -n problemhunttfstate >/dev/null 2>&1 || az storage account create -n problemhunttfstate -g problemhunt -l eastus --sku Standard_LRS --min-tls-version TLS1_2
-          az storage container show -n tfstate --account-name problemhunttfstate --auth-mode login >/dev/null 2>&1 || az storage container create -n tfstate --account-name problemhunttfstate --auth-mode login
+          if [ -n "${{ secrets.AZURE_SUBSCRIPTION_ID }}" ]; then
+            echo "Switching to subscription from AZURE_SUBSCRIPTION_ID secret..."
+            az account set --subscription "${{ secrets.AZURE_SUBSCRIPTION_ID }}"
+          fi
+          az account show --output table
+
+      # ------------------------------------------------------------------------
+      # Terraform Backend
+      # Run scripts/bootstrap-azure.ps1 locally ONCE to create the backend.
+      # We do NOT create it in CI so a bad subscription can't break the build.
+      # ------------------------------------------------------------------------
+      - name: Verify Terraform Backend
+        run: |
+          az group show -n problemhunt --output table
+          az storage account show -n problemhunttfstate --output table
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
@@ -170,6 +188,14 @@ jobs:
         uses: azure/login@v2
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Set Active Subscription (override if needed)
+        run: |
+          if [ -n "${{ secrets.AZURE_SUBSCRIPTION_ID }}" ]; then
+            echo "Switching to subscription from AZURE_SUBSCRIPTION_ID secret..."
+            az account set --subscription "${{ secrets.AZURE_SUBSCRIPTION_ID }}"
+          fi
+          az account show --output table
 
       - name: Deploy to Azure Functions
         uses: Azure/functions-action@v1
