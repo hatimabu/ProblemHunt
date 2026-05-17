@@ -22,10 +22,10 @@ variable "location" {
   default     = "eastus"
 }
 
-variable "swa_sku_tier" {
-  description = "Static Web App SKU tier (Free or Standard)"
-  type        = string
-  default     = "Standard"
+variable "allowed_origins" {
+  description = "List of allowed CORS origins for the Function App (include your Static Web App URL)"
+  type        = list(string)
+  default     = ["https://problemhunt.azurestaticapps.net"]
 }
 
 variable "cosmos_db_offer_type" {
@@ -44,16 +44,4 @@ variable "cosmos_db_throughput" {
   description = "Shared database throughput in RU/s. Free tier covers the first 1000 RU/s. Use 400 for lowest cost."
   type        = number
   default     = 400
-}
-
-variable "github_repo_url" {
-  description = "GitHub repository URL for SWA deployment source"
-  type        = string
-  default     = ""
-}
-
-variable "github_branch" {
-  description = "GitHub branch to deploy from"
-  type        = string
-  default     = "main"
 }

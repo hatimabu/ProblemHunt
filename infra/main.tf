@@ -29,21 +29,10 @@ resource "azurerm_application_insights" "main" {
 }
 
 # -----------------------------------------------------------------------------
-# Azure Static Web App (Frontend)
-# -----------------------------------------------------------------------------
-resource "azurerm_static_web_app" "frontend" {
-  name                = "${local.name_prefix}-swa"
-  location            = data.azurerm_resource_group.main.location
-  resource_group_name = data.azurerm_resource_group.main.name
-  sku_tier            = var.swa_sku_tier
-  sku_size            = var.swa_sku_tier
-
-  tags = local.common_tags
-}
-
-# -----------------------------------------------------------------------------
 # Azure Functions (Backend)
 # -----------------------------------------------------------------------------
+# NOTE: Static Web App is managed manually (already exists as 'problemhunt').
+# Terraform only creates the Function App, Cosmos DB, Key Vault, and App Insights.
 
 # Storage account required by Function App
 resource "azurerm_storage_account" "functions" {
@@ -97,12 +86,10 @@ resource "azurerm_linux_function_app" "api" {
     }
 
     cors {
-      allowed_origins = [
-        "https://${azurerm_static_web_app.frontend.default_host_name}",
-        "https://*.${azurerm_static_web_app.frontend.default_host_name}",
+      allowed_origins = concat(var.allowed_origins, [
         "http://localhost:5173",
         "http://localhost:4280"
-      ]
+      ])
       support_credentials = true
     }
 

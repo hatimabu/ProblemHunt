@@ -1,19 +1,3 @@
-output "static_web_app_name" {
-  description = "Name of the Azure Static Web App"
-  value       = azurerm_static_web_app.frontend.name
-}
-
-output "static_web_app_default_hostname" {
-  description = "Default hostname of the Static Web App"
-  value       = azurerm_static_web_app.frontend.default_host_name
-}
-
-output "static_web_app_deployment_token" {
-  description = "Deployment token for the Static Web App (add this to GitHub Secrets)"
-  value       = azurerm_static_web_app.frontend.api_key
-  sensitive   = true
-}
-
 output "function_app_name" {
   description = "Name of the Azure Function App"
   value       = azurerm_linux_function_app.api.name

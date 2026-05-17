@@ -1,9 +1,11 @@
 # Copy this file to terraform.tfvars and fill in your values
 
-prefix      = "problemhunt"
-environment = "prod"
-location    = "eastus"
+resource_group_name = "problemhunt"
+prefix              = "problemhunt"
+environment         = "prod"
+location            = "eastus"
 
-# Optional: link GitHub repo for direct SWA integration
-# github_repo_url = "https://github.com/YOUR_ORG/ProblemHunt"
-# github_branch   = "main"
+# Add your Static Web App URL here so the Function App allows CORS from it
+allowed_origins = [
+  "https://problemhunt.azurestaticapps.net"
+]

@@ -12,13 +12,12 @@ terraform {
     }
   }
 
-  # Uncomment after creating the storage account for remote state
-  # backend "azurerm" {
-  #   resource_group_name  = "tfstate-rg"
-  #   storage_account_name = "tfstateproblemhunt"
-  #   container_name       = "tfstate"
-  #   key                  = "problemhunt.terraform.tfstate"
-  # }
+  backend "azurerm" {
+    resource_group_name  = "problemhunt"
+    storage_account_name = "problemhunttfstate"
+    container_name       = "tfstate"
+    key                  = "problemhunt.terraform.tfstate"
+  }
 }
 
 provider "azurerm" {
