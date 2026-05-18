@@ -51,14 +51,45 @@ jobs:
           az account show --output table
 
       # ------------------------------------------------------------------------
-      # Terraform Backend
-      # Run scripts/bootstrap-azure.ps1 locally ONCE to create the backend.
-      # We do NOT create it in CI so a bad subscription can't break the build.
+      # Terraform Backend (self-bootstrapping)
+      # Creates the resource group, storage account and container if missing.
       # ------------------------------------------------------------------------
-      - name: Verify Terraform Backend
+      - name: Ensure Terraform Backend Exists
         run: |
-          az group show -n problemhunt --output table
-          az storage account show -n problemhunttfstate --output table
+          set -e
+          LOCATION="eastus2"
+          RG="problemhunt"
+          SA="problemhunttfstate"
+          CONTAINER="tfstate"
+
+          # Ensure resource group exists
+          if ! az group show -n "$RG" &>/dev/null; then
+            echo "Creating resource group '$RG'..."
+            az group create -n "$RG" -l "$LOCATION"
+          else
+            echo "Resource group '$RG' already exists."
+          fi
+
+          # Ensure storage account exists
+          if ! az storage account show -n "$SA" -g "$RG" &>/dev/null; then
+            echo "Creating storage account '$SA'..."
+            az storage account create \
+              -n "$SA" \
+              -g "$RG" \
+              -l "$LOCATION" \
+              --sku Standard_LRS \
+              --min-tls-version TLS1_2
+          else
+            echo "Storage account '$SA' already exists."
+          fi
+
+          # Ensure blob container exists
+          if ! az storage container show -n "$CONTAINER" --account-name "$SA" --auth-mode login &>/dev/null; then
+            echo "Creating container '$CONTAINER'..."
+            az storage container create -n "$CONTAINER" --account-name "$SA" --auth-mode login
+          else
+            echo "Container '$CONTAINER' already exists."
+          fi
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
