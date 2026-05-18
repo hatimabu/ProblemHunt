@@ -14,7 +14,7 @@
 #>
 param(
     [string]$ResourceGroupName = "problemhunt",
-    [string]$Location = "eastus",
+    [string]$Location = "eastus2",
     [string]$StorageAccountName = "problemhunttfstate",
     [string]$ContainerName = "tfstate",
     [switch]$CreateServicePrincipal
