@@ -68,7 +68,7 @@ jobs:
           echo "Using subscription: $SUBSCRIPTION_ID"
 
           # Ensure resource group exists
-          if ! az group show -n "$RG" --subscription "$SUBSCRIPTION_ID" &>/dev/null; then
+          if ! az group show -n "$RG" --subscription "$SUBSCRIPTION_ID" >/dev/null; then
             echo "Creating resource group '$RG'..."
             az group create -n "$RG" -l "$LOCATION" --subscription "$SUBSCRIPTION_ID"
           else
@@ -76,7 +76,7 @@ jobs:
           fi
 
           # Ensure storage account exists
-          if ! az storage account show -n "$SA" -g "$RG" --subscription "$SUBSCRIPTION_ID" &>/dev/null; then
+          if ! az storage account show -n "$SA" -g "$RG" --subscription "$SUBSCRIPTION_ID" >/dev/null; then
             echo "Creating storage account '$SA'..."
             az storage account create \
               -n "$SA" \
@@ -90,7 +90,7 @@ jobs:
           fi
 
           # Ensure blob container exists
-          if ! az storage container show -n "$CONTAINER" --account-name "$SA" --auth-mode login --subscription "$SUBSCRIPTION_ID" &>/dev/null; then
+          if ! az storage container show -n "$CONTAINER" --account-name "$SA" --auth-mode login --subscription "$SUBSCRIPTION_ID" >/dev/null; then
             echo "Creating container '$CONTAINER'..."
             az storage container create -n "$CONTAINER" --account-name "$SA" --auth-mode login --subscription "$SUBSCRIPTION_ID"
           else
