@@ -64,19 +64,29 @@ jobs:
           RG="problemhunt"
           SA="problemhunttfstate"
           CONTAINER="tfstate"
-          SUBSCRIPTION_ID=$(az account show --query id -o tsv)
+
+          # Capture subscription ID once from the explicitly configured secret
+          # to avoid context loss between commands.
+          SUBSCRIPTION_ID="${{ secrets.AZURE_SUBSCRIPTION_ID }}"
+          if [[ -z "$SUBSCRIPTION_ID" ]]; then
+            SUBSCRIPTION_ID=$(az account show --query id -o tsv)
+          fi
+          if [[ -z "$SUBSCRIPTION_ID" ]]; then
+            echo "ERROR: Unable to determine Azure subscription ID."
+            exit 1
+          fi
           echo "Using subscription: $SUBSCRIPTION_ID"
 
-          # Ensure resource group exists
-          if ! az group show -n "$RG" --subscription "$SUBSCRIPTION_ID" >/dev/null; then
-            echo "Creating resource group '$RG'..."
-            az group create -n "$RG" -l "$LOCATION" --subscription "$SUBSCRIPTION_ID"
-          else
-            echo "Resource group '$RG' already exists."
-          fi
+          # Ensure resource group exists (idempotent)
+          echo "Ensuring resource group '$RG' exists..."
+          az group create -n "$RG" -l "$LOCATION" --subscription "$SUBSCRIPTION_ID" &>/dev/null || {
+            echo "ERROR: Failed to ensure resource group '$RG'."
+            exit 1
+          }
+          echo "Resource group '$RG' is ready."
 
           # Ensure storage account exists
-          if ! az storage account show -n "$SA" -g "$RG" --subscription "$SUBSCRIPTION_ID" >/dev/null; then
+          if ! az storage account show -n "$SA" -g "$RG" --subscription "$SUBSCRIPTION_ID" &>/dev/null; then
             echo "Creating storage account '$SA'..."
             az storage account create \
               -n "$SA" \
@@ -84,13 +94,14 @@ jobs:
               -l "$LOCATION" \
               --sku Standard_LRS \
               --min-tls-version TLS1_2 \
+              --allow-blob-public-access false \
               --subscription "$SUBSCRIPTION_ID"
           else
             echo "Storage account '$SA' already exists."
           fi
 
           # Ensure blob container exists
-          if ! az storage container show -n "$CONTAINER" --account-name "$SA" --auth-mode login --subscription "$SUBSCRIPTION_ID" >/dev/null; then
+          if ! az storage container show -n "$CONTAINER" --account-name "$SA" --auth-mode login --subscription "$SUBSCRIPTION_ID" &>/dev/null; then
             echo "Creating container '$CONTAINER'..."
             az storage container create -n "$CONTAINER" --account-name "$SA" --auth-mode login --subscription "$SUBSCRIPTION_ID"
           else
