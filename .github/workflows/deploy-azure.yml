@@ -58,6 +58,8 @@ jobs:
       # Creates the resource group, storage account and container if missing.
       # ------------------------------------------------------------------------
       - name: Ensure Terraform Backend Exists
+        env:
+          AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
         run: |
           set -e
           LOCATION="eastus2"
@@ -65,14 +67,13 @@ jobs:
           SA="problemhunttfstate"
           CONTAINER="tfstate"
 
-          # Capture subscription ID once from the explicitly configured secret
-          # to avoid context loss between commands.
-          SUBSCRIPTION_ID="${{ secrets.AZURE_SUBSCRIPTION_ID }}"
-          if [[ -z "$SUBSCRIPTION_ID" ]]; then
-            SUBSCRIPTION_ID=$(az account show --query id -o tsv)
+          # Capture subscription ID from AZURE_CREDENTIALS JSON (same source as azure/login).
+          if ! SUBSCRIPTION_ID=$(echo "$AZURE_CREDENTIALS" | jq -er '.subscriptionId'); then
+            echo "ERROR: Failed to parse subscriptionId from AZURE_CREDENTIALS JSON."
+            exit 1
           fi
-          if [[ -z "$SUBSCRIPTION_ID" ]]; then
-            echo "ERROR: Unable to determine Azure subscription ID."
+          if [[ -z "$SUBSCRIPTION_ID" || "$SUBSCRIPTION_ID" == "null" ]]; then
+            echo "ERROR: subscriptionId is missing or empty in AZURE_CREDENTIALS."
             exit 1
           fi
           echo "Using subscription: $SUBSCRIPTION_ID"
