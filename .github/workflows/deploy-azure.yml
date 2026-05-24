@@ -32,26 +32,15 @@ jobs:
         uses: actions/checkout@v4
 
       # ------------------------------------------------------------------------
-      # Azure Auth
-      # If your AZURE_CREDENTIALS JSON has a bad subscriptionId, add a
-      # AZURE_SUBSCRIPTION_ID secret with the correct one and the step below
-      # will switch to it after login.
+      # Azure Auth — subscription comes from subscriptionId in AZURE_CREDENTIALS
       # ------------------------------------------------------------------------
       - name: Azure Login
         uses: azure/login@v2
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Set Active Subscription (override if needed)
-        run: |
-          echo "=== Subscription from AZURE_CREDENTIALS ==="
-          az account show --output json
-          if [ -n "${{ secrets.AZURE_SUBSCRIPTION_ID }}" ]; then
-            echo "Switching to subscription from AZURE_SUBSCRIPTION_ID secret..."
-            az account set --subscription "${{ secrets.AZURE_SUBSCRIPTION_ID }}"
-            echo "=== Subscription after override ==="
-            az account show --output json
-          fi
+      - name: Verify Azure Login
+        run: az account show --output json
 
       # ------------------------------------------------------------------------
       # Terraform Backend (self-bootstrapping)
@@ -238,13 +227,8 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Set Active Subscription (override if needed)
-        run: |
-          if [ -n "${{ secrets.AZURE_SUBSCRIPTION_ID }}" ]; then
-            echo "Switching to subscription from AZURE_SUBSCRIPTION_ID secret..."
-            az account set --subscription "${{ secrets.AZURE_SUBSCRIPTION_ID }}"
-          fi
-          az account show --output table
+      - name: Verify Azure Login
+        run: az account show --output table
 
       - name: Deploy to Azure Functions
         uses: Azure/functions-action@v1
