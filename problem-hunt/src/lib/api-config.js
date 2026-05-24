@@ -9,7 +9,7 @@
  *   const endpoint = `${API_BASE_URL}/api/problems`;
  */
 
-const DEFAULT_AZURE_FUNCTIONS_BASE_URL = 'https://problemhunt-api.azurewebsites.net';
+const DEFAULT_API_BASE_URL = 'http://localhost:7071';
 
 // Determine the API base URL based on environment
 export const getApiBaseUrl = () => {
@@ -22,8 +22,8 @@ export const getApiBaseUrl = () => {
     return configuredBaseUrl.replace(/\/+$/, '');
   }
 
-  // Safe default for deployed frontend to avoid falling back to static site origin.
-  return DEFAULT_AZURE_FUNCTIONS_BASE_URL;
+  // Production builds set VITE_API_BASE_URL from Terraform output in CI.
+  return DEFAULT_API_BASE_URL;
 };
 
 // Export the base URL
@@ -64,4 +64,3 @@ export const buildApiUrl = (endpoint) => {
   }
   return `${API_BASE_URL}${endpoint}`;
 };
-

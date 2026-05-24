@@ -40,6 +40,16 @@ jobs:
       - name: Force ARM Login
         run: az account get-access-token --resource https://management.azure.com/ > /dev/null
 
+      - name: Select Azure Subscription
+        id: azure-sub
+        env:
+          AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
+        run: |
+          set -e
+          SUBSCRIPTION_ID=$(echo "$AZURE_CREDENTIALS" | jq -er '.subscriptionId')
+          az account set --subscription "$SUBSCRIPTION_ID"
+          echo "subscription_id=$SUBSCRIPTION_ID" >> "$GITHUB_OUTPUT"
+
       - name: Verify Azure Login
         run: az account show --output table
 
@@ -53,11 +63,12 @@ jobs:
           set -e
           LOCATION="eastus2"
           RG="problemhunt"
-          SA="problemhunttfstate"
+          SA="problemhuntnewtfstate"
           CONTAINER="tfstate"
 
           SUBSCRIPTION_ID=$(echo "$AZURE_CREDENTIALS" | jq -er '.subscriptionId')
           echo "Using subscription: $SUBSCRIPTION_ID"
+          az account set --subscription "$SUBSCRIPTION_ID"
 
           echo "Ensuring resource group '$RG' exists..."
           az group create -n "$RG" -l "$LOCATION" --subscription "$SUBSCRIPTION_ID" >/dev/null
@@ -91,15 +102,21 @@ jobs:
 
       - name: Terraform Init
         working-directory: infra
-        run: terraform init
+        env:
+          ARM_SUBSCRIPTION_ID: ${{ steps.azure-sub.outputs.subscription_id }}
+        run: terraform init -backend-config="subscription_id=$ARM_SUBSCRIPTION_ID"
 
       - name: Terraform Apply
         working-directory: infra
+        env:
+          ARM_SUBSCRIPTION_ID: ${{ steps.azure-sub.outputs.subscription_id }}
         run: terraform apply -auto-approve -var="function_app_name=${{ secrets.AZURE_FUNCTIONAPP_NAME }}"
 
       - name: Capture Terraform Outputs
         id: tf
         working-directory: infra
+        env:
+          ARM_SUBSCRIPTION_ID: ${{ steps.azure-sub.outputs.subscription_id }}
         run: |
           echo "function_app_name=$(terraform output -raw function_app_name)" >> $GITHUB_OUTPUT
           echo "function_app_hostname=$(terraform output -raw function_app_default_hostname)" >> $GITHUB_OUTPUT
@@ -107,10 +124,13 @@ jobs:
           echo "cosmos_key=$(terraform output -raw cosmos_db_primary_key)" >> $GITHUB_OUTPUT
 
       - name: Configure Function App Settings
+        env:
+          SUBSCRIPTION_ID: ${{ steps.azure-sub.outputs.subscription_id }}
         run: |
           az functionapp config appsettings set \
             --name ${{ steps.tf.outputs.function_app_name }} \
             --resource-group problemhunt \
+            --subscription "$SUBSCRIPTION_ID" \
             --settings \
               COSMOS_ENDPOINT="${{ steps.tf.outputs.cosmos_endpoint }}" \
               COSMOS_KEY="${{ steps.tf.outputs.cosmos_key }}" \
@@ -204,6 +224,14 @@ jobs:
 
       - name: Force ARM Login
         run: az account get-access-token --resource https://management.azure.com/ > /dev/null
+
+      - name: Select Azure Subscription
+        env:
+          AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
+        run: |
+          set -e
+          SUBSCRIPTION_ID=$(echo "$AZURE_CREDENTIALS" | jq -er '.subscriptionId')
+          az account set --subscription "$SUBSCRIPTION_ID"
 
       - name: Verify Azure Login
         run: az account show --output table

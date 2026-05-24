@@ -160,15 +160,18 @@ Run these commands **once** on your local machine:
 # 1. Log into Azure
 az login
 
-# 2. Create a Service Principal for GitHub Actions
+# 2. Select the target subscription
+az account set --subscription "NEW"
+
+# 3. Create a Service Principal for GitHub Actions
 az ad sp create-for-rbac `
   --name "problemhunt-gha" `
   --role contributor `
-  --scopes "/subscriptions/$(az account show --query id -o tsv)/resourceGroups/problemhunt" `
+  --scopes "/subscriptions/$(az account show --query id -o tsv)" `
   --sdk-auth
 ```
 
-Copy the JSON output. Then go to **GitHub → Settings → Secrets → Actions** and add:
+Copy the JSON output. Its `subscriptionId` must be the target Azure subscription. Then go to **GitHub → Settings → Secrets → Actions** and add:
 
 | Secret | Value |
 |--------|-------|
@@ -206,7 +209,7 @@ Watch it at **GitHub → Actions**.
 | Error | Fix |
 |-------|-----|
 | `AZURE_CREDENTIALS` invalid | Re-run the `az ad sp create-for-rbac` command and update the secret |
-| Terraform backend missing | The workflow auto-creates the storage account on first run; if it fails, run: `az storage account create -n problemhunttfstate -g problemhunt -l eastus --sku Standard_LRS --min-tls-version TLS1_2` |
+| Terraform backend missing | The workflow auto-creates the resource group, `problemhuntnewtfstate` storage account, and container in the subscription from `AZURE_CREDENTIALS`; if it fails, run `scripts/bootstrap-azure.ps1 -SubscriptionId $(az account show --query id -o tsv)` after selecting the target subscription |
 | CORS errors | Edit `infra/main.tf` → `var.swa_url` and push |
 | `401` from API | Check `SUPABASE_JWT_SECRET` matches your Supabase project |
 | Cosmos errors | Re-run the workflow; it auto-configures the Function App with fresh Cosmos credentials from Terraform |

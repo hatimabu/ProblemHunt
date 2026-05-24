@@ -14,7 +14,7 @@ terraform {
 
   backend "azurerm" {
     resource_group_name  = "problemhunt"
-    storage_account_name = "problemhunttfstate"
+    storage_account_name = "problemhuntnewtfstate"
     container_name       = "tfstate"
     key                  = "problemhunt.tfstate"
   }

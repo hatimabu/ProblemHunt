@@ -11,7 +11,7 @@ export default defineConfig(({ mode }) => {
   const apiBaseUrl =
     env.VITE_API_BASE_URL ||
     env.VITE_API_BASE ||
-    'https://problemhunt-api.azurewebsites.net';
+    'http://localhost:7071';
 
   return {
     root: __dirname,
