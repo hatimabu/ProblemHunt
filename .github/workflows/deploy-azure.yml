@@ -69,6 +69,15 @@ jobs:
           SUBSCRIPTION_ID=$(echo "$AZURE_CREDENTIALS" | jq -er '.subscriptionId')
           echo "Using subscription: $SUBSCRIPTION_ID"
           az account set --subscription "$SUBSCRIPTION_ID"
+          ACTIVE_SUBSCRIPTION_ID=$(az account show --query id -o tsv)
+          if [ "$ACTIVE_SUBSCRIPTION_ID" != "$SUBSCRIPTION_ID" ]; then
+            echo "Azure CLI active subscription '$ACTIVE_SUBSCRIPTION_ID' does not match AZURE_CREDENTIALS subscription '$SUBSCRIPTION_ID'."
+            exit 1
+          fi
+          az provider register --namespace Microsoft.Storage --subscription "$SUBSCRIPTION_ID" --wait
+          az provider register --namespace Microsoft.Web --subscription "$SUBSCRIPTION_ID" --wait
+          az provider register --namespace Microsoft.Insights --subscription "$SUBSCRIPTION_ID" --wait
+          az provider register --namespace Microsoft.DocumentDB --subscription "$SUBSCRIPTION_ID" --wait
 
           echo "Ensuring resource group '$RG' exists..."
           az group create -n "$RG" -l "$LOCATION" --subscription "$SUBSCRIPTION_ID" >/dev/null
