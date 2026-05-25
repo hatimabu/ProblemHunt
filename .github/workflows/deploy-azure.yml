@@ -50,6 +50,22 @@ jobs:
           az account set --subscription "$SUBSCRIPTION_ID"
           echo "subscription_id=$SUBSCRIPTION_ID" >> "$GITHUB_OUTPUT"
 
+      - name: Export Terraform Azure Credentials
+        env:
+          AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
+        run: |
+          set -e
+          ARM_CLIENT_ID=$(echo "$AZURE_CREDENTIALS" | jq -er '.clientId')
+          ARM_CLIENT_SECRET=$(echo "$AZURE_CREDENTIALS" | jq -er '.clientSecret')
+          ARM_TENANT_ID=$(echo "$AZURE_CREDENTIALS" | jq -er '.tenantId')
+          ARM_SUBSCRIPTION_ID=$(echo "$AZURE_CREDENTIALS" | jq -er '.subscriptionId')
+
+          echo "::add-mask::$ARM_CLIENT_SECRET"
+          echo "ARM_CLIENT_ID=$ARM_CLIENT_ID" >> "$GITHUB_ENV"
+          echo "ARM_CLIENT_SECRET=$ARM_CLIENT_SECRET" >> "$GITHUB_ENV"
+          echo "ARM_TENANT_ID=$ARM_TENANT_ID" >> "$GITHUB_ENV"
+          echo "ARM_SUBSCRIPTION_ID=$ARM_SUBSCRIPTION_ID" >> "$GITHUB_ENV"
+
       - name: Verify Azure Login
         run: az account show --output table
 
@@ -111,21 +127,15 @@ jobs:
 
       - name: Terraform Init
         working-directory: infra
-        env:
-          ARM_SUBSCRIPTION_ID: ${{ steps.azure-sub.outputs.subscription_id }}
         run: terraform init -backend-config="subscription_id=$ARM_SUBSCRIPTION_ID"
 
       - name: Terraform Apply
         working-directory: infra
-        env:
-          ARM_SUBSCRIPTION_ID: ${{ steps.azure-sub.outputs.subscription_id }}
         run: terraform apply -auto-approve -var="function_app_name=${{ secrets.AZURE_FUNCTIONAPP_NAME }}"
 
       - name: Capture Terraform Outputs
         id: tf
         working-directory: infra
-        env:
-          ARM_SUBSCRIPTION_ID: ${{ steps.azure-sub.outputs.subscription_id }}
         run: |
           echo "function_app_name=$(terraform output -raw function_app_name)" >> $GITHUB_OUTPUT
           echo "function_app_hostname=$(terraform output -raw function_app_default_hostname)" >> $GITHUB_OUTPUT
