@@ -70,11 +70,13 @@ jobs:
           set -euo pipefail
           SUBSCRIPTION_ID=$(echo "$AZURE_CREDENTIALS" | jq -er '.subscriptionId')
 
-          az group create \
-            --name "$TF_BACKEND_RESOURCE_GROUP" \
-            --location "$AZURE_LOCATION" \
-            --subscription "$SUBSCRIPTION_ID" \
-            --output none
+          if ! az group show --name "$TF_BACKEND_RESOURCE_GROUP" --subscription "$SUBSCRIPTION_ID" --output none 2>/dev/null; then
+            az group create \
+              --name "$TF_BACKEND_RESOURCE_GROUP" \
+              --location "$AZURE_LOCATION" \
+              --subscription "$SUBSCRIPTION_ID" \
+              --output none
+          fi
 
           if ! az storage account show --name "$TF_BACKEND_STORAGE_ACCOUNT" --resource-group "$TF_BACKEND_RESOURCE_GROUP" --subscription "$SUBSCRIPTION_ID" --output none 2>/dev/null; then
             az storage account create \
