@@ -201,7 +201,7 @@ jobs:
           VITE_FARO_APP_NAME: ${{ secrets.VITE_FARO_APP_NAME }}
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
-          VITE_ALCHEMY_SOLANA_RPC_URL: ${{ secrets.VITE_ALCHEMY_SOLANA_RPC_URL }}
+          VITE_ALCHEMY_SOLANA_RPC_URL: ${{ secrets.VITE_ALCHEMY_SOLANA_RPC_URL || '' }}
           NODE_ENV: production
         run: npm run build
 
