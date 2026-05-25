@@ -1,23 +1,29 @@
 variable "resource_group_name" {
-  description = "Existing Azure resource group"
+  description = "Azure resource group for ProblemHunt resources."
   type        = string
-  default     = "problemhunt"
 }
 
 variable "location" {
-  description = "Azure region"
+  description = "Azure region for ProblemHunt resources."
   type        = string
-  default     = "eastus"
 }
 
 variable "function_app_name" {
-  description = "Name of the Function App to create"
+  description = "Name of the Azure Function App."
   type        = string
-  default     = "problemhunt"
 }
 
 variable "swa_url" {
-  description = "Your Static Web App URL for CORS"
+  description = "Static Web App URL allowed by Function App CORS."
   type        = string
-  default     = "https://problemhunt.azurestaticapps.net"
+}
+
+variable "backend_resource_group_name" {
+  description = "Azure resource group for the Terraform backend storage account."
+  type        = string
+}
+
+variable "backend_storage_account_name" {
+  description = "Azure storage account name for Terraform backend state."
+  type        = string
 }

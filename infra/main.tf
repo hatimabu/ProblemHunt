@@ -1,23 +1,14 @@
-# ---------------------------------------------------------------------------
-# Existing Resource Group
-# ---------------------------------------------------------------------------
 data "azurerm_resource_group" "main" {
   name = var.resource_group_name
 }
 
-# ---------------------------------------------------------------------------
-# Application Insights
-# ---------------------------------------------------------------------------
 resource "azurerm_application_insights" "main" {
-  name                = var.function_app_name
+  name                = "${var.function_app_name}-ai"
   location            = data.azurerm_resource_group.main.location
   resource_group_name = data.azurerm_resource_group.main.name
   application_type    = "web"
 }
 
-# ---------------------------------------------------------------------------
-# Function App Storage
-# ---------------------------------------------------------------------------
 resource "random_string" "storage_suffix" {
   length  = 8
   special = false
@@ -33,11 +24,8 @@ resource "azurerm_storage_account" "functions" {
   min_tls_version          = "TLS1_2"
 }
 
-# ---------------------------------------------------------------------------
-# Function App Plan + App
-# ---------------------------------------------------------------------------
 resource "azurerm_service_plan" "functions" {
-  name                = var.function_app_name
+  name                = "${var.function_app_name}-plan"
   location            = data.azurerm_resource_group.main.location
   resource_group_name = data.azurerm_resource_group.main.name
   os_type             = "Linux"
@@ -85,16 +73,13 @@ resource "azurerm_linux_function_app" "api" {
   }
 }
 
-# ---------------------------------------------------------------------------
-# Cosmos DB (Free Tier)
-# ---------------------------------------------------------------------------
 resource "azurerm_cosmosdb_account" "main" {
-  name                = var.function_app_name
+  name                = "${var.function_app_name}-cosmos"
   location            = data.azurerm_resource_group.main.location
   resource_group_name = data.azurerm_resource_group.main.name
   offer_type          = "Standard"
 
-  enable_free_tier = true
+  free_tier_enabled = true
 
   consistency_policy {
     consistency_level = "Session"
@@ -110,8 +95,6 @@ resource "azurerm_cosmosdb_sql_database" "main" {
   name                = "ProblemHuntDB"
   resource_group_name = data.azurerm_resource_group.main.name
   account_name        = azurerm_cosmosdb_account.main.name
-
-  throughput = 400
 }
 
 resource "azurerm_cosmosdb_sql_container" "problems" {
