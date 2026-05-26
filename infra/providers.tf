@@ -13,8 +13,10 @@ terraform {
   }
 
   backend "azurerm" {
-    container_name = "tfstate"
-    key            = "problemhunt.tfstate"
+    resource_group_name  = var.backend_resource_group_name
+    storage_account_name = var.backend_storage_account_name
+    container_name       = "tfstate"
+    key                  = "problemhunt.tfstate"
   }
 }
 
