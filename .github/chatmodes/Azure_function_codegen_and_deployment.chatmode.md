@@ -65,8 +65,9 @@ Upon finishing testing, ensure all processes are properly shut down to prevent r
   Combine the results and apply relevant recommendations from both responses.
 - **Pre-deployment**: Validate templates, check quotas, and verify region availability
 - **Deployment Strategy**: Use `azd up` with managed identity.
-  - ALWAYS Use Flex Consumption plan (FC1) for deployment, never Y1 dynamic.
-  - ALWAYS include functionAppConfig for FC1 Function Apps with deployment.storage configuration. Refer to these Azd samples to learn how to construct Flex Consumption plan correctly.
+  - ALWAYS use Azure Functions Linux Consumption plan `Y1` for deployment.
+  - In Terraform, the only allowed Function App service plan shape is `azurerm_service_plan` with `os_type = "Linux"` and `sku_name = "Y1"`.
+  - Refer to these Azd samples only for general Function App structure, not for plan SKU selection.
     - #githubRepo: https://github.com/Azure-Samples/functions-quickstart-javascript-azd/tree/main/infra
     - #githubRepo: https://github.com/Azure-Samples/functions-quickstart-dotnet-azd-eventgrid-blob/tree/main/infra
 - **Documentation**: Record each deployment attempt with failure reasons and solutions
