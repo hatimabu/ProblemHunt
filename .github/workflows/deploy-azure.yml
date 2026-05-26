@@ -5,6 +5,10 @@ on:
     branches: [main]
   workflow_dispatch:
 
+concurrency:
+  group: problemhunt-azure-deploy
+  cancel-in-progress: false
+
 env:
   NODE_VERSION: '20.x'
   PYTHON_VERSION: '3.11'
@@ -131,7 +135,7 @@ jobs:
       - name: Terraform Apply
         working-directory: infra
         run: |
-          terraform apply -auto-approve \
+          terraform apply -auto-approve -lock-timeout=10m \
             -var="resource_group_name=$AZURE_RESOURCE_GROUP" \
             -var="location=$AZURE_LOCATION" \
             -var="function_app_name=$AZURE_FUNCTIONAPP_NAME" \
