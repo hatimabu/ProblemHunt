@@ -24,7 +24,7 @@ env:
   AZURE_LOCATION: eastus
   AZURE_FUNCTIONAPP_NAME: problemhunt
   AZURE_SWA_URL: https://problemhunt.azurestaticapps.net
-  TF_BACKEND_RESOURCE_GROUP: problemhunt
+  TF_BACKEND_RESOURCE_GROUP: problemhunt-tfstate
   TF_BACKEND_STORAGE_ACCOUNT: problemhuntnewtfstate
   TF_BACKEND_CONTAINER: tfstate
 
@@ -38,8 +38,6 @@ jobs:
     outputs:
       function_app_name: ${{ steps.tf-outputs.outputs.function_app_name }}
       function_app_hostname: ${{ steps.tf-outputs.outputs.function_app_hostname }}
-      cosmos_endpoint: ${{ steps.tf-outputs.outputs.cosmos_endpoint }}
-      cosmos_key: ${{ steps.tf-outputs.outputs.cosmos_key }}
 
     steps:
       - name: Checkout
@@ -149,9 +147,7 @@ jobs:
             -var="resource_group_name=$AZURE_RESOURCE_GROUP" \
             -var="location=$AZURE_LOCATION" \
             -var="function_app_name=$AZURE_FUNCTIONAPP_NAME" \
-            -var="swa_url=$AZURE_SWA_URL" \
-            -var="backend_resource_group_name=$TF_BACKEND_RESOURCE_GROUP" \
-            -var="backend_storage_account_name=$TF_BACKEND_STORAGE_ACCOUNT"
+            -var="swa_url=$AZURE_SWA_URL"
 
       - name: Capture Terraform Outputs
         id: tf-outputs
@@ -159,8 +155,44 @@ jobs:
         run: |
           echo "function_app_name=$(terraform output -raw function_app_name)" >> "$GITHUB_OUTPUT"
           echo "function_app_hostname=$(terraform output -raw function_app_default_hostname)" >> "$GITHUB_OUTPUT"
+          echo "cosmos_account_name=$(terraform output -raw cosmos_db_account_name)" >> "$GITHUB_OUTPUT"
           echo "cosmos_endpoint=$(terraform output -raw cosmos_db_endpoint)" >> "$GITHUB_OUTPUT"
-          echo "cosmos_key=$(terraform output -raw cosmos_db_primary_key)" >> "$GITHUB_OUTPUT"
+          COSMOS_KEY=$(terraform output -raw cosmos_db_primary_key)
+          echo "::add-mask::$COSMOS_KEY"
+          echo "cosmos_key=$COSMOS_KEY" >> "$GITHUB_OUTPUT"
+
+      - name: Verify Cosmos Free-Tier Guardrails
+        env:
+          AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
+          COSMOS_ACCOUNT_NAME: ${{ steps.tf-outputs.outputs.cosmos_account_name }}
+        run: |
+          set -euo pipefail
+          SUBSCRIPTION_ID=$(echo "$AZURE_CREDENTIALS" | jq -er '.subscriptionId')
+
+          FREE_TIER=$(az cosmosdb show \
+            --name "$COSMOS_ACCOUNT_NAME" \
+            --resource-group "$AZURE_RESOURCE_GROUP" \
+            --subscription "$SUBSCRIPTION_ID" \
+            --query enableFreeTier \
+            --output tsv)
+
+          THROUGHPUT=$(az cosmosdb sql database throughput show \
+            --account-name "$COSMOS_ACCOUNT_NAME" \
+            --resource-group "$AZURE_RESOURCE_GROUP" \
+            --name ProblemHuntDB \
+            --subscription "$SUBSCRIPTION_ID" \
+            --query resource.throughput \
+            --output tsv)
+
+          if [ "$FREE_TIER" != "true" ]; then
+            echo "Cosmos DB free tier is not enabled." >&2
+            exit 1
+          fi
+
+          if [ "$THROUGHPUT" -gt 1000 ]; then
+            echo "Cosmos DB throughput is ${THROUGHPUT} RU/s, above the 1000 RU/s guardrail." >&2
+            exit 1
+          fi
 
       - name: Configure Function App Settings
         env:

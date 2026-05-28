@@ -18,12 +18,13 @@ variable "swa_url" {
   type        = string
 }
 
-variable "backend_resource_group_name" {
-  description = "Azure resource group for the Terraform backend storage account."
-  type        = string
-}
+variable "cosmos_database_throughput" {
+  description = "Shared throughput for the Cosmos SQL database. Keep at 400 RU/s for the lowest provisioned setting."
+  type        = number
+  default     = 400
 
-variable "backend_storage_account_name" {
-  description = "Azure storage account name for Terraform backend state."
-  type        = string
+  validation {
+    condition     = var.cosmos_database_throughput >= 400 && var.cosmos_database_throughput <= 1000
+    error_message = "Cosmos database throughput must stay between 400 and 1000 RU/s for this student-project deployment."
+  }
 }
