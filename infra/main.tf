@@ -3,13 +3,6 @@ resource "azurerm_resource_group" "main" {
   location = var.location
 }
 
-resource "azurerm_application_insights" "main" {
-  name                = "${var.function_app_name}-ai"
-  location            = azurerm_resource_group.main.location
-  resource_group_name = azurerm_resource_group.main.name
-  application_type    = "web"
-}
-
 resource "random_string" "storage_suffix" {
   length  = 8
   special = false
@@ -47,9 +40,6 @@ resource "azurerm_linux_function_app" "api" {
   }
 
   site_config {
-    application_insights_key               = azurerm_application_insights.main.instrumentation_key
-    application_insights_connection_string = azurerm_application_insights.main.connection_string
-
     application_stack {
       python_version = "3.11"
     }

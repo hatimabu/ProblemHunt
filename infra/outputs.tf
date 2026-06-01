@@ -22,8 +22,3 @@ output "cosmos_db_primary_key" {
 output "cosmos_database_throughput" {
   value = azurerm_cosmosdb_sql_database.main.throughput
 }
-
-output "app_insights_key" {
-  value     = azurerm_application_insights.main.instrumentation_key
-  sensitive = true
-}

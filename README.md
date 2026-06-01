@@ -150,7 +150,6 @@ One workflow provisions infrastructure and deploys code automatically on every p
 | Frontend | Static Web Apps (already exists) | Your `problemhunt` SWA |
 | Backend API | Function App (Linux, Python 3.11) | Terraform creates this; workflow deploys code |
 | Database | Cosmos DB (Free Tier) | **1000 RU/s + 25 GB free for life** |
-| Monitoring | Application Insights | Logs and telemetry |
 
 ### 7.2 One-Time Setup
 
@@ -197,7 +196,7 @@ git push origin main
 
 The workflow `.github/workflows/deploy-azure.yml` runs four jobs in order:
 
-1. **Terraform** — creates Function App, Cosmos DB, App Insights (if they don't exist)
+1. **Terraform** — creates Function App and Cosmos DB (if they don't exist)
 2. **Build Frontend** — `npm ci` + `vite build` with the Function App URL injected automatically
 3. **Deploy Frontend** — uploads `dist/` to your existing SWA
 4. **Deploy Backend** — deploys `python-function/` to the Function App

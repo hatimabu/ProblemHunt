@@ -68,7 +68,6 @@ jobs:
           az provider register --namespace Microsoft.Storage --subscription "$SUBSCRIPTION_ID" --wait
           az provider register --namespace Microsoft.Web --subscription "$SUBSCRIPTION_ID" --wait
           az provider register --namespace Microsoft.DocumentDB --subscription "$SUBSCRIPTION_ID" --wait
-          az provider register --namespace Microsoft.Insights --subscription "$SUBSCRIPTION_ID" --wait
 
       - name: Ensure Terraform Backend Exists
         env:
