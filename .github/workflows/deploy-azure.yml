@@ -21,7 +21,7 @@ env:
   BACKEND_PATH: problem-hunt/python-function
   TF_VERSION: '1.8.0'
   AZURE_RESOURCE_GROUP: problemhunt
-  AZURE_LOCATION: eastus
+  AZURE_LOCATION: eastus2
   AZURE_FUNCTIONAPP_NAME: problemhunt
   AZURE_SWA_URL: https://problemhunt.azurestaticapps.net
   TF_BACKEND_RESOURCE_GROUP: problemhunt-tfstate
