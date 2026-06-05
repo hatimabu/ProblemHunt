@@ -9,6 +9,10 @@ resource "random_string" "storage_suffix" {
   upper   = false
 }
 
+locals {
+  function_app_name = "${var.function_app_name}-${random_string.storage_suffix.result}"
+}
+
 resource "azurerm_storage_account" "functions" {
   name                     = "${var.function_app_name}${random_string.storage_suffix.result}"
   resource_group_name      = azurerm_resource_group.main.name
@@ -27,7 +31,7 @@ resource "azurerm_service_plan" "functions" {
 }
 
 resource "azurerm_linux_function_app" "api" {
-  name                = var.function_app_name
+  name                = local.function_app_name
   location            = azurerm_resource_group.main.location
   resource_group_name = azurerm_resource_group.main.name
   service_plan_id     = azurerm_service_plan.functions.id
