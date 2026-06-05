@@ -7,7 +7,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Alert, AlertDescription } from "./ui/alert";
 import { Badge } from "./ui/badge";
-import { supabase } from "../../../lib/supabaseClient";
 import { useAuth } from "../contexts/AuthContext";
 
 /**
@@ -85,15 +84,20 @@ export function CryptoPayment({ recipientUserId, recipientName, onPaymentComplet
   // Fetch recipient's wallet address for selected chain
   useEffect(() => {
     const fetchRecipientWallet = async () => {
-      const { data } = await supabase
-        .from('wallets')
-        .select('address')
-        .eq('user_id', recipientUserId)
-        .eq('chain', chain)
-        .eq('is_primary', true)
-        .single();
-      
-      setRecipientWallet(data?.address || null);
+      try {
+        const token = localStorage.getItem('problemhunt-token');
+        const res = await fetch(`/api/user/wallets/${recipientUserId}?chain=${chain}`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setRecipientWallet(data.address || null);
+        } else {
+          setRecipientWallet(null);
+        }
+      } catch {
+        setRecipientWallet(null);
+      }
     };
 
     fetchRecipientWallet();
@@ -110,15 +114,13 @@ export function CryptoPayment({ recipientUserId, recipientName, onPaymentComplet
 
     try {
       setIsLoading(true);
-      const { data, error: fetchError } = await supabase
-        .from('orders')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(10);
-
-      if (fetchError) throw fetchError;
-      setOrders(data || []);
+      const token = localStorage.getItem('problemhunt-token');
+      const res = await fetch('/api/user/orders', {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!res.ok) throw new Error('Failed to fetch orders');
+      const data = await res.json();
+      setOrders(data.orders || []);
     } catch (err: any) {
       console.error('Error fetching orders:', err);
     } finally {
@@ -150,37 +152,25 @@ export function CryptoPayment({ recipientUserId, recipientName, onPaymentComplet
       setError("");
       setSuccess("");
 
-      // Get user's wallet for this chain
-      const { data: wallet } = await supabase
-        .from('wallets')
-        .select('address')
-        .eq('user_id', user.id)
-        .eq('chain', chain)
-        .single();
-
-      const walletAddress = wallet?.address || 'unknown';
-
-      // Get token info
       const selectedToken = SUPPORTED_TOKENS[chain].find(t => t.symbol === tokenSymbol);
-
-      // Create order
-      const { data: order, error: createError } = await supabase
-        .from('orders')
-        .insert({
-          user_id: user.id,
-          wallet_address: walletAddress,
+      const token = localStorage.getItem('problemhunt-token');
+      const res = await fetch('/api/user/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
           chain,
           amount: amountNum,
           token_address: selectedToken?.address,
           token_symbol: tokenSymbol,
           receiving_address: recipientWallet,
           description: description || `Tip to ${recipientName || 'builder'}`,
-          status: 'pending',
-        })
-        .select()
-        .single();
-
-      if (createError) throw createError;
+          recipient_user_id: recipientUserId,
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || 'Failed to create order');
+      }
 
       setSuccess("Payment order created successfully!");
       setAmount("");
@@ -208,23 +198,21 @@ export function CryptoPayment({ recipientUserId, recipientName, onPaymentComplet
       setError("");
       setSuccess("");
 
-      // Call Edge Function to verify payment
-      const { data, error: verifyError } = await supabase.functions.invoke('verify-payment', {
-        body: {
-          order_id: orderId,
-          tx_hash: txHashInput,
-        }
+      const token = localStorage.getItem('problemhunt-token');
+      const res = await fetch('/api/user/orders/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ order_id: orderId, tx_hash: txHashInput }),
       });
+      const data = await res.json().catch(() => ({}));
 
-      if (verifyError) throw verifyError;
-
-      if (data.success) {
+      if (res.ok && data.success) {
         setSuccess("Payment verified successfully!");
         await fetchOrders();
         onPaymentComplete?.(orderId);
         setTxHash("");
       } else {
-        setError(data.message || 'Payment verification failed');
+        setError(data.message || data.error || 'Payment verification failed');
       }
 
     } catch (err: any) {

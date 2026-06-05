@@ -19,7 +19,6 @@ import {
 import { Button } from "./ui/button";
 import { Navbar } from "./navbar";
 import { useAuth } from "../contexts/AuthContext";
-import { supabase } from "../../../lib/supabaseClient";
 import { API_ENDPOINTS } from "../../lib/api-config";
 import { formatTimeAgo, type ProblemPost } from "../../lib/marketplace";
 
@@ -293,8 +292,7 @@ export function LandingPage() {
     const fetchPosts = async () => {
       try {
         setPostsLoading(true);
-        const { data: sessionData } = await supabase.auth.getSession();
-        const token = sessionData.session?.access_token;
+        const token = localStorage.getItem('problemhunt-token');
         const headers: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {};
         const res = await fetch(
           `${API_ENDPOINTS.PROBLEMS}?category=all&sortBy=newest&type=all`,
@@ -316,11 +314,10 @@ export function LandingPage() {
     const fetchLb = async () => {
       try {
         setLeaderboardLoading(true);
-        const { data: sessionData } = await supabase.auth.getSession();
-        const token = sessionData.session?.access_token;
+        const token = localStorage.getItem('problemhunt-token');
         const res = await fetch(
           `${API_ENDPOINTS.LEADERBOARD}?period=alltime&limit=3`,
-          { headers: { Authorization: `Bearer ${token}` } }
+          { headers: token ? { Authorization: `Bearer ${token}` } : {} }
         );
         if (!res.ok) throw new Error("fail");
         const data = await res.json();

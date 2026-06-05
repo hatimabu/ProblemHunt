@@ -3,7 +3,6 @@ import { Wallet, Loader2, AlertCircle, Check } from "lucide-react";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Alert, AlertDescription } from "./ui/alert";
-import { supabase } from "../../../lib/supabaseClient";
 import { setSessionWithTimeout } from "../utils/sessionUtils";
 import { ethers } from "ethers";
 import type { SolanaProvider } from "../../lib/solana-payments";
@@ -100,40 +99,21 @@ export function SignInWithWallet({
         throw new Error("Signature verification failed");
       }
 
-      // Sign in with Supabase using wallet
-      // Note: Supabase doesn't have native Web3 auth yet, so we use a custom flow
-      // Option 1: Create/get user by wallet address using a custom Edge Function
-      // Option 2: Use magic link with wallet address as identifier
-      
-      // For this implementation, we'll use a server endpoint to create/authenticate the user
-      const { data: authData, error: authError } = await supabase.functions.invoke('auth-wallet', {
-        body: {
-          chain,
-          address: walletAddress,
-          signature,
-          statement
-        }
+      // Authenticate with backend API
+      const authRes = await fetch('/api/auth/wallet', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chain, address: walletAddress, signature, statement })
       });
-
-      if (authError) throw authError;
-
-      // Set the session with timeout protection
-      const { session, error: sessionError } = await setSessionWithTimeout(
-        authData.access_token,
-        authData.refresh_token
-      );
-
-      if (sessionError) throw sessionError;
-
-      if (!session?.user) {
-        throw new Error("Failed to establish session");
+      if (!authRes.ok) {
+        const err = await authRes.json().catch(() => ({}));
+        throw new Error(err.error || 'Wallet authentication failed');
       }
-
-      // Save wallet to wallets table
-      await saveWalletToDatabase(session.user.id, chain, walletAddress);
+      const authData = await authRes.json();
+      localStorage.setItem('problemhunt-token', authData.token);
 
       setSuccess(`Successfully signed in with ${chain} wallet`);
-      onSuccess?.(session.user.id, walletAddress, chain);
+      onSuccess?.(authData.user?.id, walletAddress, chain);
 
       // Redirect if specified
       if (redirectTo) {
@@ -185,35 +165,21 @@ export function SignInWithWallet({
       const signedMessage = await window.solana.signMessage(encodedMessage, 'utf8');
       const signature = Buffer.from(signedMessage.signature).toString('base64');
 
-      // Authenticate with backend
-      const { data: authData, error: authError } = await supabase.functions.invoke('auth-wallet', {
-        body: {
-          chain: 'solana',
-          address: walletAddress,
-          signature,
-          statement
-        }
+      // Authenticate with backend API
+      const authRes = await fetch('/api/auth/wallet', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chain: 'solana', address: walletAddress, signature, statement })
       });
-
-      if (authError) throw authError;
-
-      // Set the session with timeout protection
-      const { session, error: sessionError } = await setSessionWithTimeout(
-        authData.access_token,
-        authData.refresh_token
-      );
-
-      if (sessionError) throw sessionError;
-
-      if (!session?.user) {
-        throw new Error("Failed to establish session");
+      if (!authRes.ok) {
+        const err = await authRes.json().catch(() => ({}));
+        throw new Error(err.error || 'Solana wallet authentication failed');
       }
-
-      // Save wallet to database
-      await saveWalletToDatabase(session.user.id, 'solana', walletAddress);
+      const authData = await authRes.json();
+      localStorage.setItem('problemhunt-token', authData.token);
 
       setSuccess("Successfully signed in with Solana wallet");
-      onSuccess?.(session.user.id, walletAddress, 'solana');
+      onSuccess?.(authData.user?.id, walletAddress, 'solana');
 
       // Redirect if specified
       if (redirectTo) {
@@ -232,54 +198,6 @@ export function SignInWithWallet({
     }
   };
 
-  /**
-   * Save wallet address to database (if not already exists)
-   */
-  const saveWalletToDatabase = async (
-    userId: string,
-    chain: ChainType,
-    address: string
-  ) => {
-    try {
-      // Check if wallet already exists
-      const { data: existing } = await supabase
-        .from('wallets')
-        .select('id')
-        .eq('chain', chain)
-        .eq('address', address)
-        .single();
-
-      if (existing) {
-        console.log('Wallet already exists in database');
-        return;
-      }
-
-      // Check if user has any wallets
-      const { data: userWallets } = await supabase
-        .from('wallets')
-        .select('id')
-        .eq('user_id', userId);
-
-      const isPrimary = !userWallets || userWallets.length === 0;
-
-      // Insert new wallet
-      const { error: insertError } = await supabase
-        .from('wallets')
-        .insert({
-          user_id: userId,
-          chain,
-          address,
-          is_primary: isPrimary
-        });
-
-      if (insertError) {
-        console.error('Error saving wallet:', insertError);
-        // Don't throw - wallet save is not critical for sign-in
-      }
-    } catch (err) {
-      console.error('Error in saveWalletToDatabase:', err);
-    }
-  };
 
   return (
     <Card className="bg-gray-900/50 border-gray-800 backdrop-blur-sm">

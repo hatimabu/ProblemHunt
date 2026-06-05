@@ -5,7 +5,6 @@ import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Alert, AlertDescription } from "./ui/alert";
-import { supabase } from "../../../lib/supabaseClient";
 import { useAuth } from "../contexts/AuthContext";
 
 /**
@@ -69,15 +68,18 @@ export function LinkEmail({ onSuccess, onError }: LinkEmailProps) {
       setError("");
       setSuccess("");
 
-      // Update user with email and password
-      const { error: updateError } = await supabase.auth.updateUser({
-        email: email,
-        password: password,
+      const token = localStorage.getItem('problemhunt-token');
+      const res = await fetch('/api/user/link-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ email, password }),
       });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || 'Failed to link email');
+      }
 
-      if (updateError) throw updateError;
-
-      setSuccess("Email linked successfully! Please check your email to verify.");
+      setSuccess("Email linked successfully!");
       setEmail("");
       setPassword("");
       onSuccess?.();
@@ -120,14 +122,18 @@ export function LinkEmail({ onSuccess, onError }: LinkEmailProps) {
       setError("");
       setSuccess("");
 
-      // Update user email (will send verification email)
-      const { error: updateError } = await supabase.auth.updateUser({
-        email: email,
+      const token = localStorage.getItem('problemhunt-token');
+      const res = await fetch('/api/user/link-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ email }),
       });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || 'Failed to update email');
+      }
 
-      if (updateError) throw updateError;
-
-      setSuccess("Verification email sent! Please check your inbox and click the link to verify.");
+      setSuccess("Email updated! Please sign in again to verify.");
       setEmail("");
       onSuccess?.();
 
@@ -154,15 +160,8 @@ export function LinkEmail({ onSuccess, onError }: LinkEmailProps) {
       setError("");
       setSuccess("");
 
-      // Use OAuth to link identity
-      const { error: linkError } = await supabase.auth.linkIdentity({
-        provider: provider,
-      });
-
-      if (linkError) throw linkError;
-
-      // This will redirect to OAuth provider
-      // After successful auth, user will be redirected back
+      setError(`Social login linking is not supported in this version. Please use email/password.`);
+      return;
 
     } catch (err: any) {
       console.error('Error linking social identity:', err);
