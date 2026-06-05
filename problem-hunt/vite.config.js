@@ -29,6 +29,9 @@ export default defineConfig(({ mode }) => {
       },
     },
     server: {
+      host: '0.0.0.0',
+      port: 5000,
+      allowedHosts: true,
       middlewareMode: false,
       headers: {
         'Content-Security-Policy': `default-src 'self' ${env.VITE_SUPABASE_URL || 'https://*.supabase.co'}; script-src 'self' 'unsafe-inline' 'unsafe-eval'; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com https://r2cdn.perplexity.ai data:; connect-src 'self' ${env.VITE_SUPABASE_URL || 'https://*.supabase.co'} https://*.supabase.co https://*.ingest.us.sentry.io https://*.grafana.net http://localhost:7072 http://localhost:7071 https://fonts.googleapis.com`
