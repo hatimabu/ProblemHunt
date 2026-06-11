@@ -1,5 +1,7 @@
 """Update Problem Handler."""
 
+import logging
+
 import azure.functions as func
 
 from handlers.marketplace_helpers import (
@@ -13,6 +15,9 @@ from handlers.marketplace_helpers import (
     sol_amount_to_string,
 )
 from utils import get_authenticated_user_id, parse_budget_value, get_timestamp, parse_requirements
+
+
+logger = logging.getLogger(__name__)
 
 
 def handle(req: func.HttpRequest) -> func.HttpResponse:
@@ -70,5 +75,6 @@ def handle(req: func.HttpRequest) -> func.HttpResponse:
 
         return json_response(replace_problem(problem))
 
-    except Exception as exc:
-        return json_response({'error': 'Failed to update problem', 'details': str(exc)}, 500)
+    except Exception:
+        logger.exception("Handler error")
+        return json_response({'error': 'Failed to update problem'}, 500)

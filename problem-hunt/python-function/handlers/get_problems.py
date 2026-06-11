@@ -1,8 +1,13 @@
 """Get Problems Handler."""
 
+import logging
+
 import azure.functions as func
 
 from handlers.marketplace_helpers import json_response, normalize_problem, query_items
+
+
+logger = logging.getLogger(__name__)
 
 
 def handle(req: func.HttpRequest) -> func.HttpResponse:
@@ -47,5 +52,6 @@ def handle(req: func.HttpRequest) -> func.HttpResponse:
             'offset': offset
         })
 
-    except Exception as exc:
-        return json_response({'error': 'Failed to fetch problems', 'details': str(exc)}, 500)
+    except Exception:
+        logger.exception("Handler error")
+        return json_response({'error': 'Failed to fetch problems'}, 500)

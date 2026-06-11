@@ -1,7 +1,11 @@
 """Search Problems Handler"""
 import json
+import logging
 import azure.functions as func
 from cosmos import containers
+
+
+logger = logging.getLogger(__name__)
 
 
 def handle(req: func.HttpRequest) -> func.HttpResponse:
@@ -41,10 +45,10 @@ def handle(req: func.HttpRequest) -> func.HttpResponse:
             mimetype="application/json"
         )
     
-    except Exception as e:
-        print(f"SearchProblems error: {str(e)}")
+    except Exception:
+        logger.exception("Handler error")
         return func.HttpResponse(
-            json.dumps({'error': 'Search failed', 'details': str(e)}),
+            json.dumps({'error': 'Search failed'}),
             status_code=500,
             mimetype="application/json"
         )

@@ -1,5 +1,7 @@
 """Mark an accepted job as completed by the builder."""
 
+import logging
+
 import azure.functions as func
 
 from handlers.marketplace_helpers import (
@@ -12,6 +14,9 @@ from handlers.marketplace_helpers import (
     replace_problem,
 )
 from utils import get_authenticated_user_id, get_timestamp
+
+
+logger = logging.getLogger(__name__)
 
 
 def handle(req: func.HttpRequest) -> func.HttpResponse:
@@ -50,5 +55,6 @@ def handle(req: func.HttpRequest) -> func.HttpResponse:
         )
 
         return json_response({"job": problem})
-    except Exception as exc:
-        return json_response({"error": "Failed to mark job complete", "details": str(exc)}, 500)
+    except Exception:
+        logger.exception("Handler error")
+        return json_response({"error": "Failed to mark job complete"}, 500)

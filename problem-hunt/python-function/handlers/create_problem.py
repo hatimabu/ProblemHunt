@@ -1,5 +1,7 @@
 """Create Problem/Job Handler."""
 
+import logging
+
 import azure.functions as func
 
 from cosmos import containers
@@ -15,6 +17,9 @@ from handlers.marketplace_helpers import (
 )
 from utils import generate_id, get_timestamp, parse_budget_value, parse_requirements, validate_required
 from shared.auth import authenticate_request, AuthError
+
+
+logger = logging.getLogger(__name__)
 
 
 def handle(req: func.HttpRequest) -> func.HttpResponse:
@@ -35,6 +40,13 @@ def handle(req: func.HttpRequest) -> func.HttpResponse:
         validation_error = validate_required(data, ['title', 'description', 'category'])
         if validation_error:
             return json_response({'error': validation_error}, 400)
+        if len(data['title']) > 200:
+            return json_response({'error': 'title must be 200 characters or fewer'}, 400)
+        if len(data['description']) > 5000:
+            return json_response({'error': 'description must be 5000 characters or fewer'}, 400)
+        brief_solution = data.get('briefSolution')
+        if brief_solution and len(brief_solution) > 2000:
+            return json_response({'error': 'briefSolution must be 2000 characters or fewer'}, 400)
 
         valid_categories = ['AI/ML', 'Web3', 'Finance', 'Governance', 'Trading', 'Infrastructure', 'Security', 'Data Engineering', 'DevOps', 'Backend', 'Frontend', 'Mobile', 'Automation']
         if data['category'] not in valid_categories:
@@ -95,5 +107,6 @@ def handle(req: func.HttpRequest) -> func.HttpResponse:
 
         return json_response(problem, 201)
 
-    except Exception as exc:
-        return json_response({'error': 'Failed to create post', 'details': str(exc)}, 500)
+    except Exception:
+        logger.exception("Handler error")
+        return json_response({'error': 'Failed to create post'}, 500)

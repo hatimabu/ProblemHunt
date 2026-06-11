@@ -1,5 +1,7 @@
 """Accept a proposal for a job post."""
 
+import logging
+
 import azure.functions as func
 
 from handlers.marketplace_helpers import (
@@ -15,6 +17,9 @@ from handlers.marketplace_helpers import (
     replace_proposal,
 )
 from utils import get_authenticated_user_id, get_timestamp
+
+
+logger = logging.getLogger(__name__)
 
 
 def handle(req: func.HttpRequest) -> func.HttpResponse:
@@ -67,5 +72,6 @@ def handle(req: func.HttpRequest) -> func.HttpResponse:
                 "acceptedProposal": get_proposal(proposal_id),
             }
         )
-    except Exception as exc:
-        return json_response({"error": "Failed to accept proposal", "details": str(exc)}, 500)
+    except Exception:
+        logger.exception("Handler error")
+        return json_response({"error": "Failed to accept proposal"}, 500)

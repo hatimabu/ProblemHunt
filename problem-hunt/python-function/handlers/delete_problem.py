@@ -1,10 +1,15 @@
 """Delete Problem Handler."""
 
+import logging
+
 import azure.functions as func
 
 from cosmos import containers
 from handlers.marketplace_helpers import delete_problem_related_documents, get_problem, json_response
 from utils import get_authenticated_user_id
+
+
+logger = logging.getLogger(__name__)
 
 
 def handle(req: func.HttpRequest) -> func.HttpResponse:
@@ -31,5 +36,6 @@ def handle(req: func.HttpRequest) -> func.HttpResponse:
             'id': problem_id
         })
 
-    except Exception as exc:
-        return json_response({'error': 'Failed to delete problem', 'details': str(exc)}, 500)
+    except Exception:
+        logger.exception("Handler error")
+        return json_response({'error': 'Failed to delete problem'}, 500)

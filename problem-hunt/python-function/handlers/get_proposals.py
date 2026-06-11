@@ -1,5 +1,7 @@
 """Get Proposals Handler."""
 
+import logging
+
 import azure.functions as func
 
 from handlers.marketplace_helpers import (
@@ -9,6 +11,9 @@ from handlers.marketplace_helpers import (
     get_tip_totals_for_proposals,
     json_response,
 )
+
+
+logger = logging.getLogger(__name__)
 
 
 def handle(req: func.HttpRequest) -> func.HttpResponse:
@@ -37,5 +42,6 @@ def handle(req: func.HttpRequest) -> func.HttpResponse:
 
         return json_response({'proposals': enriched, 'total': len(enriched)})
 
-    except Exception as exc:
-        return json_response({'error': 'Failed to fetch proposals', 'details': str(exc)}, 500)
+    except Exception:
+        logger.exception("Handler error")
+        return json_response({'error': 'Failed to fetch proposals'}, 500)

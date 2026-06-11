@@ -1,8 +1,12 @@
 """Upvote Problem Handler"""
-import json
+import logging
 import azure.functions as func
 from cosmos import containers
+from handlers.marketplace_helpers import json_response
 from utils import get_authenticated_user_id, generate_id, get_timestamp
+
+
+logger = logging.getLogger(__name__)
 
 
 def handle(req: func.HttpRequest) -> func.HttpResponse:
@@ -12,11 +16,7 @@ def handle(req: func.HttpRequest) -> func.HttpResponse:
         user_id = get_authenticated_user_id(req)
         
         if not user_id:
-            return func.HttpResponse(
-                json.dumps({'error': 'Authentication required'}),
-                status_code=401,
-                mimetype="application/json"
-            )
+            return json_response({'error': 'Authentication required'}, 401)
         
         # Check if problem exists
         problems = containers['problems'].query_items(
@@ -26,11 +26,7 @@ def handle(req: func.HttpRequest) -> func.HttpResponse:
         )
         
         if not problems:
-            return func.HttpResponse(
-                json.dumps({'error': 'Problem not found'}),
-                status_code=404,
-                mimetype="application/json"
-            )
+            return json_response({'error': 'Problem not found'}, 404)
         
         problem = problems[0]
         
@@ -44,11 +40,7 @@ def handle(req: func.HttpRequest) -> func.HttpResponse:
         )
         
         if upvotes:
-            return func.HttpResponse(
-                json.dumps({'error': 'You already upvoted this problem'}),
-                status_code=409,
-                mimetype="application/json"
-            )
+            return json_response({'error': 'You already upvoted this problem'}, 409)
         
         # Create upvote record
         upvote = {
@@ -61,24 +53,20 @@ def handle(req: func.HttpRequest) -> func.HttpResponse:
         containers['upvotes'].create_item(body=upvote)
         
         # Increment upvote count on problem
-        problem['upvotes'] = problem.get('upvotes', 0) + 1
-        problem['updatedAt'] = get_timestamp()
-        
-        containers['problems'].replace_item(problem['id'], problem)
-        
-        return func.HttpResponse(
-            json.dumps({
+        problem = containers['problems'].patch_item(
+            item=problem_id,
+            partition_key=problem_id,
+            patch_operations=[{"op": "incr", "path": "/upvotes", "value": 1}],
+        )
+
+        return json_response(
+            {
                 'problem': problem,
                 'message': 'Upvote successful'
-            }),
-            status_code=200,
-            mimetype="application/json"
+            },
+            200,
         )
     
-    except Exception as e:
-        print(f"UpvoteProblem error: {str(e)}")
-        return func.HttpResponse(
-            json.dumps({'error': 'Failed to upvote problem', 'details': str(e)}),
-            status_code=500,
-            mimetype="application/json"
-        )
+    except Exception:
+        logger.exception("Handler error")
+        return json_response({'error': 'Failed to upvote problem'}, 500)

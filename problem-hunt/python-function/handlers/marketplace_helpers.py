@@ -425,12 +425,14 @@ def get_tip_totals_for_proposals(proposal_ids: Iterable[str]) -> Dict[str, float
     if not proposal_id_set:
         return {}
 
-    tips = query_items("tips", "SELECT * FROM c")
+    tips = query_items(
+        "tips",
+        "SELECT * FROM c WHERE ARRAY_CONTAINS(@ids, c.proposalId)",
+        [{"name": "@ids", "value": list(proposal_id_set)}],
+    )
     totals: Dict[str, float] = {}
     for tip in tips:
         proposal_id = tip.get("proposalId")
-        if proposal_id not in proposal_id_set:
-            continue
         totals[proposal_id] = totals.get(proposal_id, 0.0) + float(tip.get("amount", 0) or 0)
     return totals
 

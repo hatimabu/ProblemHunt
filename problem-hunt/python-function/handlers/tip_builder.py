@@ -1,5 +1,7 @@
 """Tip Builder Handler."""
 
+import logging
+
 import azure.functions as func
 
 from cosmos import containers
@@ -11,6 +13,9 @@ from handlers.marketplace_helpers import (
     json_response,
 )
 from utils import generate_id, get_authenticated_user_id, get_timestamp
+
+
+logger = logging.getLogger(__name__)
 
 
 def handle(req: func.HttpRequest) -> func.HttpResponse:
@@ -82,5 +87,6 @@ def handle(req: func.HttpRequest) -> func.HttpResponse:
 
         return json_response(tip, 201)
 
-    except Exception as exc:
-        return json_response({'error': 'Internal server error', 'details': str(exc)}, 500)
+    except Exception:
+        logger.exception("Handler error")
+        return json_response({'error': 'Internal server error'}, 500)

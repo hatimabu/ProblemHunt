@@ -1,5 +1,6 @@
 """Record a completed peer-to-peer SOL job payment."""
 
+import logging
 from decimal import Decimal, InvalidOperation
 
 import azure.functions as func
@@ -18,6 +19,9 @@ from handlers.marketplace_helpers import (
     replace_proposal,
 )
 from utils import get_authenticated_user_id, get_timestamp
+
+
+logger = logging.getLogger(__name__)
 
 
 def _amount_matches(expected: float, provided: float) -> bool:
@@ -106,6 +110,7 @@ def handle(req: func.HttpRequest) -> func.HttpResponse:
 
         return json_response({"payment": payment, "job": problem})
     except Exception as exc:
-        details = str(exc)
-        status = 409 if "duplicate key" in details.lower() or "23505" in details else 500
-        return json_response({"error": "Failed to record payment", "details": details}, status)
+        exception_text = str(exc)
+        status = 409 if "duplicate key" in exception_text.lower() or "23505" in exception_text else 500
+        logger.exception("Handler error")
+        return json_response({"error": "Failed to record payment"}, status)

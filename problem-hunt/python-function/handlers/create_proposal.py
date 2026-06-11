@@ -1,5 +1,7 @@
 """Create Proposal Handler."""
 
+import logging
+
 import azure.functions as func
 
 from cosmos import containers
@@ -16,6 +18,9 @@ from handlers.marketplace_helpers import (
     sol_amount_to_string,
 )
 from utils import generate_id, get_authenticated_user_id, get_timestamp, validate_required
+
+
+logger = logging.getLogger(__name__)
 
 
 def handle(req: func.HttpRequest) -> func.HttpResponse:
@@ -35,6 +40,13 @@ def handle(req: func.HttpRequest) -> func.HttpResponse:
         validation_error = validate_required(data, ['title', 'description'])
         if validation_error:
             return json_response({'error': validation_error}, 400)
+        if len(data['title']) > 200:
+            return json_response({'error': 'title must be 200 characters or fewer'}, 400)
+        if len(data['description']) > 5000:
+            return json_response({'error': 'description must be 5000 characters or fewer'}, 400)
+        brief_solution = data.get('briefSolution') or data['description']
+        if len(brief_solution) > 2000:
+            return json_response({'error': 'briefSolution must be 2000 characters or fewer'}, 400)
 
         problem = get_problem(problem_id)
         if not problem:
@@ -54,7 +66,7 @@ def handle(req: func.HttpRequest) -> func.HttpResponse:
             'projectUrl': data.get('projectUrl'),
             'builderId': user_id,
             'builderName': builder_name,
-            'briefSolution': (data.get('briefSolution') or data['description']).strip(),
+            'briefSolution': brief_solution.strip(),
             'timeline': data.get('timeline') or estimated_delivery,
             'cost': data.get('cost') or (f"{sol_amount_to_string(proposed_price_sol)} SOL" if proposed_price_sol else None),
             'expertise': parse_string_list(data.get('expertise', [])),
@@ -68,9 +80,11 @@ def handle(req: func.HttpRequest) -> func.HttpResponse:
         proposal = normalize_proposal(proposal)
         containers['proposals'].create_item(body=proposal)
 
-        problem['proposals'] = problem.get('proposals', 0) + 1
-        problem['updatedAt'] = get_timestamp()
-        containers['problems'].replace_item(problem['id'], problem)
+        containers['problems'].patch_item(
+            item=problem_id,
+            partition_key=problem_id,
+            patch_operations=[{"op": "incr", "path": "/proposals", "value": 1}],
+        )
 
         if problem["type"] == PROBLEM_TYPE_JOB:
             create_notification(
@@ -81,5 +95,6 @@ def handle(req: func.HttpRequest) -> func.HttpResponse:
 
         return json_response(proposal, 201)
 
-    except Exception as exc:
-        return json_response({'error': 'Failed to create proposal', 'details': str(exc)}, 500)
+    except Exception:
+        logger.exception("Handler error")
+        return json_response({'error': 'Failed to create proposal'}, 500)

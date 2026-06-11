@@ -1,9 +1,14 @@
 """Get User Problems Handler."""
 
+import logging
+
 import azure.functions as func
 
 from handlers.marketplace_helpers import json_response, normalize_problem, query_items
 from utils import get_authenticated_user_id
+
+
+logger = logging.getLogger(__name__)
 
 
 def handle(req: func.HttpRequest) -> func.HttpResponse:
@@ -43,5 +48,6 @@ def handle(req: func.HttpRequest) -> func.HttpResponse:
             'offset': offset
         })
 
-    except Exception as exc:
-        return json_response({'error': 'Failed to fetch user problems', 'details': str(exc)}, 500)
+    except Exception:
+        logger.exception("Handler error")
+        return json_response({'error': 'Failed to fetch user problems'}, 500)

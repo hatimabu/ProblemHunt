@@ -1,6 +1,10 @@
 import os
 import json
+import threading
 from azure.cosmos import CosmosClient, PartitionKey, exceptions
+
+_client = None
+_client_lock = threading.Lock()
 
 
 def get_env(name: str) -> str:
@@ -13,19 +17,8 @@ def get_env(name: str) -> str:
 
 class CosmosDBClient:
     """Cosmos DB client for managing database operations"""
-    
-    _instance = None
-    
-    def __new__(cls):
-        if cls._instance is None:
-            cls._instance = super().__new__(cls)
-            cls._instance._initialized = False
-        return cls._instance
-    
+
     def __init__(self):
-        if self._initialized:
-            return
-            
         try:
             endpoint = get_env("COSMOS_ENDPOINT")
             key = get_env("COSMOS_KEY")
@@ -53,8 +46,6 @@ class CosmosDBClient:
             self.use_mock = True
             self.containers = self._create_mock_containers()
         
-        self._initialized = True
-    
     def _create_containers(self):
         """Create references to actual Cosmos DB containers"""
         return {
@@ -107,6 +98,16 @@ class MockContainer:
                 for param in parameters:
                     param_name = param.get('name', '').replace('@', '')
                     param_value = param.get('value')
+
+                    if (
+                        param_name == 'ids'
+                        and isinstance(param_value, list)
+                        and 'ARRAY_CONTAINS(@ids, c.proposalId)' in query
+                    ):
+                        if item.get('proposalId') not in param_value:
+                            match = False
+                            break
+                        continue
                     
                     # Simple parameter matching
                     if param_name in item and item[param_name] != param_value:
@@ -125,6 +126,18 @@ class MockContainer:
             self.items[item_id] = body
             return body
         raise exceptions.CosmosResourceNotFoundError("Item not found")
+
+    def patch_item(self, item, partition_key, patch_operations):
+        """Patch an item"""
+        if item not in self.items:
+            raise exceptions.CosmosResourceNotFoundError("Item not found")
+
+        document = self.items[item]
+        for operation in patch_operations:
+            if operation.get("op") == "incr":
+                path = operation.get("path", "").lstrip("/")
+                document[path] = document.get(path, 0) + operation.get("value", 0)
+        return document
     
     def delete_item(self, item_id, partition_key):
         """Delete an item"""
@@ -134,6 +147,14 @@ class MockContainer:
         raise exceptions.CosmosResourceNotFoundError("Item not found")
 
 
-# Get singleton instance
-cosmos_client = CosmosDBClient()
+def get_client():
+    global _client
+    if _client is None:
+        with _client_lock:
+            if _client is None:
+                _client = CosmosDBClient()
+    return _client
+
+
+cosmos_client = get_client()
 containers = cosmos_client.containers

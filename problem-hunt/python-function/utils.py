@@ -1,6 +1,7 @@
 import json
 import uuid
 import datetime
+import os
 from typing import Optional, Dict, Any, List
 
 from shared.auth import authenticate_request, AuthError
@@ -15,13 +16,14 @@ def create_response(status_code: int, body: Any, headers: Dict = None) -> Dict:
     """Create a standardized API response"""
     if headers is None:
         headers = {}
+    allowed_origins = os.getenv("ALLOWED_ORIGINS", "*")
     
     return {
         'status_code': status_code,
         'body': body if isinstance(body, str) else json.dumps(body),
         'headers': {
             'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Origin': allowed_origins,
             **headers
         }
     }
@@ -44,33 +46,9 @@ def get_authenticated_user_id(req) -> Optional[str]:
         return None
 
 
-def get_user_id(req) -> str:
-    """Get user ID from request (with fallback to IP-based ID)"""
-    auth_header = req.headers.get('Authorization') or req.headers.get('authorization')
-    
-    if not auth_header or not auth_header.startswith('Bearer '):
-        # Fallback to IP-based ID
-        ip = req.headers.get('X-Forwarded-For') or req.headers.get('X-Real-IP') or 'unknown'
-        user_agent = req.headers.get('User-Agent') or 'unknown'
-        return _hash_id(f"{ip}-{user_agent}")
-    
-    try:
-        user_id, _ = authenticate_request(req)
-        if user_id:
-            return user_id
-    except AuthError:
-        pass
-    
-    # Fallback to IP-based ID
-    ip = req.headers.get('X-Forwarded-For') or req.headers.get('X-Real-IP') or 'unknown'
-    user_agent = req.headers.get('User-Agent') or 'unknown'
-    return _hash_id(f"{ip}-{user_agent}")
-
-
-def _hash_id(value: str) -> str:
-    """Create a hash-based ID from string"""
-    import hashlib
-    return hashlib.md5(value.encode()).hexdigest()[:32]
+def get_user_id(req) -> Optional[str]:
+    """Get authenticated user ID from request."""
+    return get_authenticated_user_id(req)
 
 
 def generate_id() -> str:
