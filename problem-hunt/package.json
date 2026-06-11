@@ -12,6 +12,8 @@
     "build:config": "node scripts/build.js",
     "build:azure": "node scripts/build.js",
     "build:figma": "vite build",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "server": "node server.js",
     "start": "npm run build && npm run server"
   },
@@ -86,11 +88,16 @@
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.1.12",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
     "@vitejs/plugin-react": "^4.7.0",
+    "jsdom": "^29.1.1",
     "postcss": "^8.5.6",
     "supabase": "^2.76.9",
     "tailwindcss": "^4.1.12",
-    "vite": "^6.3.5"
+    "vite": "^6.3.5",
+    "vitest": "^4.1.8"
   },
   "pnpm": {
     "overrides": {

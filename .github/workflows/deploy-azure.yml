@@ -32,9 +32,13 @@ permissions:
   contents: read
 
 jobs:
+  test:
+    uses: ./.github/workflows/python-tests.yml
+
   infrastructure:
     runs-on: ubuntu-latest
     name: Provision Infrastructure
+    needs: test
     outputs:
       function_app_name: ${{ steps.tf-outputs.outputs.function_app_name }}
       function_app_hostname: ${{ steps.tf-outputs.outputs.function_app_hostname }}
