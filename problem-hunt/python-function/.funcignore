@@ -10,3 +10,5 @@ local.settings.example.json
 test_all.py
 pytest.ini
 *.md
+
+.venv
