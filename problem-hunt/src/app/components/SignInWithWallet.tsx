@@ -163,7 +163,10 @@ export function SignInWithWallet({
       }
 
       const signedMessage = await window.solana.signMessage(encodedMessage, 'utf8');
-      const signature = Buffer.from(signedMessage.signature).toString('base64');
+      const sigBytes = new Uint8Array(signedMessage.signature);
+      let binary = '';
+      sigBytes.forEach(b => { binary += String.fromCharCode(b); });
+      const signature = btoa(binary);
 
       // Authenticate with backend API
       const authRes = await fetch('/api/auth/wallet', {
