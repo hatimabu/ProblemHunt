@@ -23,6 +23,7 @@ interface AuthContextType {
   isLoading: boolean;
   isInitialLoad: boolean;
   login: (email: string, password: string) => Promise<void>;
+  loginWithToken: (token: string, apiUser: any) => void;
   signup: (
     username: string,
     fullName: string,
@@ -180,6 +181,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
     []
   );
+
+  const loginWithToken = useCallback((token: string, apiUser: any) => {
+    const appUser = apiUserToAppUser(apiUser);
+    saveSession(token, appUser);
+    if (isMountedRef.current) {
+      setUser(appUser);
+      setAccessToken(token);
+    }
+  }, []);
 
   const logout = useCallback(async () => {
     clearSession();
