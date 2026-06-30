@@ -8,6 +8,7 @@ import json
 import sys
 import os
 import unittest
+import importlib
 from unittest.mock import MagicMock, patch
 from datetime import datetime
 
@@ -498,6 +499,47 @@ class TestRouterConsistency(unittest.TestCase):
     def test_router_imports_all_handlers(self):
         from router import main
         self.assertTrue(callable(main))
+
+
+class TestWalletsFunction(unittest.TestCase):
+    def setUp(self):
+        self.wallets_module = importlib.import_module("Wallets.__init__")
+
+    def test_duplicate_update_does_not_delete_existing_wallet(self):
+        req = MockHttpRequest(
+            method="POST",
+            body={
+                "chain": "solana",
+                "address": "11111111111111111111111111111111",
+            },
+        )
+
+        supabase = MagicMock()
+        table = supabase.table.return_value
+
+        select_chain = MagicMock()
+        select_chain.eq.return_value = select_chain
+        select_chain.execute.return_value.data = [{"id": "wallet-1"}]
+
+        update_chain = MagicMock()
+        update_chain.eq.return_value = update_chain
+        update_chain.execute.side_effect = Exception("23505 duplicate key value violates unique constraint")
+
+        table.select.return_value = select_chain
+        table.update.return_value = update_chain
+
+        with patch.object(self.wallets_module, "get_authenticated_user_id", return_value="user-1"), \
+             patch.object(self.wallets_module, "get_supabase_client", return_value=supabase), \
+             patch.object(self.wallets_module, "sync_profile_wallet_address") as sync_wallet:
+            resp = self.wallets_module.main(req)
+
+        self.assertEqual(resp.status_code, 409)
+        self.assertEqual(
+            json.loads(resp.get_body()),
+            {"error": "This address is already linked to another account."},
+        )
+        supabase.table.return_value.delete.assert_not_called()
+        sync_wallet.assert_not_called()
 
 
 if __name__ == "__main__":

@@ -92,20 +92,38 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
 
         try:
             sb = get_supabase_client()
-
-            # Remove any existing wallet for this user+chain (one per chain rule)
-            sb.table("wallets").delete().eq("user_id", user_id).eq("chain", chain).execute()
-
-            result = (
+            existing_wallets = (
                 sb.table("wallets")
-                .insert({
-                    "user_id": user_id,
-                    "chain": chain,
-                    "address": address,
-                    "is_primary": True,
-                })
+                .select("id")
+                .eq("user_id", user_id)
+                .eq("chain", chain)
                 .execute()
             )
+            existing_wallet = (existing_wallets.data or [None])[0]
+
+            if existing_wallet:
+                result = (
+                    sb.table("wallets")
+                    .update({
+                        "address": address,
+                        "is_primary": True,
+                    })
+                    .eq("id", existing_wallet["id"])
+                    .eq("user_id", user_id)
+                    .execute()
+                )
+            else:
+                result = (
+                    sb.table("wallets")
+                    .insert({
+                        "user_id": user_id,
+                        "chain": chain,
+                        "address": address,
+                        "is_primary": True,
+                    })
+                    .execute()
+                )
+
             if chain == "solana":
                 sync_profile_wallet_address(user_id, address)
             return _json(result.data[0] if result.data else {}, 201)
