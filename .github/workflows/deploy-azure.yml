@@ -56,6 +56,7 @@ jobs:
             --resource-group "$AZURE_RESOURCE_GROUP" \
             --template-file "$AZURE_TEMPLATE_FILE" \
             --parameters appName="$AZURE_APP_NAME" location="$AZURE_LOCATION" environment=prod \
+              storageConnectionString="${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}" \
             --query properties.outputs --output json > deployment-outputs.json
 
           echo "FUNCTION_APP_NAME=$(jq -r '.functionAppName.value' deployment-outputs.json)" >> "$GITHUB_ENV"
