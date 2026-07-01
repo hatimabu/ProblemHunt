@@ -283,84 +283,9 @@ export async function handleResponse(response) {
   return body;
 }
 
-/**
- * Example: Create a new post
- *
- * @param {string} title - Post title
- * @param {string} content - Post content
- * @param {string[]} tags - Array of tags
- * @returns {Promise<Object>} The created post object
- *
- * @example
- * const post = await createPost(
- *   'Bug in login flow',
- *   'The login button is not responding...',
- *   ['bug', 'urgent']
- * );
- */
-export async function createPost(title, content, tags = []) {
-  try {
-    const response = await authenticatedFetch('/api/create-post', {
-      method: 'POST',
-      body: { title, content, tags }
-    });
-    return await handleResponse(response);
-  } catch (error) {
-    console.error('Failed to create post:', error);
-    throw error;
-  }
-}
-
-/**
- * Example: Get all user's posts
- *
- * @param {number} limit - Number of posts to retrieve (default: 10)
- * @param {number} offset - Pagination offset (default: 0)
- * @returns {Promise<Array>} Array of post objects
- *
- * @example
- * const posts = await getPosts(20, 0);
- * console.log('Retrieved', posts.length, 'posts');
- */
-export async function getPosts(limit = 10, offset = 0) {
-  try {
-    const endpoint = `/api/get-posts?limit=${limit}&offset=${offset}`;
-    const response = await authenticatedFetch(endpoint, { method: 'GET' });
-    return await handleResponse(response);
-  } catch (error) {
-    console.error('Failed to fetch posts:', error);
-    throw error;
-  }
-}
-
-/**
- * Example: Delete a post
- *
- * @param {string} postId - The ID of the post to delete
- * @returns {Promise<Object>} Deletion confirmation response
- *
- * @example
- * const result = await deletePost('post-123');
- * console.log('Deleted:', result.post_id);
- */
-export async function deletePost(postId) {
-  try {
-    const response = await authenticatedFetch(`/api/delete-post/${postId}`, {
-      method: 'DELETE'
-    });
-    return await handleResponse(response);
-  } catch (error) {
-    console.error('Failed to delete post:', error);
-    throw error;
-  }
-}
-
 export default {
   getAccessToken,
   getCurrentUser,
   authenticatedFetch,
   handleResponse,
-  createPost,
-  getPosts,
-  deletePost
 };

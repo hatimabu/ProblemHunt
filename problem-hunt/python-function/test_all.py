@@ -541,6 +541,99 @@ class TestWalletsFunction(unittest.TestCase):
         supabase.table.return_value.delete.assert_not_called()
         sync_wallet.assert_not_called()
 
+    def test_wallet_save_failure_returns_generic_500(self):
+        """POST /wallets DB error must not leak exception details to client."""
+        req = MockHttpRequest(
+            method="POST",
+            body={"chain": "ethereum", "address": "0x" + "a" * 40},
+        )
+        supabase = MagicMock()
+        table = supabase.table.return_value
+        select_chain = MagicMock()
+        select_chain.eq.return_value = select_chain
+        select_chain.execute.return_value.data = []
+        insert_chain = MagicMock()
+        insert_chain.execute.side_effect = Exception("internal db error: secret schema info")
+        table.select.return_value = select_chain
+        table.insert.return_value = insert_chain
+
+        with patch.object(self.wallets_module, "get_authenticated_user_id", return_value="user-1"), \
+             patch.object(self.wallets_module, "get_supabase_client", return_value=supabase):
+            resp = self.wallets_module.main(req)
+
+        self.assertEqual(resp.status_code, 500)
+        body = json.loads(resp.get_body())
+        self.assertEqual(body.get("error"), "Failed to save wallet")
+        self.assertNotIn("details", body)
+        self.assertNotIn("secret schema info", json.dumps(body))
+
+    def test_wallet_fetch_failure_returns_generic_500(self):
+        """GET /wallets DB error must not leak exception details to client."""
+        req = MockHttpRequest(method="GET")
+        supabase = MagicMock()
+        table = supabase.table.return_value
+        select_chain = MagicMock()
+        select_chain.eq.return_value = select_chain
+        select_chain.execute.side_effect = Exception("connection timeout: internal host detail")
+        table.select.return_value = select_chain
+
+        with patch.object(self.wallets_module, "get_authenticated_user_id", return_value="user-1"), \
+             patch.object(self.wallets_module, "get_supabase_client", return_value=supabase):
+            resp = self.wallets_module.main(req)
+
+        self.assertEqual(resp.status_code, 500)
+        body = json.loads(resp.get_body())
+        self.assertEqual(body.get("error"), "Failed to fetch wallets")
+        self.assertNotIn("details", body)
+        self.assertNotIn("internal host detail", json.dumps(body))
+
+
+class TestWalletByIdFunction(unittest.TestCase):
+    def setUp(self):
+        self.wallet_by_id_module = importlib.import_module("WalletById.__init__")
+
+    def test_wallet_delete_failure_returns_generic_500(self):
+        """DELETE /wallets/{id} DB error must not leak exception details to client."""
+        req = MockHttpRequest(method="DELETE", route_params={"wallet_id": "wallet-99"})
+        supabase = MagicMock()
+        table = supabase.table.return_value
+        check_chain = MagicMock()
+        check_chain.eq.return_value = check_chain
+        check_chain.execute.side_effect = Exception("pg error: internal table name exposed")
+        table.select.return_value = check_chain
+
+        with patch.object(self.wallet_by_id_module, "get_authenticated_user_id", return_value="user-1"), \
+             patch.object(self.wallet_by_id_module, "get_supabase_client", return_value=supabase):
+            resp = self.wallet_by_id_module.main(req)
+
+        self.assertEqual(resp.status_code, 500)
+        body = json.loads(resp.get_body())
+        self.assertEqual(body.get("error"), "Failed to delete wallet")
+        self.assertNotIn("details", body)
+        self.assertNotIn("internal table name exposed", json.dumps(body))
+
+    def test_wallet_delete_success(self):
+        req = MockHttpRequest(method="DELETE", route_params={"wallet_id": "wallet-42"})
+        supabase = MagicMock()
+        table = supabase.table.return_value
+
+        check_chain = MagicMock()
+        check_chain.eq.return_value = check_chain
+        check_chain.execute.return_value.data = [{"id": "wallet-42", "chain": "ethereum"}]
+        table.select.return_value = check_chain
+
+        delete_chain = MagicMock()
+        delete_chain.eq.return_value = delete_chain
+        delete_chain.execute.return_value = MagicMock()
+        table.delete.return_value = delete_chain
+
+        with patch.object(self.wallet_by_id_module, "get_authenticated_user_id", return_value="user-1"), \
+             patch.object(self.wallet_by_id_module, "get_supabase_client", return_value=supabase):
+            resp = self.wallet_by_id_module.main(req)
+
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(json.loads(resp.get_body()), {"deleted": "wallet-42"})
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
