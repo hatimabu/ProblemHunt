@@ -42,13 +42,10 @@
       "apiVersion": "2023-12-01",
       "name": "[variables('functionPlanName')]",
       "location": "[parameters('location')]",
-      "kind": "functionapp",
+      "kind": "linux",
       "sku": {
         "name": "Y1",
-        "tier": "Dynamic",
-        "size": "Y1",
-        "family": "Y",
-        "capacity": 0
+        "tier": "Dynamic"
       },
       "properties": { "reserved": true }
     },
