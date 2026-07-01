@@ -6,6 +6,7 @@ Only the owner can delete their own wallet (enforced server-side).
 """
 
 import json
+import logging
 import azure.functions as func
 from handlers.marketplace_helpers import sync_profile_wallet_address
 from utils import get_authenticated_user_id
@@ -51,4 +52,5 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         return _json({"deleted": wallet_id})
 
     except Exception as exc:
-        return _json({"error": "Failed to delete wallet", "details": str(exc)}, 500)
+        logging.exception("Failed to delete wallet: %s", exc)
+        return _json({"error": "Failed to delete wallet"}, 500)

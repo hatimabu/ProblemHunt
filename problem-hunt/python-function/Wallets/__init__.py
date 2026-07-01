@@ -12,6 +12,7 @@ Request body for POST:
 """
 
 import json
+import logging
 import re
 import azure.functions as func
 from handlers.marketplace_helpers import sync_profile_wallet_address
@@ -71,7 +72,8 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             wallets.sort(key=lambda wallet: wallet.get("created_at") or "")
             return _json({"wallets": wallets})
         except Exception as exc:
-            return _json({"error": "Failed to fetch wallets", "details": str(exc)}, 500)
+            logging.exception("Failed to fetch wallets: %s", exc)
+            return _json({"error": "Failed to fetch wallets"}, 500)
 
     # ── POST: add wallet ──────────────────────────────────────────────────────
     if method == "POST":
@@ -132,6 +134,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             details = str(exc)
             if "23505" in details:
                 return _json({"error": "This address is already linked to another account."}, 409)
-            return _json({"error": "Failed to save wallet", "details": details}, 500)
+            logging.exception("Failed to save wallet: %s", exc)
+            return _json({"error": "Failed to save wallet"}, 500)
 
     return _json({"error": "Method not allowed"}, 405)
