@@ -19,11 +19,7 @@
     "environment": {
       "type": "string",
       "defaultValue": "dev",
-      "allowedValues": [
-        "dev",
-        "staging",
-        "prod"
-      ]
+      "allowedValues": ["dev", "staging", "prod"]
     }
   },
   "variables": {
@@ -31,7 +27,8 @@
     "storageAccountName": "[format('st{0}{1}', take(parameters('appName'), 10), variables('uniqueSuffix'))]",
     "functionAppName": "[format('{0}-api-{1}', parameters('appName'), variables('uniqueSuffix'))]",
     "functionPlanName": "[format('{0}-plan-{1}', parameters('appName'), variables('uniqueSuffix'))]",
-    "staticWebAppName": "[format('{0}-web-{1}', parameters('appName'), variables('uniqueSuffix'))]"
+    "staticWebAppName": "[format('{0}-web-{1}', parameters('appName'), variables('uniqueSuffix'))]",
+    "cosmosAccountName": "[format('{0}-cosmos-{1}', parameters('appName'), variables('uniqueSuffix'))]"
   },
   "resources": [
     {
@@ -39,9 +36,7 @@
       "apiVersion": "2023-05-01",
       "name": "[variables('storageAccountName')]",
       "location": "[parameters('location')]",
-      "sku": {
-        "name": "Standard_LRS"
-      },
+      "sku": { "name": "Standard_LRS" },
       "kind": "StorageV2",
       "properties": {
         "accessTier": "Hot",
@@ -64,9 +59,7 @@
         "family": "Y",
         "capacity": 0
       },
-      "properties": {
-        "reserved": true
-      }
+      "properties": { "reserved": true }
     },
     {
       "type": "Microsoft.Web/sites",
@@ -74,9 +67,7 @@
       "name": "[variables('functionAppName')]",
       "location": "[parameters('location')]",
       "kind": "functionapp,linux",
-      "identity": {
-        "type": "SystemAssigned"
-      },
+      "identity": { "type": "SystemAssigned" },
       "properties": {
         "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('functionPlanName'))]",
         "httpsOnly": true,
@@ -89,35 +80,121 @@
               "name": "AzureWebJobsStorage",
               "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storageAccountName'), ';AccountKey=', listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName')), '2023-05-01').keys[0].value, ';EndpointSuffix=', environment().suffixes.storage)]"
             },
-            {
-              "name": "FUNCTIONS_EXTENSION_VERSION",
-              "value": "~4"
-            },
-            {
-              "name": "FUNCTIONS_WORKER_RUNTIME",
-              "value": "python"
-            },
-            {
-              "name": "SCM_DO_BUILD_DURING_DEPLOYMENT",
-              "value": "true"
-            },
-            {
-              "name": "WEBSITE_RUN_FROM_PACKAGE",
-              "value": "1"
-            },
-            {
-              "name": "PYTHON_VERSION",
-              "value": "3.11"
-            },
+            { "name": "FUNCTIONS_EXTENSION_VERSION", "value": "~4" },
+            { "name": "FUNCTIONS_WORKER_RUNTIME", "value": "python" },
+            { "name": "SCM_DO_BUILD_DURING_DEPLOYMENT", "value": "true" },
+            { "name": "WEBSITE_RUN_FROM_PACKAGE", "value": "1" },
+            { "name": "PYTHON_VERSION", "value": "3.11" },
             {
               "name": "WEBSITE_CONTENTAZUREFILECONNECTIONSTRING",
               "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storageAccountName'), ';AccountKey=', listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName')), '2023-05-01').keys[0].value, ';EndpointSuffix=', environment().suffixes.storage)]"
             },
-            {
-              "name": "WEBSITE_CONTENTSHARE",
-              "value": "[toLower(variables('functionAppName'))]"
-            }
+            { "name": "WEBSITE_CONTENTSHARE", "value": "[toLower(variables('functionAppName'))]" }
           ]
+        }
+      }
+    },
+    {
+      "type": "Microsoft.DocumentDB/databaseAccounts",
+      "apiVersion": "2023-11-15",
+      "name": "[variables('cosmosAccountName')]",
+      "location": "[parameters('location')]",
+      "kind": "GlobalDocumentDB",
+      "properties": {
+        "databaseAccountOfferType": "Standard",
+        "enableFreeTier": true,
+        "consistencyPolicy": {
+          "defaultConsistencyLevel": "Session"
+        },
+        "locations": [
+          {
+            "locationName": "[parameters('location')]",
+            "failoverPriority": 0,
+            "isZoneRedundant": false
+          }
+        ],
+        "publicNetworkAccess": "Enabled"
+      }
+    },
+    {
+      "type": "Microsoft.DocumentDB/databaseAccounts/sqlDatabases",
+      "apiVersion": "2023-11-15",
+      "name": "[format('{0}/{1}', variables('cosmosAccountName'), 'ProblemHuntDB')]",
+      "dependsOn": ["[resourceId('Microsoft.DocumentDB/databaseAccounts', variables('cosmosAccountName'))]"],
+      "properties": {
+        "resource": {
+          "id": "ProblemHuntDB"
+        },
+        "options": {
+          "throughput": 400
+        }
+      }
+    },
+    {
+      "type": "Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers",
+      "apiVersion": "2023-11-15",
+      "name": "[format('{0}/{1}/{2}', variables('cosmosAccountName'), 'ProblemHuntDB', 'Problems')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.DocumentDB/databaseAccounts/sqlDatabases', variables('cosmosAccountName'), 'ProblemHuntDB')]"
+      ],
+      "properties": {
+        "resource": {
+          "id": "Problems",
+          "partitionKey": {
+            "paths": ["/id"],
+            "kind": "Hash"
+          }
+        }
+      }
+    },
+    {
+      "type": "Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers",
+      "apiVersion": "2023-11-15",
+      "name": "[format('{0}/{1}/{2}', variables('cosmosAccountName'), 'ProblemHuntDB', 'Proposals')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.DocumentDB/databaseAccounts/sqlDatabases', variables('cosmosAccountName'), 'ProblemHuntDB')]"
+      ],
+      "properties": {
+        "resource": {
+          "id": "Proposals",
+          "partitionKey": {
+            "paths": ["/problem_id"],
+            "kind": "Hash"
+          }
+        }
+      }
+    },
+    {
+      "type": "Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers",
+      "apiVersion": "2023-11-15",
+      "name": "[format('{0}/{1}/{2}', variables('cosmosAccountName'), 'ProblemHuntDB', 'Upvotes')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.DocumentDB/databaseAccounts/sqlDatabases', variables('cosmosAccountName'), 'ProblemHuntDB')]"
+      ],
+      "properties": {
+        "resource": {
+          "id": "Upvotes",
+          "partitionKey": {
+            "paths": ["/problem_id"],
+            "kind": "Hash"
+          }
+        }
+      }
+    },
+    {
+      "type": "Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers",
+      "apiVersion": "2023-11-15",
+      "name": "[format('{0}/{1}/{2}', variables('cosmosAccountName'), 'ProblemHuntDB', 'Tips')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.DocumentDB/databaseAccounts/sqlDatabases', variables('cosmosAccountName'), 'ProblemHuntDB')]"
+      ],
+      "properties": {
+        "resource": {
+          "id": "Tips",
+          "partitionKey": {
+            "paths": ["/proposal_id"],
+            "kind": "Hash"
+          }
         }
       }
     },
@@ -126,10 +203,7 @@
       "apiVersion": "2023-12-01",
       "name": "[variables('staticWebAppName')]",
       "location": "[parameters('location')]",
-      "sku": {
-        "name": "Free",
-        "tier": "Free"
-      },
+      "sku": { "name": "Free", "tier": "Free" },
       "properties": {
         "stagingEnvironmentPolicy": "Enabled",
         "buildProperties": {
@@ -141,17 +215,11 @@
     }
   ],
   "outputs": {
-    "staticWebAppName": {
-      "type": "string",
-      "value": "[variables('staticWebAppName')]"
-    },
-    "functionAppName": {
-      "type": "string",
-      "value": "[variables('functionAppName')]"
-    },
-    "storageAccountName": {
-      "type": "string",
-      "value": "[variables('storageAccountName')]"
-    }
+    "staticWebAppName": { "type": "string", "value": "[variables('staticWebAppName')]" },
+    "functionAppName": { "type": "string", "value": "[variables('functionAppName')]" },
+    "functionAppHostname": { "type": "string", "value": "[reference(resourceId('Microsoft.Web/sites', variables('functionAppName')), '2023-12-01').defaultHostName]" },
+    "cosmosEndpoint": { "type": "string", "value": "[reference(resourceId('Microsoft.DocumentDB/databaseAccounts', variables('cosmosAccountName')), '2023-11-15').documentEndpoint]" },
+    "cosmosPrimaryKey": { "type": "securestring", "value": "[listKeys(resourceId('Microsoft.DocumentDB/databaseAccounts', variables('cosmosAccountName')), '2023-11-15').primaryMasterKey]" },
+    "storageAccountName": { "type": "string", "value": "[variables('storageAccountName')]" }
   }
 }
