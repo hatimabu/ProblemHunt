@@ -19,9 +19,7 @@ permissions:
 
 env:
   NODE_VERSION: '20'
-  PYTHON_VERSION: '3.11'
   FRONTEND_PATH: problem-hunt
-  BACKEND_PATH: problem-hunt/python-function
   AZURE_RESOURCE_GROUP: problemhunt
   AZURE_LOCATION: eastus2
   AZURE_APP_NAME: problemhunt
@@ -56,11 +54,8 @@ jobs:
             --resource-group "$AZURE_RESOURCE_GROUP" \
             --template-file "$AZURE_TEMPLATE_FILE" \
             --parameters appName="$AZURE_APP_NAME" location="$AZURE_LOCATION" environment=prod \
-              storageConnectionString="${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}" \
             --query properties.outputs --output json > deployment-outputs.json
 
-          echo "FUNCTION_APP_NAME=$(jq -r '.functionAppName.value' deployment-outputs.json)" >> "$GITHUB_ENV"
-          echo "FUNCTION_APP_HOSTNAME=$(jq -r '.functionAppHostname.value' deployment-outputs.json)" >> "$GITHUB_ENV"
           echo "STATIC_WEB_APP_NAME=$(jq -r '.staticWebAppName.value' deployment-outputs.json)" >> "$GITHUB_ENV"
           echo "COSMOS_ENDPOINT=$(jq -r '.cosmosEndpoint.value' deployment-outputs.json)" >> "$GITHUB_ENV"
 
@@ -68,13 +63,13 @@ jobs:
           echo "::add-mask::$COSMOS_KEY"
           echo "COSMOS_KEY=$COSMOS_KEY" >> "$GITHUB_ENV"
 
-      - name: Configure Function App settings
+      - name: Configure Static Web App API settings
         run: |
           set -euo pipefail
-          az functionapp config appsettings set \
-            --name "$FUNCTION_APP_NAME" \
+          az staticwebapp appsettings set \
+            --name "$STATIC_WEB_APP_NAME" \
             --resource-group "$AZURE_RESOURCE_GROUP" \
-            --settings \
+            --setting-names \
               COSMOS_ENDPOINT="$COSMOS_ENDPOINT" \
               COSMOS_KEY="$COSMOS_KEY" \
               COSMOS_DATABASE="ProblemHuntDB" \
@@ -100,7 +95,7 @@ jobs:
       - name: Build frontend
         working-directory: ${{ env.FRONTEND_PATH }}
         env:
-          VITE_API_BASE_URL: https://${{ env.FUNCTION_APP_HOSTNAME }}
+          VITE_API_BASE_URL: /
           VITE_FARO_URL: ${{ secrets.VITE_FARO_URL }}
           VITE_FARO_APP_NAME: ${{ secrets.VITE_FARO_APP_NAME }}
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
@@ -109,41 +104,13 @@ jobs:
           NODE_ENV: production
         run: npm run build
 
-      - name: Deploy frontend to Static Web App
+      - name: Deploy frontend + API to Static Web App
         uses: Azure/static-web-apps-deploy@v1
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           action: upload
           app_location: ${{ env.FRONTEND_PATH }}
-          api_location: ''
+          api_location: problem-hunt/python-function
           output_location: dist
           skip_app_build: true
-
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-
-      - name: Build backend package
-        run: |
-          set -euo pipefail
-          rm -rf api functionapp.zip
-          mkdir api
-          rsync -a "$BACKEND_PATH"/ api/ \
-            --exclude local.settings.json \
-            --exclude .pytest_cache \
-            --exclude __pycache__ \
-            --exclude .python_packages \
-            --exclude .venv
-          python -m pip install --upgrade pip
-          python -m pip install --target api/.python_packages/lib/site-packages -r api/requirements.txt
-          (cd api && zip -r ../functionapp.zip .)
-
-      - name: Deploy backend package
-        run: |
-          set -euo pipefail
-          az functionapp deployment source config-zip \
-            --name "$FUNCTION_APP_NAME" \
-            --resource-group "$AZURE_RESOURCE_GROUP" \
-            --src functionapp.zip

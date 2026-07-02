@@ -32,7 +32,7 @@ Azure Static Web Apps (React + Vite frontend)
   |      |- storage
   |      \- optional Edge Functions
   |
-  \--> Azure Functions App (Python API /api/*)
+  \--> Static Web Apps managed Functions (Python API /api/*)
          |
          +--> Cosmos DB
          |      |- Problems
@@ -147,9 +147,10 @@ One workflow provisions infrastructure and deploys code automatically on every p
 
 | Resource | Azure Service | Purpose |
 |----------|--------------|---------|
-| Frontend | Static Web Apps (already exists) | Your `problemhunt` SWA |
-| Backend API | Function App (Linux, Python 3.11) | Terraform creates this; workflow deploys code |
+| Frontend + Backend API | Static Web Apps (Standard) with managed Azure Functions (Python 3.11) | One SWA deployment uploads `dist/` and builds/deploys `problem-hunt/python-function` as the integrated `/api/*` backend |
 | Database | Cosmos DB (Free Tier) | **1000 RU/s + 25 GB free for life** |
+
+> Cost note: Static Web Apps **Standard** is required for Python managed Functions and is approximately **$9/month** (plus any additional Azure usage).
 
 ### 7.2 One-Time Setup
 
@@ -176,7 +177,6 @@ Copy the JSON output. Its `subscriptionId` must be the target Azure subscription
 |--------|-------|
 | `AZURE_CREDENTIALS` | The JSON from above |
 | `AZURE_STATIC_WEB_APPS_API_TOKEN` | Azure Portal → SWA `problemhunt` → Manage deployment token |
-| `AZURE_FUNCTIONAPP_NAME` | The name you want for your Function App (`problemhunt`) |
 | `VITE_SUPABASE_URL` | From Supabase Dashboard |
 | `VITE_SUPABASE_ANON_KEY` | From Supabase Dashboard |
 | `VITE_ALCHEMY_SOLANA_RPC_URL` | From Alchemy Dashboard |
@@ -194,44 +194,30 @@ git commit -m "deploy"
 git push origin main
 ```
 
-The workflow `.github/workflows/deploy-azure.yml` runs four jobs in order:
+The workflow `.github/workflows/deploy-azure.yml` runs these deployment stages:
 
-1. **Terraform** — creates Function App and Cosmos DB (if they don't exist)
-2. **Build Frontend** — `npm ci` + `vite build` with the Function App URL injected automatically
-3. **Deploy Frontend** — uploads `dist/` to your existing SWA
-4. **Deploy Backend** — deploys `python-function/` to the Function App
+1. **ARM Deployment** — creates/updates the resource group infrastructure from `azureARM.json` (Static Web App Standard + Cosmos DB).
+2. **Configure SWA API settings** — writes Cosmos/Supabase app settings to the Static Web App (used by managed Functions runtime).
+3. **Build Frontend** — `npm ci` + `vite build` with `VITE_API_BASE_URL=/` for same-origin `/api/*` calls.
+4. **Single SWA Deploy Step** — `Azure/static-web-apps-deploy@v1` uploads `dist/` and deploys `problem-hunt/python-function` via `api_location`.
 
 Watch it at **GitHub → Actions**.
-
-### Deployment: Azure quota
-
-If deployment fails with:
-
-`SubscriptionIsOverQuotaForSku` for `Microsoft.Web/serverFarms` in a region (for example `eastus2`),
-that means the subscription has no available regional quota for that App Service/Functions SKU.
-
-Important: this can happen even for a Function App on **Y1 (Consumption)** with `capacity: 0`.
-Consumption still requires regional quota for `Microsoft.Web/serverFarms`.
-
-This repo already supports region override without editing `azureARM.json` resources:
-
-- `azureARM.json` uses a `location` parameter
-- `.github/workflows/deploy-azure.yml` passes `location="$AZURE_LOCATION"`
-
-So the only workflow value you need to change for region is:
-
-- `AZURE_LOCATION` in `.github/workflows/deploy-azure.yml`
 
 ### 7.4 Troubleshooting
 
 | Error | Fix |
 |-------|-----|
 | `AZURE_CREDENTIALS` invalid | Re-run the `az ad sp create-for-rbac` command and update the secret |
-| Terraform backend missing | The workflow auto-creates the resource group, `problemhuntnewtfstate` storage account, and container in the subscription from `AZURE_CREDENTIALS`; if it fails, run `scripts/bootstrap-azure.ps1 -SubscriptionId $(az account show --query id -o tsv)` after selecting the target subscription |
-| CORS errors | Edit `infra/main.tf` → `var.swa_url` and push |
+| ARM deployment fails by region | Change `AZURE_LOCATION` in `.github/workflows/deploy-azure.yml` to a supported region and rerun |
+| SWA deployment fails with API build/runtime errors | Verify `problem-hunt/python-function/requirements.txt` installs cleanly and that `host.json` stays on Functions v4 extension bundle |
 | `401` from API | Check `SUPABASE_JWT_SECRET` matches your Supabase project |
-| Cosmos errors | Re-run the workflow; it auto-configures the Function App with fresh Cosmos credentials from Terraform |
-| `SubscriptionIsOverQuotaForSku` for `Microsoft.Web/serverFarms` | Either request a quota increase for the target region/SKU in Azure, or switch `AZURE_LOCATION` to a region with available quota |
+| Cosmos errors | Re-run the workflow; it rewrites SWA app settings with Cosmos endpoint/key from ARM outputs |
+
+### 7.5 Managed Functions compatibility checklist (Python)
+
+- `problem-hunt/python-function/host.json` uses Functions runtime `version: "2.0"` and extension bundle `[4.*, 5.0.0)`, which is compatible with Python Functions v4 on Static Web Apps.
+- Function bindings under `problem-hunt/python-function/**/function.json` are HTTP trigger/output only (`httpTrigger` + `http`), so there are no unsupported queue/event/timer/durable bindings in this API.
+- `problem-hunt/python-function/requirements.txt` targets the Python worker/runtime stack in use (`azure-functions` + `azure-cosmos` and standard Python packages) and remains compatible with SWA-managed Functions on Python 3.11.
 
 ## 8. Recommended Local Mode
 

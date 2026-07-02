@@ -20,68 +20,14 @@
       "type": "string",
       "defaultValue": "dev",
       "allowedValues": ["dev", "staging", "prod"]
-    },
-    "storageConnectionString": {
-      "type": "securestring",
-      "defaultValue": "",
-      "metadata": {
-        "description": "Azure Storage connection string required by the Function App runtime (AzureWebJobsStorage). Fill this in manually or pass via GitHub secret AZURE_STORAGE_CONNECTION_STRING."
-      }
     }
   },
   "variables": {
     "uniqueSuffix": "[toLower(uniqueString(subscription().subscriptionId, resourceGroup().id, parameters('appName')))]",
-    "functionAppName": "[format('{0}-api-{1}', parameters('appName'), variables('uniqueSuffix'))]",
-    "functionPlanName": "[format('{0}-plan-{1}', parameters('appName'), variables('uniqueSuffix'))]",
     "staticWebAppName": "[format('{0}-web-{1}', parameters('appName'), variables('uniqueSuffix'))]",
     "cosmosAccountName": "[format('{0}-cosmos-{1}', parameters('appName'), variables('uniqueSuffix'))]"
   },
   "resources": [
-    {
-      "type": "Microsoft.Web/serverfarms",
-      "apiVersion": "2023-12-01",
-      "name": "[variables('functionPlanName')]",
-      "location": "[parameters('location')]",
-      "kind": "linux",
-      "sku": {
-        "name": "Y1",
-        "tier": "Dynamic"
-      },
-      "properties": { "reserved": true }
-    },
-    {
-      "type": "Microsoft.Web/sites",
-      "apiVersion": "2023-12-01",
-      "name": "[variables('functionAppName')]",
-      "location": "[parameters('location')]",
-      "kind": "functionapp,linux",
-      "identity": { "type": "SystemAssigned" },
-      "properties": {
-        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('functionPlanName'))]",
-        "httpsOnly": true,
-        "siteConfig": {
-          "linuxFxVersion": "PYTHON|3.11",
-          "ftpsState": "FtpsOnly",
-          "minTlsVersion": "1.2",
-          "appSettings": [
-            {
-              "name": "AzureWebJobsStorage",
-              "value": "[parameters('storageConnectionString')]"
-            },
-            { "name": "FUNCTIONS_EXTENSION_VERSION", "value": "~4" },
-            { "name": "FUNCTIONS_WORKER_RUNTIME", "value": "python" },
-            { "name": "SCM_DO_BUILD_DURING_DEPLOYMENT", "value": "true" },
-            { "name": "WEBSITE_RUN_FROM_PACKAGE", "value": "1" },
-            { "name": "PYTHON_VERSION", "value": "3.11" },
-            {
-              "name": "WEBSITE_CONTENTAZUREFILECONNECTIONSTRING",
-              "value": "[parameters('storageConnectionString')]"
-            },
-            { "name": "WEBSITE_CONTENTSHARE", "value": "[toLower(variables('functionAppName'))]" }
-          ]
-        }
-      }
-    },
     {
       "type": "Microsoft.DocumentDB/databaseAccounts",
       "apiVersion": "2023-11-15",
@@ -191,7 +137,7 @@
       "apiVersion": "2023-12-01",
       "name": "[variables('staticWebAppName')]",
       "location": "[parameters('location')]",
-      "sku": { "name": "Free", "tier": "Free" },
+      "sku": { "name": "Standard", "tier": "Standard" },
       "properties": {
         "stagingEnvironmentPolicy": "Enabled",
         "buildProperties": {
@@ -204,8 +150,6 @@
   ],
   "outputs": {
     "staticWebAppName": { "type": "string", "value": "[variables('staticWebAppName')]" },
-    "functionAppName": { "type": "string", "value": "[variables('functionAppName')]" },
-    "functionAppHostname": { "type": "string", "value": "[reference(resourceId('Microsoft.Web/sites', variables('functionAppName')), '2023-12-01').defaultHostName]" },
     "cosmosEndpoint": { "type": "string", "value": "[reference(resourceId('Microsoft.DocumentDB/databaseAccounts', variables('cosmosAccountName')), '2023-11-15').documentEndpoint]" },
     "cosmosPrimaryKey": { "type": "securestring", "value": "[listKeys(resourceId('Microsoft.DocumentDB/databaseAccounts', variables('cosmosAccountName')), '2023-11-15').primaryMasterKey]" }
   }
