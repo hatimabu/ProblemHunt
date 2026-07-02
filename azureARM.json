@@ -13,7 +13,7 @@
       "type": "string",
       "defaultValue": "eastus2",
       "metadata": {
-        "description": "Azure region for the deployment"
+        "description": "Azure region for the deployment. Override per deploy via template parameter (for GitHub Actions this comes from AZURE_LOCATION)."
       }
     },
     "environment": {

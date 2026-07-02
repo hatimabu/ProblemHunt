@@ -203,6 +203,25 @@ The workflow `.github/workflows/deploy-azure.yml` runs four jobs in order:
 
 Watch it at **GitHub → Actions**.
 
+### Deployment: Azure quota
+
+If deployment fails with:
+
+`SubscriptionIsOverQuotaForSku` for `Microsoft.Web/serverFarms` in a region (for example `eastus2`),
+that means the subscription has no available regional quota for that App Service/Functions SKU.
+
+Important: this can happen even for a Function App on **Y1 (Consumption)** with `capacity: 0`.
+Consumption still requires regional quota for `Microsoft.Web/serverFarms`.
+
+This repo already supports region override without editing `azureARM.json` resources:
+
+- `azureARM.json` uses a `location` parameter
+- `.github/workflows/deploy-azure.yml` passes `location="$AZURE_LOCATION"`
+
+So the only workflow value you need to change for region is:
+
+- `AZURE_LOCATION` in `.github/workflows/deploy-azure.yml`
+
 ### 7.4 Troubleshooting
 
 | Error | Fix |
@@ -212,6 +231,7 @@ Watch it at **GitHub → Actions**.
 | CORS errors | Edit `infra/main.tf` → `var.swa_url` and push |
 | `401` from API | Check `SUPABASE_JWT_SECRET` matches your Supabase project |
 | Cosmos errors | Re-run the workflow; it auto-configures the Function App with fresh Cosmos credentials from Terraform |
+| `SubscriptionIsOverQuotaForSku` for `Microsoft.Web/serverFarms` | Either request a quota increase for the target region/SKU in Azure, or switch `AZURE_LOCATION` to a region with available quota |
 
 ## 8. Recommended Local Mode
 
