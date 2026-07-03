@@ -165,6 +165,8 @@ class MockTableQuery:
         if self._op == 'insert':
             row = dict(self._payload)
             row.setdefault('id', str(uuid.uuid4()))
+            if str(row['id']) in self._data:
+                raise Exception("23505 duplicate key value violates unique constraint")
             row.setdefault('created_at', datetime.utcnow().isoformat() + 'Z')
             row.setdefault('updated_at', row['created_at'])
             self._data[str(row['id'])] = row
@@ -546,6 +548,12 @@ class TestHandlersIntegration(unittest.TestCase):
         resp2 = create_proposal.handle(req2)
         self.assertEqual(resp2.status_code, 201)
         proposal = json.loads(resp2.get_body())
+
+        _mock_supabase._db["profiles"]["builder"] = {
+            "user_id": "builder",
+            "username": "builder",
+            "wallet_address": "11111111111111111111111111111111",
+        }
 
         req3 = self._auth_req("POST", route_params={"id": pid, "proposal_id": proposal["id"]}, user_id="owner")
         resp3 = accept_proposal.handle(req3)
