@@ -1,9 +1,12 @@
-"""Get Leaderboard Handler"""
+"""Get Leaderboard Handler."""
+
 import logging
 import time
+
 import azure.functions as func
-from cosmos import containers
+
 from handlers.marketplace_helpers import json_response
+from supabase_client import get_supabase_client
 
 
 logger = logging.getLogger(__name__)
@@ -18,34 +21,27 @@ def _get_leaderboard(period: str, limit: int):
     if cached and now - cached["timestamp"] < _CACHE_TTL_SECONDS:
         return cached["result"]
 
-    # Fetch all proposals
-    proposals = list(containers['proposals'].query_items(
-        query="SELECT c.builderId, c.builderName, c.status FROM c",
-        parameters=[],
-        enable_cross_partition_query=True
-    ))
+    sb = get_supabase_client()
 
-    # Fetch all tips
+    proposals_resp = sb.table('proposals').select('builder_id, builder_name, status').execute()
+    proposals = proposals_resp.data or []
+
     try:
-        tips = list(containers['tips'].query_items(
-            query="SELECT c.builderId, c.amount, c.createdAt FROM c",
-            parameters=[],
-            enable_cross_partition_query=True
-        ))
+        tips_resp = sb.table('tips').select('builder_id, amount').execute()
+        tips = tips_resp.data or []
     except Exception:
         tips = []
 
-    # Aggregate stats per builder
     builder_stats = {}
 
     for proposal in proposals:
-        builder_id = proposal.get('builderId')
+        builder_id = proposal.get('builder_id')
         if not builder_id:
             continue
         if builder_id not in builder_stats:
             builder_stats[builder_id] = {
                 'builderId': builder_id,
-                'builderName': proposal.get('builderName', 'Anonymous'),
+                'builderName': proposal.get('builder_name', 'Anonymous'),
                 'proposalsSubmitted': 0,
                 'proposalsAccepted': 0,
                 'tipsReceived': 0.0,
@@ -56,7 +52,7 @@ def _get_leaderboard(period: str, limit: int):
             builder_stats[builder_id]['proposalsAccepted'] += 1
 
     for tip in tips:
-        builder_id = tip.get('builderId')
+        builder_id = tip.get('builder_id')
         if not builder_id:
             continue
         if builder_id not in builder_stats:
@@ -70,7 +66,6 @@ def _get_leaderboard(period: str, limit: int):
             }
         builder_stats[builder_id]['tipsReceived'] += float(tip.get('amount', 0))
 
-    # Calculate reputation score: accepted * 100 + tips * 10 + submitted * 5
     for stats in builder_stats.values():
         stats['reputationScore'] = (
             stats['proposalsAccepted'] * 100
@@ -78,17 +73,14 @@ def _get_leaderboard(period: str, limit: int):
             + stats['proposalsSubmitted'] * 5
         )
 
-    # Sort by reputation score descending, take top N
     leaderboard = sorted(
         builder_stats.values(),
         key=lambda x: x['reputationScore'],
-        reverse=True
+        reverse=True,
     )[:limit]
 
-    # Add rank
     for idx, entry in enumerate(leaderboard):
         entry['rank'] = idx + 1
-        # Determine tier
         score = entry['reputationScore']
         if score >= 5000:
             entry['tier'] = 'Legend'
@@ -101,22 +93,17 @@ def _get_leaderboard(period: str, limit: int):
         else:
             entry['tier'] = 'Newcomer'
 
-    result = {
-        'leaderboard': leaderboard,
-        'total': len(leaderboard),
-        'period': period
-    }
+    result = {'leaderboard': leaderboard, 'total': len(leaderboard), 'period': period}
     _leaderboard_cache[cache_key] = {"timestamp": now, "result": result}
     return result
 
 
 def handle(req: func.HttpRequest) -> func.HttpResponse:
-    """Get top builders by reputation, accepted proposals, and tips received"""
+    """Get top builders by reputation, accepted proposals, and tips received."""
     try:
-        period = req.params.get('period', 'alltime')  # 'week' or 'alltime'
+        period = req.params.get('period', 'alltime')
         limit = int(req.params.get('limit', 20))
         return json_response(_get_leaderboard(period, limit), 200)
-
     except Exception:
         logger.exception("Handler error")
         return json_response({'error': 'Failed to fetch leaderboard'}, 500)

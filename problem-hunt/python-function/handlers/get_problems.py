@@ -4,7 +4,8 @@ import logging
 
 import azure.functions as func
 
-from handlers.marketplace_helpers import json_response, normalize_problem, query_items
+from handlers.marketplace_helpers import _pg_problem_to_camel, json_response, normalize_problem
+from supabase_client import get_supabase_client
 
 
 logger = logging.getLogger(__name__)
@@ -21,7 +22,9 @@ def handle(req: func.HttpRequest) -> func.HttpResponse:
         limit = int(req.params.get('limit', 100))
         offset = int(req.params.get('offset', 0))
 
-        problems = [normalize_problem(problem) for problem in query_items("problems", "SELECT * FROM c")]
+        sb = get_supabase_client()
+        resp = sb.table('problems').select('*').execute()
+        problems = [normalize_problem(_pg_problem_to_camel(row)) for row in (resp.data or [])]
 
         filtered = [
             problem for problem in problems
@@ -29,10 +32,10 @@ def handle(req: func.HttpRequest) -> func.HttpResponse:
         ]
 
         if category != 'all':
-            filtered = [problem for problem in filtered if problem.get('category') == category]
+            filtered = [p for p in filtered if p.get('category') == category]
 
         if post_type in ('problem', 'job'):
-            filtered = [problem for problem in filtered if problem.get('type') == post_type]
+            filtered = [p for p in filtered if p.get('type') == post_type]
 
         if sort_by == 'newest':
             filtered.sort(key=lambda x: x.get('createdAt', ''), reverse=True)
@@ -49,7 +52,7 @@ def handle(req: func.HttpRequest) -> func.HttpResponse:
             'problems': paginated,
             'total': len(filtered),
             'limit': limit,
-            'offset': offset
+            'offset': offset,
         })
 
     except Exception:

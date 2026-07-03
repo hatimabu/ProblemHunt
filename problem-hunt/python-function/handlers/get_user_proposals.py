@@ -5,12 +5,13 @@ import logging
 import azure.functions as func
 
 from handlers.marketplace_helpers import (
+    _pg_proposal_to_camel,
+    get_problem,
     get_tip_totals_for_proposals,
     json_response,
-    normalize_problem,
     normalize_proposal,
-    query_items,
 )
+from supabase_client import get_supabase_client
 from utils import get_authenticated_user_id
 
 
@@ -25,40 +26,39 @@ def handle(req: func.HttpRequest) -> func.HttpResponse:
         if not user_id:
             return json_response({'error': 'Authentication required'}, 401)
 
+        sb = get_supabase_client()
+        proposals_resp = (
+            sb.table('proposals')
+            .select('*')
+            .eq('builder_id', user_id)
+            .order('created_at', desc=True)
+            .execute()
+        )
         proposals = [
-            normalize_proposal(proposal)
-            for proposal in query_items(
-                "proposals",
-                "SELECT * FROM c WHERE c.builderId = @userId ORDER BY c.createdAt DESC",
-                [{'name': '@userId', 'value': user_id}],
-            )
+            normalize_proposal(_pg_proposal_to_camel(row))
+            for row in (proposals_resp.data or [])
         ]
 
         tip_totals = get_tip_totals_for_proposals([proposal["id"] for proposal in proposals])
         enriched = []
         problem_cache = {}
+
         for proposal in proposals:
             proposal_id = proposal.get('id')
             problem_id = proposal.get('problemId')
 
             if problem_id and problem_id not in problem_cache:
-                problems = query_items(
-                    "problems",
-                    "SELECT * FROM c WHERE c.id = @id",
-                    [{'name': '@id', 'value': problem_id}],
-                )
-                problem_cache[problem_id] = normalize_problem(problems[0]) if problems else {}
+                problem_cache[problem_id] = get_problem(problem_id) or {}
 
             problem = problem_cache.get(problem_id, {})
-            enriched_proposal = {
+            enriched.append({
                 **proposal,
                 'problemTitle': problem.get('title', 'Unknown Problem'),
                 'problemType': problem.get('type', 'problem'),
                 'jobStatus': problem.get('jobStatus'),
                 'isAcceptedBuilder': problem.get('acceptedProposalId') == proposal_id,
                 'tipTotal': tip_totals.get(proposal_id, 0),
-            }
-            enriched.append(enriched_proposal)
+            })
 
         return json_response({'proposals': enriched, 'total': len(enriched)})
 

@@ -4,19 +4,22 @@ import logging
 
 import azure.functions as func
 
-from cosmos import containers
 from handlers.marketplace_helpers import (
     PROBLEM_TYPE_JOB,
+    _pg_problem_to_camel,
+    _proposal_insert_row,
     build_problem_link,
     create_notification,
     get_display_name,
     get_problem,
     json_response,
+    normalize_problem,
     normalize_proposal,
     parse_sol_amount,
     parse_string_list,
     sol_amount_to_string,
 )
+from supabase_client import get_supabase_client
 from utils import generate_id, get_authenticated_user_id, get_timestamp, validate_required
 
 
@@ -74,17 +77,19 @@ def handle(req: func.HttpRequest) -> func.HttpResponse:
             'proposedPriceSol': proposed_price_sol,
             'estimatedDelivery': estimated_delivery,
             'createdAt': get_timestamp(),
-            'updatedAt': get_timestamp()
+            'updatedAt': get_timestamp(),
         }
 
         proposal = normalize_proposal(proposal)
-        containers['proposals'].create_item(body=proposal)
 
-        containers['problems'].patch_item(
-            item=problem_id,
-            partition_key=problem_id,
-            patch_operations=[{"op": "incr", "path": "/proposals", "value": 1}],
-        )
+        sb = get_supabase_client()
+        sb.table('proposals').insert(_proposal_insert_row(proposal)).execute()
+
+        # Atomic increment via RPC
+        rpc_resp = sb.rpc('increment_problem_proposals', {'pid': problem_id}).execute()
+        if rpc_resp.data:
+            updated_row = rpc_resp.data[0] if isinstance(rpc_resp.data, list) else rpc_resp.data
+            problem = normalize_problem(_pg_problem_to_camel(updated_row))
 
         if problem["type"] == PROBLEM_TYPE_JOB:
             create_notification(

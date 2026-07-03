@@ -1,72 +1,46 @@
-"""Remove Upvote Handler"""
+"""Remove Upvote Handler."""
+
 import json
 import logging
+
 import azure.functions as func
-from cosmos import containers
-from utils import get_authenticated_user_id, get_timestamp
+
+from handlers.marketplace_helpers import _pg_problem_to_camel, json_response, normalize_problem
+from supabase_client import get_supabase_client
+from utils import get_authenticated_user_id
 
 
 logger = logging.getLogger(__name__)
 
 
 def handle(req: func.HttpRequest) -> func.HttpResponse:
-    """Remove an upvote from a problem"""
+    """Remove an upvote from a problem."""
     try:
         problem_id = req.route_params.get('id')
         user_id = get_authenticated_user_id(req)
-        
+
         if not user_id:
-            return func.HttpResponse(
-                json.dumps({'error': 'Authentication required'}),
-                status_code=401,
-                mimetype="application/json"
-            )
-        
+            return json_response({'error': 'Authentication required'}, 401)
+
+        sb = get_supabase_client()
         upvote_id = f"{problem_id}-{user_id}"
-        
-        # Check if upvote exists
-        upvotes = containers['upvotes'].query_items(
-            query="SELECT * FROM c WHERE c.id = @id",
-            parameters=[{'name': '@id', 'value': upvote_id}],
-            enable_cross_partition_query=True
-        )
-        
-        if not upvotes:
-            return func.HttpResponse(
-                json.dumps({'error': 'Upvote not found'}),
-                status_code=404,
-                mimetype="application/json"
-            )
-        
+
+        # Check upvote exists
+        upvote_resp = sb.table('upvotes').select('id').eq('id', upvote_id).limit(1).execute()
+        if not upvote_resp.data:
+            return json_response({'error': 'Upvote not found'}, 404)
+
         # Delete upvote
-        containers['upvotes'].delete_item(upvote_id, upvote_id)
-        
-        # Decrement upvote count
-        problems = containers['problems'].query_items(
-            query="SELECT * FROM c WHERE c.id = @id",
-            parameters=[{'name': '@id', 'value': problem_id}],
-            enable_cross_partition_query=True
-        )
-        
-        if problems:
-            problem = problems[0]
-            problem['upvotes'] = max(0, problem.get('upvotes', 0) - 1)
-            problem['updatedAt'] = get_timestamp()
-            containers['problems'].replace_item(problem['id'], problem)
-        
-        return func.HttpResponse(
-            json.dumps({
-                'problem': problem if problems else None,
-                'message': 'Upvote removed successfully'
-            }),
-            status_code=200,
-            mimetype="application/json"
-        )
-    
+        sb.table('upvotes').delete().eq('id', upvote_id).execute()
+
+        # Atomic counter decrement
+        rpc_resp = sb.rpc('decrement_problem_upvotes', {'pid': problem_id}).execute()
+        rpc_data = rpc_resp.data
+        updated_row = (rpc_data[0] if isinstance(rpc_data, list) else rpc_data) if rpc_data else None
+        updated_problem = normalize_problem(_pg_problem_to_camel(updated_row)) if updated_row else None
+
+        return json_response({'problem': updated_problem, 'message': 'Upvote removed successfully'}, 200)
+
     except Exception:
         logger.exception("Handler error")
-        return func.HttpResponse(
-            json.dumps({'error': 'Failed to remove upvote'}),
-            status_code=500,
-            mimetype="application/json"
-        )
+        return json_response({'error': 'Failed to remove upvote'}, 500)

@@ -24,114 +24,9 @@
   },
   "variables": {
     "uniqueSuffix": "[toLower(uniqueString(subscription().subscriptionId, resourceGroup().id, parameters('appName')))]",
-    "staticWebAppName": "[format('{0}-web-{1}', parameters('appName'), variables('uniqueSuffix'))]",
-    "cosmosAccountName": "[format('{0}-cosmos-{1}', parameters('appName'), variables('uniqueSuffix'))]"
+    "staticWebAppName": "[format('{0}-web-{1}', parameters('appName'), variables('uniqueSuffix'))]"
   },
   "resources": [
-    {
-      "type": "Microsoft.DocumentDB/databaseAccounts",
-      "apiVersion": "2023-11-15",
-      "name": "[variables('cosmosAccountName')]",
-      "location": "[parameters('location')]",
-      "kind": "GlobalDocumentDB",
-      "properties": {
-        "databaseAccountOfferType": "Standard",
-        "enableFreeTier": true,
-        "capabilities": [
-          { "name": "EnableServerless" }
-        ],
-        "consistencyPolicy": {
-          "defaultConsistencyLevel": "Session"
-        },
-        "locations": [
-          {
-            "locationName": "[parameters('location')]",
-            "failoverPriority": 0,
-            "isZoneRedundant": false
-          }
-        ],
-        "publicNetworkAccess": "Enabled"
-      }
-    },
-    {
-      "type": "Microsoft.DocumentDB/databaseAccounts/sqlDatabases",
-      "apiVersion": "2023-11-15",
-      "name": "[format('{0}/{1}', variables('cosmosAccountName'), 'ProblemHuntDB')]",
-      "dependsOn": ["[resourceId('Microsoft.DocumentDB/databaseAccounts', variables('cosmosAccountName'))]"],
-      "properties": {
-        "resource": {
-          "id": "ProblemHuntDB"
-        }
-      }
-    },
-    {
-      "type": "Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers",
-      "apiVersion": "2023-11-15",
-      "name": "[format('{0}/{1}/{2}', variables('cosmosAccountName'), 'ProblemHuntDB', 'Problems')]",
-      "dependsOn": [
-        "[resourceId('Microsoft.DocumentDB/databaseAccounts/sqlDatabases', variables('cosmosAccountName'), 'ProblemHuntDB')]"
-      ],
-      "properties": {
-        "resource": {
-          "id": "Problems",
-          "partitionKey": {
-            "paths": ["/id"],
-            "kind": "Hash"
-          }
-        }
-      }
-    },
-    {
-      "type": "Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers",
-      "apiVersion": "2023-11-15",
-      "name": "[format('{0}/{1}/{2}', variables('cosmosAccountName'), 'ProblemHuntDB', 'Proposals')]",
-      "dependsOn": [
-        "[resourceId('Microsoft.DocumentDB/databaseAccounts/sqlDatabases', variables('cosmosAccountName'), 'ProblemHuntDB')]"
-      ],
-      "properties": {
-        "resource": {
-          "id": "Proposals",
-          "partitionKey": {
-            "paths": ["/problem_id"],
-            "kind": "Hash"
-          }
-        }
-      }
-    },
-    {
-      "type": "Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers",
-      "apiVersion": "2023-11-15",
-      "name": "[format('{0}/{1}/{2}', variables('cosmosAccountName'), 'ProblemHuntDB', 'Upvotes')]",
-      "dependsOn": [
-        "[resourceId('Microsoft.DocumentDB/databaseAccounts/sqlDatabases', variables('cosmosAccountName'), 'ProblemHuntDB')]"
-      ],
-      "properties": {
-        "resource": {
-          "id": "Upvotes",
-          "partitionKey": {
-            "paths": ["/problem_id"],
-            "kind": "Hash"
-          }
-        }
-      }
-    },
-    {
-      "type": "Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers",
-      "apiVersion": "2023-11-15",
-      "name": "[format('{0}/{1}/{2}', variables('cosmosAccountName'), 'ProblemHuntDB', 'Tips')]",
-      "dependsOn": [
-        "[resourceId('Microsoft.DocumentDB/databaseAccounts/sqlDatabases', variables('cosmosAccountName'), 'ProblemHuntDB')]"
-      ],
-      "properties": {
-        "resource": {
-          "id": "Tips",
-          "partitionKey": {
-            "paths": ["/proposal_id"],
-            "kind": "Hash"
-          }
-        }
-      }
-    },
     {
       "type": "Microsoft.Web/staticSites",
       "apiVersion": "2023-12-01",
@@ -149,8 +44,6 @@
     }
   ],
   "outputs": {
-    "staticWebAppName": { "type": "string", "value": "[variables('staticWebAppName')]" },
-    "cosmosEndpoint": { "type": "string", "value": "[reference(resourceId('Microsoft.DocumentDB/databaseAccounts', variables('cosmosAccountName')), '2023-11-15').documentEndpoint]" },
-    "cosmosPrimaryKey": { "type": "securestring", "value": "[listKeys(resourceId('Microsoft.DocumentDB/databaseAccounts', variables('cosmosAccountName')), '2023-11-15').primaryMasterKey]" }
+    "staticWebAppName": { "type": "string", "value": "[variables('staticWebAppName')]" }
   }
 }

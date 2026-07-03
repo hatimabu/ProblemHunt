@@ -7,6 +7,8 @@ Or: python test_all.py
 import json
 import sys
 import os
+import re
+import uuid
 import unittest
 import importlib
 from unittest.mock import MagicMock, patch
@@ -16,20 +18,12 @@ from datetime import datetime
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 # Set required env vars before importing modules that read them
-os.environ["COSMOS_ENDPOINT"] = "placeholder-endpoint"
-os.environ["COSMOS_KEY"] = "placeholder-key"
-os.environ["COSMOS_DATABASE"] = "ProblemHuntDB"
-os.environ["COSMOS_CONTAINER_PROBLEMS"] = "Problems"
-os.environ["COSMOS_CONTAINER_PROPOSALS"] = "Proposals"
-os.environ["COSMOS_CONTAINER_UPVOTES"] = "Upvotes"
-os.environ["COSMOS_CONTAINER_TIPS"] = "Tips"
 os.environ["SUPABASE_URL"] = "https://ajvobbpwgopinxtbpcpu.supabase.co"
 os.environ["SUPABASE_ANON_KEY"] = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFqdm9iYnB3Z29waW54dGJwY3B1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkzMDIwNjMsImV4cCI6MjA4NDg3ODA2M30.-6yF5xvQ5oUwsmdFt1DKv-Hn1cKLo_OIvytaV6GxSC8"
 os.environ["SUPABASE_JWT_SECRET"] = "WF0N+WumBLUU4EuRIEDA9SoetkSKhwRCDjWID5Tpd9nrjKlrpMtSwmA006srX4V1bHYH4tU1nPnsoVARPgbG/A=="
 
 import azure.functions as func
 
-# Import modules under test
 from utils import (
     create_response,
     error_response,
@@ -41,8 +35,6 @@ from utils import (
     time_ago,
     get_user_id,
 )
-
-from cosmos import MockContainer, containers, CosmosDBClient
 
 from handlers.marketplace_helpers import (
     PROBLEM_TYPE_JOB,
@@ -57,7 +49,6 @@ from handlers.marketplace_helpers import (
     sol_amount_to_string,
     normalize_problem,
     normalize_proposal,
-    query_items,
     get_problem,
     get_proposal,
     get_proposals_for_problem,
@@ -89,6 +80,190 @@ from handlers import (
 )
 
 
+# ─── in-memory Supabase mock ──────────────────────────────────────────────────
+
+class MockTableQuery:
+    """Minimal chained builder that mirrors the supabase-py query API."""
+
+    def __init__(self, data_dict: dict):
+        self._data = data_dict
+        self._op = 'select'
+        self._filters: dict = {}
+        self._in_filters: dict = {}
+        self._or_expr: str | None = None
+        self._order_col: str | None = None
+        self._order_desc = False
+        self._limit_n: int | None = None
+        self._payload = None
+
+    # builder methods ──────────────────────────────────────────────────────────
+
+    def select(self, cols='*'):
+        self._op = 'select'
+        return self
+
+    def insert(self, payload):
+        self._op = 'insert'
+        self._payload = payload
+        return self
+
+    def update(self, payload):
+        self._op = 'update'
+        self._payload = payload
+        return self
+
+    def delete(self):
+        self._op = 'delete'
+        return self
+
+    def eq(self, col, val):
+        self._filters[col] = val
+        return self
+
+    def in_(self, col, vals):
+        self._in_filters[col] = set(vals)
+        return self
+
+    def or_(self, expr):
+        self._or_expr = expr
+        return self
+
+    def order(self, col, desc=False):
+        self._order_col = col
+        self._order_desc = desc
+        return self
+
+    def limit(self, n):
+        self._limit_n = n
+        return self
+
+    # execution ────────────────────────────────────────────────────────────────
+
+    def _filter_rows(self):
+        rows = list(self._data.values())
+        for col, val in self._filters.items():
+            rows = [r for r in rows if r.get(col) == val]
+        for col, vals in self._in_filters.items():
+            rows = [r for r in rows if r.get(col) in vals]
+        if self._or_expr:
+            filtered = []
+            parts = self._or_expr.split(',')
+            for row in rows:
+                for part in parts:
+                    m = re.match(r'(\w+)\.ilike\.%(.+)%', part.strip())
+                    if m:
+                        col, term = m.group(1), m.group(2).lower()
+                        if term in str(row.get(col, '')).lower():
+                            filtered.append(row)
+                            break
+            rows = filtered
+        return rows
+
+    def execute(self):
+        result = MagicMock()
+
+        if self._op == 'insert':
+            row = dict(self._payload)
+            row.setdefault('id', str(uuid.uuid4()))
+            row.setdefault('created_at', datetime.utcnow().isoformat() + 'Z')
+            row.setdefault('updated_at', row['created_at'])
+            self._data[str(row['id'])] = row
+            result.data = [row]
+            return result
+
+        rows = self._filter_rows()
+
+        if self._op == 'update':
+            updated = []
+            for row in rows:
+                row.update(self._payload)
+                updated.append(dict(row))
+            result.data = updated
+            return result
+
+        if self._op == 'delete':
+            for row in rows:
+                self._data.pop(str(row.get('id', '')), None)
+            result.data = []
+            return result
+
+        # select
+        if self._order_col:
+            rows.sort(key=lambda r: r.get(self._order_col) or '', reverse=self._order_desc)
+        if self._limit_n is not None:
+            rows = rows[:self._limit_n]
+        result.data = [dict(r) for r in rows]
+        return result
+
+
+class MockRpc:
+    """Simulates the three atomic counter RPC functions."""
+
+    def __init__(self, tables: dict, fn_name: str, params: dict):
+        self._tables = tables
+        self._fn_name = fn_name
+        self._params = params
+
+    def execute(self):
+        result = MagicMock()
+        problems = self._tables.get('problems', {})
+        pid = str(self._params.get('pid', ''))
+        row = problems.get(pid)
+
+        if row is None:
+            result.data = []
+            return result
+
+        if self._fn_name == 'increment_problem_upvotes':
+            row['upvotes'] = row.get('upvotes', 0) + 1
+            row['updated_at'] = datetime.utcnow().isoformat() + 'Z'
+        elif self._fn_name == 'decrement_problem_upvotes':
+            row['upvotes'] = max(0, row.get('upvotes', 0) - 1)
+            row['updated_at'] = datetime.utcnow().isoformat() + 'Z'
+        elif self._fn_name == 'increment_problem_proposals':
+            row['proposals'] = row.get('proposals', 0) + 1
+
+        result.data = [dict(row)]
+        return result
+
+
+class MockSupabase:
+    """Stateful in-memory Supabase client for integration tests."""
+
+    def __init__(self):
+        self._db: dict[str, dict] = {}
+        self.reset()
+
+    def reset(self):
+        self._db = {
+            'problems': {},
+            'proposals': {},
+            'upvotes': {},
+            'tips': {},
+            'profiles': {},
+            'wallets': {},
+            'payments': {},
+            'tip_transactions': {},
+            'notifications': {},
+        }
+
+    def table(self, name: str) -> MockTableQuery:
+        if name not in self._db:
+            self._db[name] = {}
+        return MockTableQuery(self._db[name])
+
+    def rpc(self, fn_name: str, params: dict | None = None) -> MockRpc:
+        return MockRpc(self._db, fn_name, params or {})
+
+
+# Inject mock before any module-level get_supabase_client() is called
+import supabase_client as _sc
+_mock_supabase = MockSupabase()
+_sc._client = _mock_supabase  # type: ignore[assignment]
+
+
+# ─── helpers ──────────────────────────────────────────────────────────────────
+
 class MockHttpRequest:
     """Mock Azure Functions HttpRequest for testing."""
     def __init__(self, method="GET", route_params=None, params=None, body=None, headers=None):
@@ -97,28 +272,29 @@ class MockHttpRequest:
         self.params = params or {}
         self._body = json.dumps(body).encode() if body is not None else b""
         self._headers = headers or {}
-    
+
     def get_json(self):
         return json.loads(self._body.decode()) if self._body else {}
-    
+
     @property
     def headers(self):
         return self._headers
-    
+
     def get_body(self):
         return self._body
 
 
 def make_auth_headers(user_id="test-user-123"):
-    """Create a fake valid JWT for testing."""
     import jwt as pyjwt
     token = pyjwt.encode(
         {"sub": user_id, "aud": "authenticated", "role": "authenticated"},
         os.environ["SUPABASE_JWT_SECRET"],
-        algorithm="HS256"
+        algorithm="HS256",
     )
     return {"Authorization": f"Bearer {token}"}
 
+
+# ─── TestUtils ────────────────────────────────────────────────────────────────
 
 class TestUtils(unittest.TestCase):
     def test_generate_id(self):
@@ -162,35 +338,7 @@ class TestUtils(unittest.TestCase):
         self.assertIn("bad", resp["body"])
 
 
-class TestCosmosMock(unittest.TestCase):
-    def setUp(self):
-        self.container = MockContainer()
-
-    def test_create_and_get_item(self):
-        item = {"id": "1", "name": "test"}
-        self.container.create_item(item)
-        got = self.container.get_item("1", "pk")
-        self.assertEqual(got["name"], "test")
-
-    def test_query_items(self):
-        self.container.create_item({"id": "1", "user_id": "u1", "name": "a"})
-        self.container.create_item({"id": "2", "user_id": "u2", "name": "b"})
-        results = self.container.query_items("SELECT * FROM c", [{"name": "@user_id", "value": "u1"}])
-        self.assertEqual(len(results), 1)
-        self.assertEqual(results[0]["id"], "1")
-
-    def test_replace_item(self):
-        self.container.create_item({"id": "1", "name": "old"})
-        self.container.replace_item("1", {"id": "1", "name": "new"})
-        got = self.container.get_item("1", "pk")
-        self.assertEqual(got["name"], "new")
-
-    def test_delete_item(self):
-        self.container.create_item({"id": "1", "name": "test"})
-        self.container.delete_item("1", "pk")
-        with self.assertRaises(Exception):
-            self.container.get_item("1", "pk")
-
+# ─── TestMarketplaceHelpers ───────────────────────────────────────────────────
 
 class TestMarketplaceHelpers(unittest.TestCase):
     def test_json_response(self):
@@ -242,13 +390,13 @@ class TestMarketplaceHelpers(unittest.TestCase):
         self.assertEqual(build_problem_link("123"), "/problem/123")
 
 
+# ─── TestHandlersIntegration ─────────────────────────────────────────────────
+
 class TestHandlersIntegration(unittest.TestCase):
-    """Integration tests using mock Cosmos and mocked auth."""
+    """Integration tests using MockSupabase in place of a real database."""
 
     def setUp(self):
-        # Reset mock containers between tests
-        for name in ["problems", "proposals", "upvotes", "tips"]:
-            containers[name] = MockContainer()
+        _mock_supabase.reset()
 
     def _auth_req(self, method="GET", route_params=None, params=None, body=None, user_id="test-user-123"):
         return MockHttpRequest(
@@ -265,7 +413,7 @@ class TestHandlersIntegration(unittest.TestCase):
             "description": "A test problem",
             "category": "AI/ML",
             "type": "problem",
-            "budget": "$100"
+            "budget": "$100",
         })
         resp = create_problem.handle(req)
         self.assertEqual(resp.status_code, 201)
@@ -280,7 +428,7 @@ class TestHandlersIntegration(unittest.TestCase):
 
     def test_create_problem_invalid_category(self):
         req = self._auth_req("POST", body={
-            "title": "T", "description": "D", "category": "Invalid", "budget": "$10"
+            "title": "T", "description": "D", "category": "Invalid", "budget": "$10",
         })
         resp = create_problem.handle(req)
         self.assertEqual(resp.status_code, 400)
@@ -288,10 +436,9 @@ class TestHandlersIntegration(unittest.TestCase):
     def test_create_job_requires_budget_deadline_type(self):
         req = self._auth_req("POST", body={
             "title": "Job", "description": "Desc", "category": "AI/ML",
-            "type": "job", "budgetSol": 1.0
+            "type": "job", "budgetSol": 1.0,
         })
         resp = create_problem.handle(req)
-        # Missing deadline and jobType
         self.assertEqual(resp.status_code, 400)
 
     def test_get_problems_empty(self):
@@ -307,10 +454,9 @@ class TestHandlersIntegration(unittest.TestCase):
         self.assertEqual(resp.status_code, 404)
 
     def test_update_problem(self):
-        # Create first
         req = self._auth_req("POST", body={
             "title": "Original", "description": "Desc", "category": "AI/ML",
-            "type": "problem", "budget": "$50"
+            "type": "problem", "budget": "$50",
         })
         resp = create_problem.handle(req)
         problem = json.loads(resp.get_body())
@@ -325,7 +471,7 @@ class TestHandlersIntegration(unittest.TestCase):
     def test_delete_problem(self):
         req = self._auth_req("POST", body={
             "title": "To Delete", "description": "D", "category": "AI/ML",
-            "type": "problem", "budget": "$10"
+            "type": "problem", "budget": "$10",
         })
         resp = create_problem.handle(req)
         pid = json.loads(resp.get_body())["id"]
@@ -339,10 +485,9 @@ class TestHandlersIntegration(unittest.TestCase):
         self.assertEqual(resp3.status_code, 404)
 
     def test_upvote_and_remove_upvote(self):
-        # Create problem as user A
         req = self._auth_req("POST", body={
             "title": "Upvote Me", "description": "D", "category": "AI/ML",
-            "type": "problem", "budget": "$10"
+            "type": "problem", "budget": "$10",
         }, user_id="user-a")
         resp = create_problem.handle(req)
         pid = json.loads(resp.get_body())["id"]
@@ -366,21 +511,18 @@ class TestHandlersIntegration(unittest.TestCase):
         self.assertEqual(data4["problem"]["upvotes"], 0)
 
     def test_create_and_get_proposals(self):
-        # Create problem
         req = self._auth_req("POST", body={
             "title": "Need Help", "description": "D", "category": "AI/ML",
-            "type": "problem", "budget": "$10"
+            "type": "problem", "budget": "$10",
         }, user_id="owner")
         pid = json.loads(create_problem.handle(req).get_body())["id"]
 
-        # Create proposal
         req2 = self._auth_req("POST", route_params={"id": pid}, body={
-            "title": "I can help", "description": "Proposal desc"
+            "title": "I can help", "description": "Proposal desc",
         }, user_id="builder")
         resp2 = create_proposal.handle(req2)
         self.assertEqual(resp2.status_code, 201)
 
-        # Get proposals
         req3 = MockHttpRequest("GET", route_params={"id": pid})
         resp3 = get_proposals.handle(req3)
         self.assertEqual(resp3.status_code, 200)
@@ -388,47 +530,39 @@ class TestHandlersIntegration(unittest.TestCase):
         self.assertEqual(data["total"], 1)
 
     def test_job_lifecycle(self):
-        # Create job
         req = self._auth_req("POST", body={
             "title": "Build App", "description": "D", "category": "AI/ML",
-            "type": "job", "budgetSol": 5.0, "deadline": "2025-12-31", "jobType": "one-time"
+            "type": "job", "budgetSol": 5.0, "deadline": "2025-12-31", "jobType": "one-time",
         }, user_id="owner")
         resp = create_problem.handle(req)
         job = json.loads(resp.get_body())
         self.assertEqual(job["jobStatus"], "open")
         pid = job["id"]
 
-        # Submit proposal
         req2 = self._auth_req("POST", route_params={"id": pid}, body={
             "title": "My Proposal", "description": "I will build it",
-            "proposedPriceSol": 5.0, "estimatedDelivery": "2 weeks"
+            "proposedPriceSol": 5.0, "estimatedDelivery": "2 weeks",
         }, user_id="builder")
         resp2 = create_proposal.handle(req2)
         self.assertEqual(resp2.status_code, 201)
         proposal = json.loads(resp2.get_body())
 
-        # Accept proposal
         req3 = self._auth_req("POST", route_params={"id": pid, "proposal_id": proposal["id"]}, user_id="owner")
         resp3 = accept_proposal.handle(req3)
         self.assertEqual(resp3.status_code, 200)
         data = json.loads(resp3.get_body())
         self.assertEqual(data["job"]["jobStatus"], "in_progress")
 
-        # Mark complete
         req4 = self._auth_req("POST", route_params={"id": pid}, user_id="builder")
         resp4 = mark_job_complete.handle(req4)
         self.assertEqual(resp4.status_code, 200)
         job = json.loads(resp4.get_body())["job"]
         self.assertEqual(job["jobStatus"], "completed")
 
-        # Record payment
         req5 = self._auth_req("POST", route_params={"id": pid}, body={
-            "txHash": "abc123", "amountSol": 5.0
+            "txHash": "abc123", "amountSol": 5.0,
         }, user_id="owner")
-        # Need to mock supabase for insert_payment_record
-        with patch("handlers.marketplace_helpers.get_supabase_client") as mock_sb:
-            mock_sb.return_value.table.return_value.insert.return_value.execute.return_value.data = [{}]
-            resp5 = record_payment.handle(req5)
+        resp5 = record_payment.handle(req5)
         self.assertEqual(resp5.status_code, 200)
         job = json.loads(resp5.get_body())["job"]
         self.assertEqual(job["jobStatus"], "paid")
@@ -436,7 +570,7 @@ class TestHandlersIntegration(unittest.TestCase):
     def test_search_problems(self):
         req = self._auth_req("POST", body={
             "title": "Unique Search Term XYZ", "description": "D", "category": "AI/ML",
-            "type": "problem", "budget": "$10"
+            "type": "problem", "budget": "$10",
         })
         create_problem.handle(req)
 
@@ -449,7 +583,7 @@ class TestHandlersIntegration(unittest.TestCase):
     def test_get_user_problems(self):
         req = self._auth_req("POST", body={
             "title": "My Problem", "description": "D", "category": "AI/ML",
-            "type": "problem", "budget": "$10"
+            "type": "problem", "budget": "$10",
         }, user_id="user-special")
         create_problem.handle(req)
 
@@ -460,20 +594,19 @@ class TestHandlersIntegration(unittest.TestCase):
         self.assertGreaterEqual(data["total"], 1)
 
     def test_tip_builder(self):
-        # Create problem and proposal
         req = self._auth_req("POST", body={
             "title": "Tip Test", "description": "D", "category": "AI/ML",
-            "type": "problem", "budget": "$10"
+            "type": "problem", "budget": "$10",
         }, user_id="owner")
         pid = json.loads(create_problem.handle(req).get_body())["id"]
 
         req2 = self._auth_req("POST", route_params={"id": pid}, body={
-            "title": "Proposal", "description": "P"
+            "title": "Proposal", "description": "P",
         }, user_id="builder")
         prop = json.loads(create_proposal.handle(req2).get_body())
 
         req3 = self._auth_req("POST", route_params={"id": prop["id"]}, body={
-            "amount": 1.5, "chain": "solana", "txHash": "tx123"
+            "amount": 1.5, "chain": "solana", "txHash": "tx123",
         }, user_id="tipper")
         resp = tip_builder.handle(req3)
         self.assertEqual(resp.status_code, 201)
@@ -494,8 +627,6 @@ class TestHandlersIntegration(unittest.TestCase):
 
 
 class TestRouterConsistency(unittest.TestCase):
-    """Check that the main router covers all expected endpoints."""
-
     def test_router_imports_all_handlers(self):
         from router import main
         self.assertTrue(callable(main))
@@ -508,10 +639,7 @@ class TestWalletsFunction(unittest.TestCase):
     def test_duplicate_update_does_not_delete_existing_wallet(self):
         req = MockHttpRequest(
             method="POST",
-            body={
-                "chain": "solana",
-                "address": "11111111111111111111111111111111",
-            },
+            body={"chain": "solana", "address": "11111111111111111111111111111111"},
         )
 
         supabase = MagicMock()
@@ -542,7 +670,6 @@ class TestWalletsFunction(unittest.TestCase):
         sync_wallet.assert_not_called()
 
     def test_wallet_save_failure_returns_generic_500(self):
-        """POST /wallets DB error must not leak exception details to client."""
         req = MockHttpRequest(
             method="POST",
             body={"chain": "ethereum", "address": "0x" + "a" * 40},
@@ -568,7 +695,6 @@ class TestWalletsFunction(unittest.TestCase):
         self.assertNotIn("secret schema info", json.dumps(body))
 
     def test_wallet_fetch_failure_returns_generic_500(self):
-        """GET /wallets DB error must not leak exception details to client."""
         req = MockHttpRequest(method="GET")
         supabase = MagicMock()
         table = supabase.table.return_value
@@ -593,7 +719,6 @@ class TestWalletByIdFunction(unittest.TestCase):
         self.wallet_by_id_module = importlib.import_module("WalletById.__init__")
 
     def test_wallet_delete_failure_returns_generic_500(self):
-        """DELETE /wallets/{id} DB error must not leak exception details to client."""
         req = MockHttpRequest(method="DELETE", route_params={"wallet_id": "wallet-99"})
         supabase = MagicMock()
         table = supabase.table.return_value

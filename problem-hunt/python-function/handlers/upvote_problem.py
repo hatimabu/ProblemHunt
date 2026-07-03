@@ -1,72 +1,55 @@
-"""Upvote Problem Handler"""
+"""Upvote Problem Handler."""
+
 import logging
+
 import azure.functions as func
-from cosmos import containers
-from handlers.marketplace_helpers import json_response
-from utils import get_authenticated_user_id, generate_id, get_timestamp
+
+from handlers.marketplace_helpers import _pg_problem_to_camel, json_response, normalize_problem
+from supabase_client import get_supabase_client
+from utils import get_authenticated_user_id
 
 
 logger = logging.getLogger(__name__)
 
 
 def handle(req: func.HttpRequest) -> func.HttpResponse:
-    """Upvote a problem"""
+    """Upvote a problem."""
     try:
         problem_id = req.route_params.get('id')
         user_id = get_authenticated_user_id(req)
-        
+
         if not user_id:
             return json_response({'error': 'Authentication required'}, 401)
-        
-        # Check if problem exists
-        problems = containers['problems'].query_items(
-            query="SELECT * FROM c WHERE c.id = @id",
-            parameters=[{'name': '@id', 'value': problem_id}],
-            enable_cross_partition_query=True
-        )
-        
-        if not problems:
-            return json_response({'error': 'Problem not found'}, 404)
-        
-        problem = problems[0]
-        
-        # Check if user already upvoted
-        upvote_id = f"{problem_id}-{user_id}"
-        
-        upvotes = containers['upvotes'].query_items(
-            query="SELECT * FROM c WHERE c.id = @id",
-            parameters=[{'name': '@id', 'value': upvote_id}],
-            enable_cross_partition_query=True
-        )
-        
-        if upvotes:
-            return json_response({'error': 'You already upvoted this problem'}, 409)
-        
-        # Create upvote record
-        upvote = {
-            'id': upvote_id,
-            'problemId': problem_id,
-            'userId': user_id,
-            'createdAt': get_timestamp()
-        }
-        
-        containers['upvotes'].create_item(body=upvote)
-        
-        # Increment upvote count on problem
-        problem = containers['problems'].patch_item(
-            item=problem_id,
-            partition_key=problem_id,
-            patch_operations=[{"op": "incr", "path": "/upvotes", "value": 1}],
-        )
 
-        return json_response(
-            {
-                'problem': problem,
-                'message': 'Upvote successful'
-            },
-            200,
-        )
-    
+        sb = get_supabase_client()
+
+        # Check problem exists
+        prob_resp = sb.table('problems').select('id').eq('id', problem_id).limit(1).execute()
+        if not prob_resp.data:
+            return json_response({'error': 'Problem not found'}, 404)
+
+        # Insert upvote — unique constraint on (problem_id, user_id) rejects duplicates
+        upvote_id = f"{problem_id}-{user_id}"
+        try:
+            sb.table('upvotes').insert({
+                'id': upvote_id,
+                'problem_id': problem_id,
+                'user_id': user_id,
+            }).execute()
+        except Exception as e:
+            err = str(e).lower()
+            if '23505' in str(e) or 'unique' in err or 'duplicate' in err:
+                return json_response({'error': 'You already upvoted this problem'}, 409)
+            raise
+
+        # Atomic counter increment
+        rpc_resp = sb.rpc('increment_problem_upvotes', {'pid': problem_id}).execute()
+        rpc_data = rpc_resp.data
+        updated_row = (rpc_data[0] if isinstance(rpc_data, list) else rpc_data) if rpc_data else None
+        updated_problem = normalize_problem(_pg_problem_to_camel(updated_row)) if updated_row else None
+
+        return json_response({'problem': updated_problem, 'message': 'Upvote successful'}, 200)
+
     except Exception:
         logger.exception("Handler error")
         return json_response({'error': 'Failed to upvote problem'}, 500)

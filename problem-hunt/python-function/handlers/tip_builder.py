@@ -4,7 +4,6 @@ import logging
 
 import azure.functions as func
 
-from cosmos import containers
 from handlers.marketplace_helpers import (
     VALID_TIP_CHAINS,
     get_primary_wallet_address,
@@ -12,10 +11,27 @@ from handlers.marketplace_helpers import (
     insert_tip_transaction_record,
     json_response,
 )
+from supabase_client import get_supabase_client
 from utils import generate_id, get_authenticated_user_id, get_timestamp
 
 
 logger = logging.getLogger(__name__)
+
+
+def _tip_insert_row(tip: dict) -> dict:
+    return {
+        'id': tip.get('id'),
+        'proposal_id': tip.get('proposalId'),
+        'problem_id': tip.get('problemId'),
+        'builder_id': tip.get('builderId'),
+        'tipper_id': tip.get('tipperId'),
+        'amount': tip.get('amount'),
+        'message': tip.get('message'),
+        'currency': tip.get('currency'),
+        'chain': tip.get('chain'),
+        'tx_hash': tip.get('txHash'),
+        'to_wallet': tip.get('toWallet'),
+    }
 
 
 def handle(req: func.HttpRequest) -> func.HttpResponse:
@@ -66,10 +82,11 @@ def handle(req: func.HttpRequest) -> func.HttpResponse:
             'chain': chain,
             'txHash': tx_hash or None,
             'toWallet': to_wallet,
-            'createdAt': get_timestamp()
+            'createdAt': get_timestamp(),
         }
 
-        containers['tips'].create_item(body=tip)
+        sb = get_supabase_client()
+        sb.table('tips').insert(_tip_insert_row(tip)).execute()
 
         if tx_hash:
             insert_tip_transaction_record(

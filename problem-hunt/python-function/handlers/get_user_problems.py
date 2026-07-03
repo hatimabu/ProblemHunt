@@ -4,7 +4,8 @@ import logging
 
 import azure.functions as func
 
-from handlers.marketplace_helpers import json_response, normalize_problem, query_items
+from handlers.marketplace_helpers import _pg_problem_to_camel, json_response, normalize_problem
+from supabase_client import get_supabase_client
 from utils import get_authenticated_user_id
 
 
@@ -23,14 +24,9 @@ def handle(req: func.HttpRequest) -> func.HttpResponse:
         limit = int(req.params.get('limit', 100))
         offset = int(req.params.get('offset', 0))
 
-        user_problems = [
-            normalize_problem(problem)
-            for problem in query_items(
-                "problems",
-                "SELECT * FROM c WHERE c.authorId = @authorId",
-                [{'name': '@authorId', 'value': user_id}],
-            )
-        ]
+        sb = get_supabase_client()
+        resp = sb.table('problems').select('*').eq('author_id', user_id).execute()
+        user_problems = [normalize_problem(_pg_problem_to_camel(row)) for row in (resp.data or [])]
 
         if sort_by == 'upvotes':
             user_problems = sorted(user_problems, key=lambda x: x.get('upvotes', 0), reverse=True)
@@ -45,7 +41,7 @@ def handle(req: func.HttpRequest) -> func.HttpResponse:
             'problems': paginated,
             'total': len(user_problems),
             'limit': limit,
-            'offset': offset
+            'offset': offset,
         })
 
     except Exception:

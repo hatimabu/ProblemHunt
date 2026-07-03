@@ -57,13 +57,6 @@ jobs:
 
       - name: Run pytest
         env:
-          COSMOS_ENDPOINT: placeholder-endpoint
-          COSMOS_KEY: placeholder-key
-          COSMOS_DATABASE: ProblemHuntDB
-          COSMOS_CONTAINER_PROBLEMS: Problems
-          COSMOS_CONTAINER_PROPOSALS: Proposals
-          COSMOS_CONTAINER_UPVOTES: Upvotes
-          COSMOS_CONTAINER_TIPS: Tips
           SUPABASE_URL: https://example.supabase.co
           SUPABASE_ANON_KEY: dummy-anon-key
           SUPABASE_JWT_SECRET: dummy-jwt-secret-for-testing
@@ -71,16 +64,12 @@ jobs:
 
       - name: Syntax & import smoke check
         env:
-          COSMOS_ENDPOINT: placeholder-endpoint
-          COSMOS_KEY: placeholder-key
           SUPABASE_URL: https://example.supabase.co
           SUPABASE_ANON_KEY: dummy-anon-key
           SUPABASE_JWT_SECRET: dummy-jwt-secret-for-testing
         run: |
           python -c "
           import os, sys
-          os.environ.setdefault('COSMOS_ENDPOINT', 'placeholder-endpoint')
-          os.environ.setdefault('COSMOS_KEY', 'placeholder-key')
           os.environ.setdefault('SUPABASE_URL', 'https://example.supabase.co')
           os.environ.setdefault('SUPABASE_ANON_KEY', 'dummy')
           os.environ.setdefault('SUPABASE_JWT_SECRET', 'dummy')

@@ -4,10 +4,10 @@ import logging
 
 import azure.functions as func
 
-from cosmos import containers
 from handlers.marketplace_helpers import (
     PROBLEM_TYPE_JOB,
     VALID_JOB_TYPES,
+    _problem_insert_row,
     json_response,
     normalize_problem,
     parse_problem_type,
@@ -15,6 +15,7 @@ from handlers.marketplace_helpers import (
     parse_string_list,
     sol_amount_to_string,
 )
+from supabase_client import get_supabase_client
 from utils import generate_id, get_timestamp, parse_budget_value, parse_requirements, validate_required
 from shared.auth import authenticate_request, AuthError
 
@@ -30,7 +31,6 @@ def handle(req: func.HttpRequest) -> func.HttpResponse:
         return json_response({"error": str(e)}, 401)
 
     try:
-
         try:
             data = req.get_json()
         except ValueError:
@@ -68,7 +68,7 @@ def handle(req: func.HttpRequest) -> func.HttpResponse:
             'authorId': user_id,
             'deadline': data.get('deadline'),
             'createdAt': timestamp,
-            'updatedAt': timestamp
+            'updatedAt': timestamp,
         }
 
         if problem_type == PROBLEM_TYPE_JOB:
@@ -79,7 +79,6 @@ def handle(req: func.HttpRequest) -> func.HttpResponse:
                     {'error': 'Jobs require budgetSol, deadline, and jobType (one-time, contract, or ongoing)'},
                     400,
                 )
-
             problem.update(
                 {
                     'budget': data.get('budget') or f"{sol_amount_to_string(budget_sol)} SOL",
@@ -103,7 +102,9 @@ def handle(req: func.HttpRequest) -> func.HttpResponse:
             )
 
         problem = normalize_problem(problem)
-        containers['problems'].create_item(body=problem)
+
+        sb = get_supabase_client()
+        sb.table('problems').insert(_problem_insert_row(problem)).execute()
 
         return json_response(problem, 201)
 

@@ -1,4 +1,4 @@
-"""Shared helpers for the Cosmos-backed marketplace and Supabase side tables."""
+"""Shared helpers for the Supabase-Postgres-backed marketplace."""
 
 from __future__ import annotations
 
@@ -9,7 +9,6 @@ from typing import Any, Dict, Iterable, List, Optional
 
 import azure.functions as func
 
-from cosmos import containers
 from supabase_client import get_supabase_client
 from utils import get_timestamp
 
@@ -33,87 +32,288 @@ def json_response(body: Any, status: int = 200) -> func.HttpResponse:
     )
 
 
-def query_items(container_name: str, query: str, parameters: Optional[List[Dict[str, Any]]] = None) -> List[Dict[str, Any]]:
-    return list(
-        containers[container_name].query_items(
-            query=query,
-            parameters=parameters or [],
-            enable_cross_partition_query=True,
-        )
-    )
+# ─── snake_case ↔ camelCase converters ────────────────────────────────────────
 
+def _pg_problem_to_camel(row: Dict[str, Any]) -> Dict[str, Any]:
+    """Map a snake_case Postgres problems row to the camelCase shape normalize_problem expects."""
+    if not row:
+        return {}
+    return {
+        "id": row.get("id"),
+        "type": row.get("type"),
+        "title": row.get("title"),
+        "description": row.get("description"),
+        "requirements": row.get("requirements") or [],
+        "category": row.get("category"),
+        "upvotes": row.get("upvotes", 0),
+        "proposals": row.get("proposals", 0),
+        "author": row.get("author"),
+        "authorId": row.get("author_id"),
+        "deadline": row.get("deadline"),
+        "budget": row.get("budget"),
+        "budgetSol": row.get("budget_sol"),
+        "budgetValue": row.get("budget_value"),
+        "jobType": row.get("job_type"),
+        "skillsRequired": row.get("skills_required") or [],
+        "jobStatus": row.get("job_status"),
+        "acceptedProposalId": row.get("accepted_proposal_id"),
+        "acceptedBuilderId": row.get("accepted_builder_id"),
+        "acceptedBuilderName": row.get("accepted_builder_name"),
+        "acceptedBuilderWalletAddress": row.get("accepted_builder_wallet_address"),
+        "completedAt": row.get("completed_at"),
+        "paidAt": row.get("paid_at"),
+        "paymentTxHash": row.get("payment_tx_hash"),
+        "createdAt": row.get("created_at"),
+        "updatedAt": row.get("updated_at"),
+    }
+
+
+def _problem_insert_row(problem: Dict[str, Any]) -> Dict[str, Any]:
+    """camelCase problem dict → snake_case dict for Postgres INSERT."""
+    return {
+        "id": problem.get("id"),
+        "type": problem.get("type"),
+        "title": problem.get("title"),
+        "description": problem.get("description"),
+        "requirements": problem.get("requirements") or [],
+        "category": problem.get("category"),
+        "upvotes": problem.get("upvotes", 0),
+        "proposals": problem.get("proposals", 0),
+        "author": problem.get("author"),
+        "author_id": problem.get("authorId"),
+        "deadline": problem.get("deadline"),
+        "budget": problem.get("budget"),
+        "budget_sol": problem.get("budgetSol"),
+        "budget_value": problem.get("budgetValue"),
+        "job_type": problem.get("jobType"),
+        "skills_required": problem.get("skillsRequired") or [],
+        "job_status": problem.get("jobStatus"),
+        "accepted_proposal_id": problem.get("acceptedProposalId"),
+        "accepted_builder_id": problem.get("acceptedBuilderId"),
+        "accepted_builder_name": problem.get("acceptedBuilderName"),
+        "accepted_builder_wallet_address": problem.get("acceptedBuilderWalletAddress"),
+        "completed_at": problem.get("completedAt"),
+        "paid_at": problem.get("paidAt"),
+        "payment_tx_hash": problem.get("paymentTxHash"),
+        "created_at": problem.get("createdAt"),
+        "updated_at": problem.get("updatedAt"),
+    }
+
+
+def _problem_update_row(problem: Dict[str, Any]) -> Dict[str, Any]:
+    """camelCase problem dict → snake_case dict for Postgres UPDATE (no id/created_at)."""
+    return {
+        "type": problem.get("type"),
+        "title": problem.get("title"),
+        "description": problem.get("description"),
+        "requirements": problem.get("requirements") or [],
+        "category": problem.get("category"),
+        "author": problem.get("author"),
+        "deadline": problem.get("deadline"),
+        "budget": problem.get("budget"),
+        "budget_sol": problem.get("budgetSol"),
+        "budget_value": problem.get("budgetValue"),
+        "job_type": problem.get("jobType"),
+        "skills_required": problem.get("skillsRequired") or [],
+        "job_status": problem.get("jobStatus"),
+        "accepted_proposal_id": problem.get("acceptedProposalId"),
+        "accepted_builder_id": problem.get("acceptedBuilderId"),
+        "accepted_builder_name": problem.get("acceptedBuilderName"),
+        "accepted_builder_wallet_address": problem.get("acceptedBuilderWalletAddress"),
+        "completed_at": problem.get("completedAt"),
+        "paid_at": problem.get("paidAt"),
+        "payment_tx_hash": problem.get("paymentTxHash"),
+        "updated_at": problem.get("updatedAt"),
+    }
+
+
+def _pg_proposal_to_camel(row: Dict[str, Any]) -> Dict[str, Any]:
+    """Map a snake_case Postgres proposals row to the camelCase shape normalize_proposal expects."""
+    if not row:
+        return {}
+    return {
+        "id": row.get("id"),
+        "problemId": row.get("problem_id"),
+        "title": row.get("title"),
+        "description": row.get("description"),
+        "projectUrl": row.get("project_url"),
+        "builderId": row.get("builder_id"),
+        "builderName": row.get("builder_name"),
+        "briefSolution": row.get("brief_solution"),
+        "timeline": row.get("timeline"),
+        "cost": row.get("cost"),
+        "expertise": row.get("expertise") or [],
+        "status": row.get("status", "pending"),
+        "proposedPriceSol": row.get("proposed_price_sol"),
+        "estimatedDelivery": row.get("estimated_delivery"),
+        "paymentTxHash": row.get("payment_tx_hash"),
+        "createdAt": row.get("created_at"),
+        "updatedAt": row.get("updated_at"),
+    }
+
+
+def _proposal_insert_row(proposal: Dict[str, Any]) -> Dict[str, Any]:
+    """camelCase proposal dict → snake_case dict for Postgres INSERT."""
+    return {
+        "id": proposal.get("id"),
+        "problem_id": proposal.get("problemId"),
+        "title": proposal.get("title"),
+        "description": proposal.get("description"),
+        "project_url": proposal.get("projectUrl"),
+        "builder_id": proposal.get("builderId"),
+        "builder_name": proposal.get("builderName"),
+        "brief_solution": proposal.get("briefSolution"),
+        "timeline": proposal.get("timeline"),
+        "cost": proposal.get("cost"),
+        "expertise": proposal.get("expertise") or [],
+        "status": proposal.get("status", "pending"),
+        "proposed_price_sol": proposal.get("proposedPriceSol"),
+        "estimated_delivery": proposal.get("estimatedDelivery"),
+        "payment_tx_hash": proposal.get("paymentTxHash"),
+        "created_at": proposal.get("createdAt"),
+        "updated_at": proposal.get("updatedAt"),
+    }
+
+
+def _proposal_update_row(proposal: Dict[str, Any]) -> Dict[str, Any]:
+    """camelCase proposal dict → snake_case dict for Postgres UPDATE (no id/created_at)."""
+    return {
+        "problem_id": proposal.get("problemId"),
+        "title": proposal.get("title"),
+        "description": proposal.get("description"),
+        "project_url": proposal.get("projectUrl"),
+        "builder_id": proposal.get("builderId"),
+        "builder_name": proposal.get("builderName"),
+        "brief_solution": proposal.get("briefSolution"),
+        "timeline": proposal.get("timeline"),
+        "cost": proposal.get("cost"),
+        "expertise": proposal.get("expertise") or [],
+        "status": proposal.get("status", "pending"),
+        "proposed_price_sol": proposal.get("proposedPriceSol"),
+        "estimated_delivery": proposal.get("estimatedDelivery"),
+        "payment_tx_hash": proposal.get("paymentTxHash"),
+        "updated_at": proposal.get("updatedAt"),
+    }
+
+
+# ─── marketplace DB helpers ────────────────────────────────────────────────────
 
 def get_problem(problem_id: str) -> Optional[Dict[str, Any]]:
-    problems = query_items(
-        "problems",
-        "SELECT * FROM c WHERE c.id = @id",
-        [{"name": "@id", "value": problem_id}],
-    )
-    return normalize_problem(problems[0]) if problems else None
+    try:
+        sb = get_supabase_client()
+        resp = sb.table("problems").select("*").eq("id", problem_id).limit(1).execute()
+        return normalize_problem(_pg_problem_to_camel(resp.data[0])) if resp.data else None
+    except Exception as e:
+        logger.warning("get_problem failed for %s: %s", problem_id, e)
+        return None
 
 
 def get_proposal(proposal_id: str) -> Optional[Dict[str, Any]]:
-    proposals = query_items(
-        "proposals",
-        "SELECT * FROM c WHERE c.id = @id",
-        [{"name": "@id", "value": proposal_id}],
-    )
-    return normalize_proposal(proposals[0]) if proposals else None
+    try:
+        sb = get_supabase_client()
+        resp = sb.table("proposals").select("*").eq("id", proposal_id).limit(1).execute()
+        return normalize_proposal(_pg_proposal_to_camel(resp.data[0])) if resp.data else None
+    except Exception as e:
+        logger.warning("get_proposal failed for %s: %s", proposal_id, e)
+        return None
 
 
 def get_proposals_for_problem(problem_id: str) -> List[Dict[str, Any]]:
-    proposals = query_items(
-        "proposals",
-        "SELECT * FROM c WHERE c.problemId = @problemId ORDER BY c.createdAt DESC",
-        [{"name": "@problemId", "value": problem_id}],
-    )
-    return [normalize_proposal(proposal) for proposal in proposals]
+    try:
+        sb = get_supabase_client()
+        resp = (
+            sb.table("proposals")
+            .select("*")
+            .eq("problem_id", problem_id)
+            .order("created_at", desc=True)
+            .execute()
+        )
+        return [normalize_proposal(_pg_proposal_to_camel(row)) for row in (resp.data or [])]
+    except Exception as e:
+        logger.warning("get_proposals_for_problem failed for %s: %s", problem_id, e)
+        return []
 
 
 def replace_problem(problem: Dict[str, Any]) -> Dict[str, Any]:
     normalized = normalize_problem(problem)
-    containers["problems"].replace_item(normalized["id"], normalized)
+    try:
+        sb = get_supabase_client()
+        resp = (
+            sb.table("problems")
+            .update(_problem_update_row(normalized))
+            .eq("id", normalized["id"])
+            .execute()
+        )
+        if resp.data:
+            return normalize_problem(_pg_problem_to_camel(resp.data[0]))
+    except Exception as e:
+        logger.warning("replace_problem failed for %s: %s", normalized.get("id"), e)
     return normalized
 
 
 def replace_proposal(proposal: Dict[str, Any]) -> Dict[str, Any]:
     normalized = normalize_proposal(proposal)
-    containers["proposals"].replace_item(normalized["id"], normalized)
+    try:
+        sb = get_supabase_client()
+        resp = (
+            sb.table("proposals")
+            .update(_proposal_update_row(normalized))
+            .eq("id", normalized["id"])
+            .execute()
+        )
+        if resp.data:
+            return normalize_proposal(_pg_proposal_to_camel(resp.data[0]))
+    except Exception as e:
+        logger.warning("replace_proposal failed for %s: %s", normalized.get("id"), e)
     return normalized
 
 
 def delete_document(container_name: str, document_id: str) -> None:
-    containers[container_name].delete_item(document_id, document_id)
+    try:
+        sb = get_supabase_client()
+        sb.table(container_name).delete().eq("id", document_id).execute()
+    except Exception as e:
+        logger.warning("delete_document failed for %s/%s: %s", container_name, document_id, e)
 
 
 def delete_problem_related_documents(problem_id: str) -> None:
-    proposals = get_proposals_for_problem(problem_id)
-    proposal_ids = {proposal["id"] for proposal in proposals}
+    """Delete tips for a problem (proposals/upvotes cascade when problem is deleted)."""
+    try:
+        sb = get_supabase_client()
+        # Collect proposal ids so we catch any tips whose problem_id is NULL
+        proposals_resp = sb.table("proposals").select("id").eq("problem_id", problem_id).execute()
+        proposal_ids = [r["id"] for r in (proposals_resp.data or [])]
+        if proposal_ids:
+            sb.table("tips").delete().in_("proposal_id", proposal_ids).execute()
+        sb.table("tips").delete().eq("problem_id", problem_id).execute()
+    except Exception as e:
+        logger.warning("delete_problem_related_documents failed for %s: %s", problem_id, e)
 
-    upvotes = query_items(
-        "upvotes",
-        "SELECT * FROM c WHERE c.problemId = @problemId",
-        [{"name": "@problemId", "value": problem_id}],
-    )
-    tips = query_items(
-        "tips",
-        "SELECT * FROM c WHERE c.problemId = @problemId",
-        [{"name": "@problemId", "value": problem_id}],
-    )
 
-    if not tips and proposal_ids:
-        all_tips = query_items("tips", "SELECT * FROM c")
-        tips = [tip for tip in all_tips if tip.get("proposalId") in proposal_ids]
+def get_tip_totals_for_proposals(proposal_ids: Iterable[str]) -> Dict[str, float]:
+    proposal_id_list = [pid for pid in proposal_ids if pid]
+    if not proposal_id_list:
+        return {}
+    try:
+        sb = get_supabase_client()
+        resp = (
+            sb.table("tips")
+            .select("proposal_id, amount")
+            .in_("proposal_id", proposal_id_list)
+            .execute()
+        )
+        totals: Dict[str, float] = {}
+        for row in (resp.data or []):
+            pid = row.get("proposal_id")
+            if pid:
+                totals[pid] = totals.get(pid, 0.0) + float(row.get("amount", 0) or 0)
+        return totals
+    except Exception as e:
+        logger.warning("get_tip_totals_for_proposals failed: %s", e)
+        return {}
 
-    for proposal in proposals:
-        delete_document("proposals", proposal["id"])
 
-    for upvote in upvotes:
-        delete_document("upvotes", upvote["id"])
-
-    for tip in tips:
-        delete_document("tips", tip["id"])
-
+# ─── parsing / normalization ───────────────────────────────────────────────────
 
 def parse_problem_type(raw_value: Any) -> str:
     value = str(raw_value or PROBLEM_TYPE_PROBLEM).strip().lower()
@@ -150,15 +350,12 @@ def parse_optional_text(raw_value: Any) -> Optional[str]:
 def parse_sol_amount(raw_value: Any) -> Optional[float]:
     if raw_value in (None, ""):
         return None
-
     try:
         amount = Decimal(str(raw_value)).quantize(Decimal("0.000001"), rounding=ROUND_HALF_UP)
     except (InvalidOperation, ValueError, TypeError):
         return None
-
     if amount <= 0:
         return None
-
     return float(amount)
 
 
@@ -231,6 +428,8 @@ def normalize_proposal(proposal: Dict[str, Any]) -> Dict[str, Any]:
     return normalized
 
 
+# ─── Supabase side-table helpers (profiles, wallets, notifications, payments) ──
+
 def get_profile(user_id: str) -> Optional[Dict[str, Any]]:
     try:
         sb = get_supabase_client()
@@ -243,7 +442,7 @@ def get_profile(user_id: str) -> Optional[Dict[str, Any]]:
         )
         return response.data[0] if response.data else None
     except Exception as e:
-        logger.warning("Supabase get_profile failed for %s: %s", user_id, e)
+        logger.warning("get_profile failed for %s: %s", user_id, e)
         return None
 
 
@@ -253,7 +452,7 @@ def get_display_name(user_id: str, fallback: Optional[str] = None) -> str:
         if profile:
             return profile.get("full_name") or profile.get("username") or fallback or "Anonymous Builder"
     except Exception as e:
-        logger.warning("Supabase get_display_name failed for %s: %s", user_id, e)
+        logger.warning("get_display_name failed for %s: %s", user_id, e)
     return fallback or "Anonymous Builder"
 
 
@@ -276,7 +475,7 @@ def get_primary_wallet_address(user_id: str, chain: str = "solana") -> Optional[
         )
         return response.data[0]["address"] if response.data else None
     except Exception as e:
-        logger.warning("Supabase get_primary_wallet_address failed for %s (%s): %s", user_id, chain, e)
+        logger.warning("get_primary_wallet_address failed for %s (%s): %s", user_id, chain, e)
         return None
 
 
@@ -300,7 +499,7 @@ def get_wallet_addresses(user_id: str) -> Dict[str, str]:
         for wallet in response.data or []:
             wallets.setdefault(wallet["chain"], wallet["address"])
     except Exception as e:
-        logger.warning("Supabase get_wallet_addresses failed for %s: %s", user_id, e)
+        logger.warning("get_wallet_addresses failed for %s: %s", user_id, e)
 
     return wallets
 
@@ -315,7 +514,7 @@ def sync_profile_wallet_address(user_id: str, wallet_address: Optional[str]) -> 
             .execute()
         )
     except Exception as e:
-        logger.warning("Supabase sync_profile_wallet_address failed for %s: %s", user_id, e)
+        logger.warning("sync_profile_wallet_address failed for %s: %s", user_id, e)
 
 
 def create_notification(user_id: str, message: str, link: Optional[str] = None) -> None:
@@ -324,17 +523,11 @@ def create_notification(user_id: str, message: str, link: Optional[str] = None) 
         sb = get_supabase_client()
         (
             sb.table("notifications")
-            .insert(
-                {
-                    "user_id": user_id,
-                    "message": message,
-                    "link": link,
-                }
-            )
+            .insert({"user_id": user_id, "message": message, "link": link})
             .execute()
         )
     except Exception as e:
-        logger.warning("Supabase create_notification failed for %s: %s", user_id, e)
+        logger.warning("create_notification failed for %s: %s", user_id, e)
 
 
 def insert_payment_record(
@@ -366,7 +559,7 @@ def insert_payment_record(
         )
         return response.data[0] if response.data else {}
     except Exception as e:
-        logger.warning("Supabase insert_payment_record failed: %s", e)
+        logger.warning("insert_payment_record failed: %s", e)
         return {
             "job_id": job_id,
             "from_user_id": from_user_id,
@@ -393,7 +586,6 @@ def insert_tip_transaction_record(
 ) -> Optional[Dict[str, Any]]:
     if not tx_hash:
         return None
-
     try:
         sb = get_supabase_client()
         response = (
@@ -416,25 +608,8 @@ def insert_tip_transaction_record(
         )
         return response.data[0] if response.data else None
     except Exception as e:
-        logger.warning("Supabase insert_tip_transaction_record failed: %s", e)
+        logger.warning("insert_tip_transaction_record failed: %s", e)
         return None
-
-
-def get_tip_totals_for_proposals(proposal_ids: Iterable[str]) -> Dict[str, float]:
-    proposal_id_set = {proposal_id for proposal_id in proposal_ids if proposal_id}
-    if not proposal_id_set:
-        return {}
-
-    tips = query_items(
-        "tips",
-        "SELECT * FROM c WHERE ARRAY_CONTAINS(@ids, c.proposalId)",
-        [{"name": "@ids", "value": list(proposal_id_set)}],
-    )
-    totals: Dict[str, float] = {}
-    for tip in tips:
-        proposal_id = tip.get("proposalId")
-        totals[proposal_id] = totals.get(proposal_id, 0.0) + float(tip.get("amount", 0) or 0)
-    return totals
 
 
 def build_problem_link(problem_id: str) -> str:

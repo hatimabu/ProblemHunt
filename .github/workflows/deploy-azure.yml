@@ -57,11 +57,6 @@ jobs:
             --query properties.outputs --output json > deployment-outputs.json
 
           echo "STATIC_WEB_APP_NAME=$(jq -r '.staticWebAppName.value' deployment-outputs.json)" >> "$GITHUB_ENV"
-          echo "COSMOS_ENDPOINT=$(jq -r '.cosmosEndpoint.value' deployment-outputs.json)" >> "$GITHUB_ENV"
-
-          COSMOS_KEY=$(jq -r '.cosmosPrimaryKey.value' deployment-outputs.json)
-          echo "::add-mask::$COSMOS_KEY"
-          echo "COSMOS_KEY=$COSMOS_KEY" >> "$GITHUB_ENV"
 
       - name: Configure Static Web App API settings
         run: |
@@ -70,13 +65,6 @@ jobs:
             --name "$STATIC_WEB_APP_NAME" \
             --resource-group "$AZURE_RESOURCE_GROUP" \
             --setting-names \
-              COSMOS_ENDPOINT="$COSMOS_ENDPOINT" \
-              COSMOS_KEY="$COSMOS_KEY" \
-              COSMOS_DATABASE="ProblemHuntDB" \
-              COSMOS_CONTAINER_PROBLEMS="Problems" \
-              COSMOS_CONTAINER_PROPOSALS="Proposals" \
-              COSMOS_CONTAINER_UPVOTES="Upvotes" \
-              COSMOS_CONTAINER_TIPS="Tips" \
               SUPABASE_JWT_SECRET="${{ secrets.SUPABASE_JWT_SECRET }}" \
               SUPABASE_URL="${{ secrets.VITE_SUPABASE_URL }}" \
               SUPABASE_SERVICE_ROLE_KEY="${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}"
