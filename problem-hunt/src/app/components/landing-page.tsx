@@ -776,7 +776,11 @@ export function LandingPage() {
             <Button
               variant="outline"
               onClick={handleSignOut}
+<<<<<<< HEAD
               className="h-10 border-[color:var(--board-line-strong)] bg-transparent px-4 text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-[var(--board-muted)] hover:bg-[var(--board-panel-strong)] hover:text-[var(--board-ink)]"
+=======
+              className="btn-outline-animated h-9 border-[color:var(--board-line-strong)] bg-transparent px-4 text-[0.72rem] font-semibold uppercase tracking-[0.14em] text-[var(--board-muted)] hover:border-[color:rgba(219,84,97,0.4)] hover:text-[var(--board-accent)]"
+>>>>>>> origin/main
             >
               <LogOut className="mr-1.5 h-3.5 w-3.5" />
               Sign out
@@ -785,7 +789,11 @@ export function LandingPage() {
             <Link to="/auth">
               <Button
                 variant="outline"
+<<<<<<< HEAD
                 className="h-10 border-[color:var(--board-line-strong)] bg-transparent px-4 text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-[var(--board-muted)] hover:bg-[var(--board-panel-strong)] hover:text-[var(--board-ink)]"
+=======
+                className="btn-outline-animated h-9 border-[color:var(--board-line-strong)] bg-transparent px-4 text-[0.72rem] font-semibold uppercase tracking-[0.14em] text-[var(--board-muted)] hover:border-[color:rgba(219,84,97,0.4)] hover:text-[var(--board-accent)]"
+>>>>>>> origin/main
               >
                 Sign in
               </Button>

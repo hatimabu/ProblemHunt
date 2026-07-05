@@ -114,7 +114,15 @@ export function BuilderDashboard() {
 
     setWalletSaving(true);
     try {
+<<<<<<< HEAD
       await upsertPrimaryWalletApi(walletChain, trimmed);
+=======
+      try {
+        await upsertPrimaryWalletApi(walletChain, trimmed);
+      } catch (apiErr) {
+        throw apiErr;
+      }
+>>>>>>> origin/main
       setWalletAddress("");
       setActionMessage("Wallet saved.");
       void loadDashboard(false);
@@ -132,11 +140,23 @@ export function BuilderDashboard() {
     if (!user) return;
     setWalletsLoading(true);
     try {
+<<<<<<< HEAD
       const rows = await listUserWalletsApi();
       setWallets(rows);
       setWalletCount(rows.length);
     } catch {
       setError("Couldn't load your wallets right now. Please try again shortly.");
+=======
+      try {
+        const rows = await listUserWalletsApi();
+        setWallets(rows);
+        setWalletCount(rows.length);
+      } catch (apiErr) {
+        throw apiErr;
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load wallets.");
+>>>>>>> origin/main
     } finally {
       setWalletsLoading(false);
     }
@@ -144,7 +164,15 @@ export function BuilderDashboard() {
 
   const handleDeleteWallet = async (walletId: string) => {
     try {
+<<<<<<< HEAD
       await deleteUserWalletApi(walletId);
+=======
+      try {
+        await deleteUserWalletApi(walletId);
+      } catch (apiErr) {
+        throw apiErr;
+      }
+>>>>>>> origin/main
       await fetchWalletsList();
       setActionMessage("Wallet removed.");
       void loadDashboard(false);
