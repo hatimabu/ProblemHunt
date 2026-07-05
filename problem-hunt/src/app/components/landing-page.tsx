@@ -503,36 +503,6 @@ export function LandingPage() {
                   </Button>
                 </Link>
               </motion.div>
-
-              <motion.div
-                variants={fadeUp}
-                className="mx-auto mt-14 grid max-w-2xl gap-6 border-t border-[color:var(--board-line)] pt-8 sm:grid-cols-3"
-              >
-                <div>
-                  <div className="font-[family-name:var(--font-display)] text-[clamp(1.8rem,3.5vw,2.6rem)] font-medium tracking-[-0.03em] text-[var(--board-ink)]">
-                    <AnimatedCounter value={liveCount} />
-                  </div>
-                  <div className="mt-1 font-mono text-[0.7rem] font-semibold uppercase tracking-[0.14em] text-[var(--board-metal-steel)]">
-                    Live briefs on the board
-                  </div>
-                </div>
-                <div>
-                  <div className="font-[family-name:var(--font-display)] text-[clamp(1.8rem,3.5vw,2.6rem)] font-medium tracking-[-0.03em] text-[var(--board-ink)]">
-                    <AnimatedCounter value={4} suffix="+" />
-                  </div>
-                  <div className="mt-1 font-mono text-[0.7rem] font-semibold uppercase tracking-[0.14em] text-[var(--board-metal-steel)]">
-                    Chains supported for payout
-                  </div>
-                </div>
-                <div>
-                  <div className="font-[family-name:var(--font-display)] text-[clamp(1.8rem,3.5vw,2.6rem)] font-medium tracking-[-0.03em] text-[var(--board-ink)]">
-                    <AnimatedCounter value={0} suffix="s" />
-                  </div>
-                  <div className="mt-1 font-mono text-[0.7rem] font-semibold uppercase tracking-[0.14em] text-[var(--board-metal-steel)]">
-                    Wallet-to-wallet settlement delay
-                  </div>
-                </div>
-              </motion.div>
             </motion.div>
           </div>
 
@@ -802,52 +772,25 @@ export function LandingPage() {
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
-            <Link to="/browse">
-              <Button variant="ghost" className="h-9 text-[0.72rem] font-semibold uppercase tracking-[0.14em] text-[var(--board-muted)] hover:text-[var(--board-ink)]">
-                Browse
-              </Button>
-            </Link>
-            <Link to="/leaderboard">
-              <Button variant="ghost" className="h-9 text-[0.72rem] font-semibold uppercase tracking-[0.14em] text-[var(--board-muted)] hover:text-[var(--board-ink)]">
-                Leaderboard
-              </Button>
-            </Link>
-            {user && (
-              <Link to="/dashboard">
-                <Button variant="ghost" className="h-9 text-[0.72rem] font-semibold uppercase tracking-[0.14em] text-[var(--board-muted)] hover:text-[var(--board-ink)]">
-                  Dashboard
-                </Button>
-              </Link>
-            )}
-            <Link to="/post">
-              <Button variant="ghost" className="h-9 text-[0.72rem] font-semibold uppercase tracking-[0.14em] text-[var(--board-muted)] hover:text-[var(--board-ink)]">
-                Post
-              </Button>
-            </Link>
-
-            <div className="mx-2 h-4 w-px bg-[color:var(--board-line)]" />
-
-            {user ? (
+          {user ? (
+            <Button
+              variant="outline"
+              onClick={handleSignOut}
+              className="btn-outline-animated h-9 border-[color:var(--board-line-strong)] bg-transparent px-4 text-[0.72rem] font-semibold uppercase tracking-[0.14em] text-[var(--board-muted)] hover:border-[color:rgba(219,84,97,0.4)] hover:text-[var(--board-accent)]"
+            >
+              <LogOut className="mr-1.5 h-3.5 w-3.5" />
+              Sign out
+            </Button>
+          ) : (
+            <Link to="/auth">
               <Button
                 variant="outline"
-                onClick={handleSignOut}
                 className="btn-outline-animated h-9 border-[color:var(--board-line-strong)] bg-transparent px-4 text-[0.72rem] font-semibold uppercase tracking-[0.14em] text-[var(--board-muted)] hover:border-[color:rgba(219,84,97,0.4)] hover:text-[var(--board-accent)]"
               >
-                <LogOut className="mr-1.5 h-3.5 w-3.5" />
-                Sign out
+                Sign in
               </Button>
-            ) : (
-              <Link to="/auth">
-                <Button
-                  variant="outline"
-                  className="btn-outline-animated h-9 border-[color:var(--board-line-strong)] bg-transparent px-4 text-[0.72rem] font-semibold uppercase tracking-[0.14em] text-[var(--board-muted)] hover:border-[color:rgba(219,84,97,0.4)] hover:text-[var(--board-accent)]"
-                >
-                  Sign in
-                </Button>
-              </Link>
-            )}
-          </div>
+            </Link>
+          )}
         </div>
       </footer>
     </div>
