@@ -1,9 +1,0 @@
-ERROR: pip's dependency resolver does not currently take into account all the packages that are installed. This behaviour is the source of the following dependency conflicts.
-awsebcli 3.25 requires packaging<25.0,>=24.2, but you have packaging 26.2 which is incompatible.
-awsebcli 3.25 requires urllib3<2,>=1.26.5, but you have urllib3 2.7.0 which is incompatible.
-gotrue 2.9.1 requires httpx[http2]<0.28,>=0.24, but you have httpx 0.28.1 which is incompatible.
-msal 1.34.0 requires cryptography<49,>=2.5, but you have cryptography 49.0.0 which is incompatible.
-supafunc 0.3.3 requires httpx<0.26,>=0.24, but you have httpx 0.28.1 which is incompatible.
-
-[notice] A new release of pip is available: 26.0.1 -> 26.1.2
-[notice] To update, run: C:\Users\Hatim\AppData\Local\Programs\Python\Python313\python.exe -m pip install --upgrade pip

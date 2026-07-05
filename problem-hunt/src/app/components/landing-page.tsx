@@ -1,12 +1,19 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import {
+  motion,
+  useMotionValue,
+  useScroll,
+  useSpring,
+  useTransform,
+  type Variants,
+} from "motion/react";
+import {
   ArrowRight,
   BarChart3,
   Briefcase,
   ChevronRight,
   Globe,
-  LogIn,
   LogOut,
   Radar,
   Rocket,
@@ -19,7 +26,6 @@ import {
 import { Button } from "./ui/button";
 import { Navbar } from "./navbar";
 import { useAuth } from "../contexts/AuthContext";
-import { supabase } from "../../../lib/supabaseClient";
 import { API_ENDPOINTS } from "../../lib/api-config";
 import { formatTimeAgo, type ProblemPost } from "../../lib/marketplace";
 
@@ -39,32 +45,23 @@ interface LeaderboardEntry {
 }
 
 /* ================================================================== */
-/*  Scroll-reveal hook (self-contained)                               */
+/*  Motion presets — shared language across the whole page            */
 /* ================================================================== */
 
-function useScrollReveal() {
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (CSS.supports("animation-timeline", "view()")) return;
+const fadeUp: Variants = {
+  hidden: { opacity: 0, y: 28 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] } },
+};
 
-    const els = document.querySelectorAll<HTMLElement>(".sr");
-    if (!els.length) return;
+const stagger: Variants = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.09, delayChildren: 0.05 } },
+};
 
-    const io = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((e) => {
-          if (e.isIntersecting) {
-            e.target.classList.add("sr-on");
-            io.unobserve(e.target);
-          }
-        });
-      },
-      { threshold: 0.08, rootMargin: "0px 0px -48px 0px" }
-    );
-    els.forEach((el) => io.observe(el));
-    return () => io.disconnect();
-  }, []);
-}
+const scaleIn: Variants = {
+  hidden: { opacity: 0, scale: 0.92 },
+  show: { opacity: 1, scale: 1, transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] } },
+};
 
 /* ================================================================== */
 /*  Theme data                                                        */
@@ -93,6 +90,29 @@ const FEATURES = [
   },
 ];
 
+const STEPS = [
+  {
+    n: "01",
+    title: "Post the brief",
+    copy: "Describe the problem, set a budget or bounty, and publish it to the board in under a minute.",
+  },
+  {
+    n: "02",
+    title: "Review real proposals",
+    copy: "Builders respond with scoped plans, pricing, and timelines. No cold DMs, no guessing.",
+  },
+  {
+    n: "03",
+    title: "Accept & track",
+    copy: "Pick a builder, watch the job move from accepted to in-progress to complete in one place.",
+  },
+  {
+    n: "04",
+    title: "Pay on-chain",
+    copy: "Release payment wallet-to-wallet the moment the work is verified. No invoices, no waiting.",
+  },
+];
+
 const TIER_STYLES: Record<string, string> = {
   Legend: "border-[color:rgba(201,168,76,0.36)] bg-[rgba(201,168,76,0.12)] text-[var(--board-gold)]",
   Expert: "border-[color:rgba(201,84,94,0.34)] bg-[rgba(201,84,94,0.14)] text-[var(--board-accent)]",
@@ -102,58 +122,107 @@ const TIER_STYLES: Record<string, string> = {
 };
 
 /* ================================================================== */
-/*  Sub-components                                                    */
+/*  Animated counter                                                  */
 /* ================================================================== */
 
-function ProblemCard({ post, index }: { post: ProblemPost; index: number }) {
+function AnimatedCounter({ value, suffix = "" }: { value: number; suffix?: string }) {
+  const [display, setDisplay] = useState(0);
+  const ref = useRef<HTMLSpanElement>(null);
+  const started = useRef(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting && !started.current) {
+            started.current = true;
+            const duration = 1100;
+            const start = performance.now();
+            const tick = (now: number) => {
+              const progress = Math.min((now - start) / duration, 1);
+              const eased = 1 - Math.pow(1 - progress, 3);
+              setDisplay(Math.round(eased * value));
+              if (progress < 1) requestAnimationFrame(tick);
+            };
+            requestAnimationFrame(tick);
+            io.disconnect();
+          }
+        });
+      },
+      { threshold: 0.4 }
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [value]);
+
   return (
-    <Link
-      to={`/problem/${post.id}`}
-      className={`group block rounded-xl border border-[color:var(--board-line)] bg-[var(--board-panel)] p-5 transition-all duration-300 hover:border-[color:rgba(160,168,173,0.35)] hover:bg-[var(--board-panel-strong)] hover:shadow-[0_14px_34px_rgba(0,0,0,0.22)] sr sr-d${Math.min(index + 1, 5)}`}
-    >
-      <div className="flex items-center justify-between gap-3">
-        <span className="inline-flex items-center gap-1.5 rounded-full border border-[color:var(--board-line)] bg-[var(--board-panel-strong)] px-2.5 py-1 font-mono text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-[var(--board-metal-steel)]">
-          <Signal className="h-3 w-3 text-emerald-500/80" />
-          {post.type === "job" ? "Paid task" : "Bounty"}
-        </span>
-        <span className="font-mono text-[0.65rem] text-[var(--board-muted)]">
-          {formatTimeAgo(post.createdAt)}
-        </span>
-      </div>
-
-      <h3 className="mt-3 font-[family-name:var(--font-display)] text-[1.15rem] font-medium leading-snug tracking-[-0.02em] text-[var(--board-ink)] transition-colors group-hover:text-[var(--board-accent)]">
-        {post.title}
-      </h3>
-
-      <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-[var(--board-muted)]">
-        {post.description}
-      </p>
-
-      <div className="mt-4 flex items-center gap-4 border-t border-[color:var(--board-line)] pt-3">
-        {post.budgetSol ? (
-          <span className="flex items-center gap-1 font-mono text-[0.72rem] font-semibold uppercase tracking-[0.1em] text-[var(--board-gold)]">
-            <Wallet className="h-3 w-3" />
-            {post.budgetSol} SOL
-          </span>
-        ) : post.budget ? (
-          <span className="flex items-center gap-1 font-mono text-[0.72rem] font-semibold uppercase tracking-[0.1em] text-[var(--board-gold)]">
-            <Wallet className="h-3 w-3" />
-            {post.budget}
-          </span>
-        ) : null}
-        <span className="flex items-center gap-1 font-mono text-[0.72rem] text-[var(--board-muted)]">
-          <Briefcase className="h-3 w-3" />
-          {post.proposals} proposal{post.proposals === 1 ? "" : "s"}
-        </span>
-      </div>
-    </Link>
+    <span ref={ref}>
+      {display}
+      {suffix}
+    </span>
   );
 }
 
-function LeaderboardRow({ entry, index }: { entry: LeaderboardEntry; index: number }) {
+/* ================================================================== */
+/*  Sub-components                                                    */
+/* ================================================================== */
+
+function ProblemCard({ post }: { post: ProblemPost }) {
+  return (
+    <motion.div variants={fadeUp}>
+      <Link
+        to={`/problem/${post.id}`}
+        className="group block rounded-xl border border-[color:var(--board-line)] bg-[var(--board-panel)] p-5 transition-all duration-300 hover:-translate-y-1 hover:border-[color:rgba(160,168,173,0.35)] hover:bg-[var(--board-panel-strong)] hover:shadow-[0_18px_40px_rgba(0,0,0,0.28)]"
+      >
+        <div className="flex items-center justify-between gap-3">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-[color:var(--board-line)] bg-[var(--board-panel-strong)] px-2.5 py-1 font-mono text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-[var(--board-metal-steel)]">
+            <Signal className="h-3 w-3 text-emerald-500/80" />
+            {post.type === "job" ? "Paid task" : "Bounty"}
+          </span>
+          <span className="font-mono text-[0.65rem] text-[var(--board-muted)]">
+            {formatTimeAgo(post.createdAt)}
+          </span>
+        </div>
+
+        <h3 className="mt-3 font-[family-name:var(--font-display)] text-[1.15rem] font-medium leading-snug tracking-[-0.02em] text-[var(--board-ink)] transition-colors group-hover:text-[var(--board-accent)]">
+          {post.title}
+        </h3>
+
+        <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-[var(--board-muted)]">
+          {post.description}
+        </p>
+
+        <div className="mt-4 flex items-center gap-4 border-t border-[color:var(--board-line)] pt-3">
+          {post.budgetSol ? (
+            <span className="flex items-center gap-1 font-mono text-[0.72rem] font-semibold uppercase tracking-[0.1em] text-[var(--board-gold)]">
+              <Wallet className="h-3 w-3" />
+              {post.budgetSol} SOL
+            </span>
+          ) : post.budget ? (
+            <span className="flex items-center gap-1 font-mono text-[0.72rem] font-semibold uppercase tracking-[0.1em] text-[var(--board-gold)]">
+              <Wallet className="h-3 w-3" />
+              {post.budget}
+            </span>
+          ) : null}
+          <span className="flex items-center gap-1 font-mono text-[0.72rem] text-[var(--board-muted)]">
+            <Briefcase className="h-3 w-3" />
+            {post.proposals} proposal{post.proposals === 1 ? "" : "s"}
+          </span>
+        </div>
+      </Link>
+    </motion.div>
+  );
+}
+
+function LeaderboardRow({ entry }: { entry: LeaderboardEntry }) {
   const tierStyle = TIER_STYLES[entry.tier] || TIER_STYLES.Newcomer;
   return (
-    <div className={`flex items-center gap-4 rounded-xl border border-[color:var(--board-line)] bg-[var(--board-panel)] p-4 transition-all duration-300 hover:border-[color:rgba(160,168,173,0.35)] hover:bg-[var(--board-panel-strong)] sr sr-d${Math.min(index + 1, 5)}`}>
+    <motion.div
+      variants={fadeUp}
+      className="flex items-center gap-4 rounded-xl border border-[color:var(--board-line)] bg-[var(--board-panel)] p-4 transition-all duration-300 hover:-translate-y-1 hover:border-[color:rgba(160,168,173,0.35)] hover:bg-[var(--board-panel-strong)]"
+    >
       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[color:var(--board-line)] bg-[var(--board-panel-strong)] font-[family-name:var(--font-display)] text-sm font-medium text-[var(--board-ink)]">
         {entry.rank}
       </div>
@@ -170,17 +239,33 @@ function LeaderboardRow({ entry, index }: { entry: LeaderboardEntry; index: numb
           <span>{entry.reputationScore} rep</span>
         </div>
       </div>
-      {index === 0 && <Trophy className="h-5 w-5 shrink-0 text-[var(--board-gold)]" />}
-    </div>
+      {entry.rank === 1 && <Trophy className="h-5 w-5 shrink-0 text-[var(--board-gold)]" />}
+    </motion.div>
   );
 }
 
 /* ================================================================== */
-/*  Mesh background canvas                                            */
+/*  Unified animated background — persists across the whole page      */
 /* ================================================================== */
 
-function MeshBackground() {
+function LivingBackground() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const mouseX = useMotionValue(0.5);
+  const mouseY = useMotionValue(0.5);
+  const smoothX = useSpring(mouseX, { stiffness: 40, damping: 20 });
+  const smoothY = useSpring(mouseY, { stiffness: 40, damping: 20 });
+
+  const glowLeft = useTransform(smoothX, (v) => `${v * 100}%`);
+  const glowTop = useTransform(smoothY, (v) => `${v * 100}%`);
+
+  useEffect(() => {
+    const handleMove = (e: MouseEvent) => {
+      mouseX.set(e.clientX / window.innerWidth);
+      mouseY.set(e.clientY / window.innerHeight);
+    };
+    window.addEventListener("mousemove", handleMove);
+    return () => window.removeEventListener("mousemove", handleMove);
+  }, [mouseX, mouseY]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -194,8 +279,8 @@ function MeshBackground() {
     const nodes: { x: number; y: number; vx: number; vy: number }[] = [];
 
     const resize = () => {
-      w = canvas.offsetWidth;
-      h = canvas.offsetHeight;
+      w = window.innerWidth;
+      h = document.documentElement.scrollHeight;
       canvas.width = w;
       canvas.height = h;
     };
@@ -203,46 +288,50 @@ function MeshBackground() {
     const init = () => {
       resize();
       nodes.length = 0;
-      const count = Math.floor((w * h) / 18000);
+      const count = Math.floor((w * Math.min(h, window.innerHeight * 2.2)) / 24000);
       for (let i = 0; i < count; i++) {
         nodes.push({
           x: Math.random() * w,
           y: Math.random() * h,
-          vx: (Math.random() - 0.5) * 0.3,
-          vy: (Math.random() - 0.5) * 0.3,
+          vx: (Math.random() - 0.5) * 0.22,
+          vy: (Math.random() - 0.5) * 0.22,
         });
       }
     };
 
     const draw = () => {
       ctx.clearRect(0, 0, w, h);
+      const viewTop = window.scrollY - 200;
+      const viewBottom = window.scrollY + window.innerHeight + 200;
 
-      // Draw connections
       for (let i = 0; i < nodes.length; i++) {
+        const a = nodes[i];
+        if (a.y < viewTop || a.y > viewBottom) continue;
         for (let j = i + 1; j < nodes.length; j++) {
-          const dx = nodes[i].x - nodes[j].x;
-          const dy = nodes[i].y - nodes[j].y;
+          const b = nodes[j];
+          const dx = a.x - b.x;
+          const dy = a.y - b.y;
           const dist = Math.sqrt(dx * dx + dy * dy);
-          if (dist < 120) {
+          if (dist < 130) {
             ctx.beginPath();
-            ctx.moveTo(nodes[i].x, nodes[i].y);
-            ctx.lineTo(nodes[j].x, nodes[j].y);
-            ctx.strokeStyle = `rgba(160,168,173,${0.06 * (1 - dist / 120)})`;
+            ctx.moveTo(a.x, a.y);
+            ctx.lineTo(b.x, b.y);
+            ctx.strokeStyle = `rgba(160,168,173,${0.05 * (1 - dist / 130)})`;
             ctx.lineWidth = 0.8;
             ctx.stroke();
           }
         }
       }
 
-      // Draw nodes
       for (const n of nodes) {
         n.x += n.vx;
         n.y += n.vy;
         if (n.x < 0 || n.x > w) n.vx *= -1;
         if (n.y < 0 || n.y > h) n.vy *= -1;
+        if (n.y < viewTop || n.y > viewBottom) continue;
         ctx.beginPath();
-        ctx.arc(n.x, n.y, 1.2, 0, Math.PI * 2);
-        ctx.fillStyle = "rgba(160,168,173,0.35)";
+        ctx.arc(n.x, n.y, 1.1, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(160,168,173,0.3)";
         ctx.fill();
       }
 
@@ -259,18 +348,41 @@ function MeshBackground() {
   }, []);
 
   return (
-    <canvas
-      ref={canvasRef}
-      aria-hidden="true"
-      style={{
-        position: "absolute",
-        inset: 0,
-        width: "100%",
-        height: "100%",
-        zIndex: 0,
-        opacity: 0.6,
-        pointerEvents: "none",
-      }}
+    <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
+      <canvas ref={canvasRef} aria-hidden="true" style={{ position: "absolute", top: 0, left: 0, width: "100%", opacity: 0.55 }} />
+      <motion.div
+        aria-hidden="true"
+        className="absolute h-[900px] w-[900px] -translate-x-1/2 -translate-y-1/2 rounded-full"
+        style={{
+          left: glowLeft,
+          top: glowTop,
+          background: "radial-gradient(circle, rgba(201,84,94,0.07), transparent 60%)",
+          filter: "blur(10px)",
+        }}
+      />
+      <div
+        aria-hidden="true"
+        className="absolute inset-0"
+        style={{
+          background:
+            "radial-gradient(ellipse 900px 500px at 15% 0%, rgba(201,84,94,0.07), transparent 60%), radial-gradient(ellipse 900px 500px at 85% 30%, rgba(232,197,71,0.05), transparent 60%), radial-gradient(ellipse 900px 600px at 50% 100%, rgba(120,150,255,0.04), transparent 60%)",
+        }}
+      />
+    </div>
+  );
+}
+
+/* ================================================================== */
+/*  Scroll progress rail                                              */
+/* ================================================================== */
+
+function ScrollRail() {
+  const { scrollYProgress } = useScroll();
+  const scaleX = useSpring(scrollYProgress, { stiffness: 120, damping: 30, restDelta: 0.001 });
+  return (
+    <motion.div
+      className="fixed left-0 right-0 top-0 z-[60] h-[2px] origin-left bg-gradient-to-r from-[var(--board-accent)] via-[var(--board-gold)] to-[var(--board-accent)]"
+      style={{ scaleX }}
     />
   );
 }
@@ -282,27 +394,25 @@ function MeshBackground() {
 export function LandingPage() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  useScrollReveal();
 
   const [latestPosts, setLatestPosts] = useState<ProblemPost[]>([]);
   const [postsLoading, setPostsLoading] = useState(true);
   const [topBuilders, setTopBuilders] = useState<LeaderboardEntry[]>([]);
   const [leaderboardLoading, setLeaderboardLoading] = useState(true);
+  const [liveCount, setLiveCount] = useState(0);
 
   useEffect(() => {
     const fetchPosts = async () => {
       try {
         setPostsLoading(true);
-        const { data: sessionData } = await supabase.auth.getSession();
-        const token = sessionData.session?.access_token;
+        const token = localStorage.getItem("problemhunt-token");
         const headers: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {};
-        const res = await fetch(
-          `${API_ENDPOINTS.PROBLEMS}?category=all&sortBy=newest&type=all`,
-          { headers }
-        );
+        const res = await fetch(`${API_ENDPOINTS.PROBLEMS}?category=all&sortBy=newest&type=all`, { headers });
         if (!res.ok) throw new Error("fail");
         const data = await res.json();
-        setLatestPosts(Array.isArray(data.problems) ? data.problems.slice(0, 3) : []);
+        const problems = Array.isArray(data.problems) ? data.problems : [];
+        setLatestPosts(problems.slice(0, 3));
+        setLiveCount(typeof data.total === "number" ? data.total : problems.length);
       } catch {
         setLatestPosts([]);
       } finally {
@@ -316,12 +426,10 @@ export function LandingPage() {
     const fetchLb = async () => {
       try {
         setLeaderboardLoading(true);
-        const { data: sessionData } = await supabase.auth.getSession();
-        const token = sessionData.session?.access_token;
-        const res = await fetch(
-          `${API_ENDPOINTS.LEADERBOARD}?period=alltime&limit=3`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
+        const token = localStorage.getItem("problemhunt-token");
+        const res = await fetch(`${API_ENDPOINTS.LEADERBOARD}?period=alltime&limit=3`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
         if (!res.ok) throw new Error("fail");
         const data = await res.json();
         setTopBuilders(data.leaderboard || []);
@@ -340,45 +448,47 @@ export function LandingPage() {
   };
 
   return (
-    <div className="board-app">
+    <div className="board-app relative">
+      <ScrollRail />
+      <LivingBackground />
       <Navbar />
 
-      <main>
+      <main className="relative z-[2]">
         {/* ========================= HERO ========================= */}
         <section className="relative flex min-h-[calc(100svh-64px)] items-center overflow-hidden py-16 md:min-h-[calc(100svh-73px)] md:py-20">
-          <MeshBackground />
-
-          {/* Gradient overlays */}
-          <div
-            className="pointer-events-none absolute inset-0 z-[1]"
-            style={{
-              background:
-                "radial-gradient(ellipse at 20% 20%, rgba(201,84,94,0.06), transparent 50%), radial-gradient(ellipse at 80% 80%, rgba(232,197,71,0.04), transparent 50%)",
-            }}
-          />
-
           <div className="board-container relative z-[2]">
-            <div className="mx-auto max-w-4xl text-center">
-              {/* eyebrow */}
-              <div className="mb-8 inline-flex items-center gap-2.5 rounded-full border border-[color:var(--board-line)] bg-[rgba(10,14,22,0.6)] px-4 py-2 backdrop-blur-md">
+            <motion.div
+              initial="hidden"
+              animate="show"
+              variants={stagger}
+              className="mx-auto max-w-4xl text-center"
+            >
+              <motion.div
+                variants={fadeUp}
+                className="mb-8 inline-flex items-center gap-2.5 rounded-full border border-[color:var(--board-line)] bg-[rgba(10,14,22,0.6)] px-4 py-2 backdrop-blur-md"
+              >
                 <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-500 shadow-[0_0_0_4px_rgba(34,197,94,0.15)]" />
                 <span className="font-mono text-[0.65rem] font-semibold uppercase tracking-[0.22em] text-[var(--board-metal-steel)]">
                   System Operational
                 </span>
-              </div>
+              </motion.div>
 
-              {/* headline */}
-              <h1 className="font-[family-name:var(--font-display)] text-[clamp(2.8rem,8vw,6.5rem)] font-medium leading-[0.95] tracking-[-0.04em] text-[var(--board-ink)]">
+              <motion.h1
+                variants={fadeUp}
+                className="font-[family-name:var(--font-display)] text-[clamp(2.8rem,8vw,6.5rem)] font-medium leading-[0.95] tracking-[-0.04em] text-[var(--board-ink)]"
+              >
                 Put the work on the board and find a builder who can actually close it.
-              </h1>
+              </motion.h1>
 
-              <p className="mx-auto mt-6 max-w-2xl text-[clamp(1rem,1.6vw,1.15rem)] leading-relaxed text-[var(--board-muted)]">
+              <motion.p
+                variants={fadeUp}
+                className="mx-auto mt-6 max-w-2xl text-[clamp(1rem,1.6vw,1.15rem)] leading-relaxed text-[var(--board-muted)]"
+              >
                 Problem Hunt is a bounty marketplace for technical work that keeps getting delayed.
                 Post a brief, price the ask, review serious responses, and move from backlog to shipped.
-              </p>
+              </motion.p>
 
-              {/* CTA buttons */}
-              <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
+              <motion.div variants={fadeUp} className="mt-10 flex flex-wrap items-center justify-center gap-3">
                 <Link to="/browse">
                   <Button className="h-12 border-0 bg-[var(--board-metal-accent)] px-7 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-[var(--board-metal-dark)] transition-all hover:bg-[var(--board-metal-light)] hover:shadow-[0_0_20px_rgba(200,205,208,0.35)] hover:scale-[1.02]">
                     Browse live work
@@ -392,43 +502,70 @@ export function LandingPage() {
                     Post a brief
                   </Button>
                 </Link>
-              </div>
+              </motion.div>
+            </motion.div>
+          </div>
 
-              {/* stats */}
-              <div className="mx-auto mt-14 grid max-w-2xl gap-6 border-t border-[color:var(--board-line)] pt-8 sm:grid-cols-3">
-                <div>
-                  <div className="font-[family-name:var(--font-display)] text-[clamp(1.8rem,3.5vw,2.6rem)] font-medium tracking-[-0.03em] text-[var(--board-ink)]">
-                    One
-                  </div>
-                  <div className="mt-1 font-mono text-[0.7rem] font-semibold uppercase tracking-[0.14em] text-[var(--board-metal-steel)]">
-                    Place for briefs, tasks, and bounties
-                  </div>
-                </div>
-                <div>
-                  <div className="font-[family-name:var(--font-display)] text-[clamp(1.8rem,3.5vw,2.6rem)] font-medium tracking-[-0.03em] text-[var(--board-ink)]">
-                    Direct
-                  </div>
-                  <div className="mt-1 font-mono text-[0.7rem] font-semibold uppercase tracking-[0.14em] text-[var(--board-metal-steel)]">
-                    Wallet-aware payout flow
-                  </div>
-                </div>
-                <div>
-                  <div className="font-[family-name:var(--font-display)] text-[clamp(1.8rem,3.5vw,2.6rem)] font-medium tracking-[-0.03em] text-[var(--board-ink)]">
-                    Clear
-                  </div>
-                  <div className="mt-1 font-mono text-[0.7rem] font-semibold uppercase tracking-[0.14em] text-[var(--board-metal-steel)]">
-                    Signals, bids, and ownership
-                  </div>
-                </div>
-              </div>
-            </div>
+          <motion.div
+            aria-hidden="true"
+            className="absolute bottom-6 left-1/2 -translate-x-1/2"
+            animate={{ y: [0, 8, 0] }}
+            transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
+          >
+            <ChevronRight className="h-5 w-5 rotate-90 text-[var(--board-metal-steel)]" />
+          </motion.div>
+        </section>
+
+        {/* ========================= HOW IT WORKS ========================= */}
+        <section className="relative border-t border-[color:var(--board-line)] py-16 md:py-20">
+          <div className="board-container">
+            <motion.div
+              initial="hidden"
+              whileInView="show"
+              viewport={{ once: true, amount: 0.3 }}
+              variants={fadeUp}
+              className="max-w-2xl"
+            >
+              <p className="board-kicker">The flow</p>
+              <h2 className="board-title mt-3">From backlog to paid, in four moves.</h2>
+            </motion.div>
+
+            <motion.div
+              initial="hidden"
+              whileInView="show"
+              viewport={{ once: true, amount: 0.2 }}
+              variants={stagger}
+              className="mt-12 grid gap-px overflow-hidden rounded-2xl border border-[color:var(--board-line)] bg-[color:var(--board-line)] sm:grid-cols-2 lg:grid-cols-4"
+            >
+              {STEPS.map((step) => (
+                <motion.div
+                  key={step.n}
+                  variants={fadeUp}
+                  className="relative bg-[var(--board-panel)] p-6 transition-colors hover:bg-[var(--board-panel-strong)]"
+                >
+                  <span className="font-[family-name:var(--font-display)] text-[2.2rem] font-medium tracking-[-0.03em] text-[color:rgba(160,168,173,0.28)]">
+                    {step.n}
+                  </span>
+                  <h3 className="mt-3 font-[family-name:var(--font-display)] text-[1.05rem] font-medium tracking-[-0.02em] text-[var(--board-ink)]">
+                    {step.title}
+                  </h3>
+                  <p className="mt-2 text-sm leading-relaxed text-[var(--board-muted)]">{step.copy}</p>
+                </motion.div>
+              ))}
+            </motion.div>
           </div>
         </section>
 
         {/* ========================= LIVE WORK ========================= */}
         <section className="relative border-t border-[color:var(--board-line)] py-16 md:py-20">
           <div className="board-container">
-            <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+            <motion.div
+              initial="hidden"
+              whileInView="show"
+              viewport={{ once: true, amount: 0.3 }}
+              variants={fadeUp}
+              className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end"
+            >
               <div>
                 <div className="flex items-center gap-2">
                   <Radar className="h-4 w-4 animate-[cpuPulse_3s_ease-in-out_infinite] text-[#e8c547]" />
@@ -442,9 +579,15 @@ export function LandingPage() {
                   <ChevronRight className="h-4 w-4" />
                 </Button>
               </Link>
-            </div>
+            </motion.div>
 
-            <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            <motion.div
+              initial="hidden"
+              whileInView="show"
+              viewport={{ once: true, amount: 0.15 }}
+              variants={stagger}
+              className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3"
+            >
               {postsLoading
                 ? Array.from({ length: 3 }).map((_, i) => (
                     <div key={i} className="rounded-xl border border-[color:var(--board-line)] bg-[var(--board-panel)] p-5">
@@ -455,43 +598,74 @@ export function LandingPage() {
                       <div className="skeleton mt-5 h-4 w-32" />
                     </div>
                   ))
-                : latestPosts.map((post, i) => <ProblemCard key={post.id} post={post} index={i} />)}
-            </div>
+                : latestPosts.length > 0
+                ? latestPosts.map((post) => <ProblemCard key={post.id} post={post} />)
+                : (
+                  <motion.div
+                    variants={fadeUp}
+                    className="col-span-full rounded-xl border border-dashed border-[color:var(--board-line)] bg-[var(--board-panel)] p-10 text-center"
+                  >
+                    <p className="text-sm text-[var(--board-muted)]">
+                      No briefs on the board yet. Be the first to post one.
+                    </p>
+                  </motion.div>
+                )}
+            </motion.div>
           </div>
         </section>
 
         {/* ========================= FEATURES ========================= */}
         <section className="relative border-t border-[color:var(--board-line)] py-16 md:py-20">
           <div className="board-container">
-            <div className="max-w-2xl">
+            <motion.div
+              initial="hidden"
+              whileInView="show"
+              viewport={{ once: true, amount: 0.3 }}
+              variants={fadeUp}
+              className="max-w-2xl"
+            >
               <p className="board-kicker">Decentralized</p>
               <h2 className="board-title mt-3">No gatekeepers. Just work and wallets.</h2>
-            </div>
+            </motion.div>
 
-            <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-              {FEATURES.map((item, index) => {
+            <motion.div
+              initial="hidden"
+              whileInView="show"
+              viewport={{ once: true, amount: 0.15 }}
+              variants={stagger}
+              className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4"
+            >
+              {FEATURES.map((item) => {
                 const Icon = item.icon;
                 return (
-                  <div
+                  <motion.div
                     key={item.title}
-                    className={`feature-box-navy rounded-2xl border p-6 sr sr-d${Math.min(index + 1, 5)}`}
+                    variants={scaleIn}
+                    whileHover={{ y: -4 }}
+                    className="feature-box-navy rounded-2xl border p-6"
                   >
                     <div className="feature-box-navy__icon-wrap flex h-10 w-10 items-center justify-center rounded-xl border">
                       <Icon className="feature-box-navy__icon h-4 w-4" />
                     </div>
                     <h3 className="feature-box-navy__title board-subtitle mt-5 text-[1.25rem]">{item.title}</h3>
                     <p className="feature-box-navy__copy board-copy mt-3 text-sm leading-7">{item.copy}</p>
-                  </div>
+                  </motion.div>
                 );
               })}
-            </div>
+            </motion.div>
           </div>
         </section>
 
         {/* ========================= LEADERBOARD ========================= */}
         <section className="relative border-t border-[color:var(--board-line)] py-16 md:py-20">
           <div className="board-container">
-            <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+            <motion.div
+              initial="hidden"
+              whileInView="show"
+              viewport={{ once: true, amount: 0.3 }}
+              variants={fadeUp}
+              className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end"
+            >
               <div>
                 <div className="flex items-center gap-2">
                   <BarChart3 className="h-4 w-4 text-[var(--board-metal-steel)]" />
@@ -505,9 +679,15 @@ export function LandingPage() {
                   <ChevronRight className="h-4 w-4" />
                 </Button>
               </Link>
-            </div>
+            </motion.div>
 
-            <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <motion.div
+              initial="hidden"
+              whileInView="show"
+              viewport={{ once: true, amount: 0.15 }}
+              variants={stagger}
+              className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+            >
               {leaderboardLoading
                 ? Array.from({ length: 3 }).map((_, i) => (
                     <div key={i} className="flex items-center gap-4 rounded-xl border border-[color:var(--board-line)] bg-[var(--board-panel)] p-4">
@@ -518,44 +698,72 @@ export function LandingPage() {
                       </div>
                     </div>
                   ))
-                : topBuilders.map((entry, i) => <LeaderboardRow key={entry.builderId} entry={entry} index={i} />)}
-            </div>
+                : topBuilders.length > 0
+                ? topBuilders.map((entry) => <LeaderboardRow key={entry.builderId} entry={entry} />)
+                : (
+                  <motion.div
+                    variants={fadeUp}
+                    className="col-span-full rounded-xl border border-dashed border-[color:var(--board-line)] bg-[var(--board-panel)] p-10 text-center"
+                  >
+                    <p className="text-sm text-[var(--board-muted)]">
+                      No rankings yet. Once builders start winning work, they'll show up here.
+                    </p>
+                  </motion.div>
+                )}
+            </motion.div>
           </div>
         </section>
 
         {/* ========================= FINAL CTA ========================= */}
         <section className="relative border-t border-[color:var(--board-line)] py-16 md:py-20">
           <div className="board-container">
-            <div className="sr sr-d1 rounded-2xl border border-[color:var(--board-line)] bg-[var(--board-panel)] p-8 md:p-12">
-              <p className="board-kicker">Ready</p>
-              <h2 className="board-title mt-3 max-w-3xl">
-                If the task keeps surviving the sprint, it probably belongs on the board.
-              </h2>
-              <p className="board-copy mt-5">
-                Start with the thing your team keeps pushing forward, the workflow nobody owns, or the scoped implementation that needs a real builder behind it.
-              </p>
+            <motion.div
+              initial="hidden"
+              whileInView="show"
+              viewport={{ once: true, amount: 0.3 }}
+              variants={scaleIn}
+              className="relative overflow-hidden rounded-2xl border border-[color:var(--board-line)] bg-[var(--board-panel)] p-8 md:p-12"
+            >
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-0"
+                style={{
+                  background:
+                    "radial-gradient(ellipse 500px 300px at 90% 0%, rgba(201,84,94,0.08), transparent 60%)",
+                }}
+              />
+              <div className="relative">
+                <p className="board-kicker">Ready</p>
+                <h2 className="board-title mt-3 max-w-3xl">
+                  If the task keeps surviving the sprint, it probably belongs on the board.
+                </h2>
+                <p className="board-copy mt-5">
+                  Start with the thing your team keeps pushing forward, the workflow nobody owns, or the scoped
+                  implementation that needs a real builder behind it.
+                </p>
 
-              <div className="mt-8 flex flex-wrap gap-3">
-                <Link to="/post">
-                  <Button className="h-12 border-0 bg-[var(--board-accent)] px-6 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-white transition-all hover:bg-[var(--color-accent-hover)] hover:shadow-[0_0_20px_rgba(200,205,208,0.35)] hover:scale-[1.02]">
-                    <Rocket className="h-4 w-4" />
-                    Post a brief
-                  </Button>
-                </Link>
-                <Link to="/browse">
-                  <Button className="h-12 border-0 bg-[var(--board-metal-accent)] px-6 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-[var(--board-metal-dark)] transition-all hover:bg-[var(--board-metal-light)] hover:shadow-[0_0_20px_rgba(200,205,208,0.35)] hover:scale-[1.02]">
-                    Browse live work
-                    <ArrowRight className="h-4 w-4" />
-                  </Button>
-                </Link>
+                <div className="mt-8 flex flex-wrap gap-3">
+                  <Link to="/post">
+                    <Button className="h-12 border-0 bg-[var(--board-accent)] px-6 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-white transition-all hover:bg-[var(--color-accent-hover)] hover:shadow-[0_0_20px_rgba(200,205,208,0.35)] hover:scale-[1.02]">
+                      <Rocket className="h-4 w-4" />
+                      Post a brief
+                    </Button>
+                  </Link>
+                  <Link to="/browse">
+                    <Button className="h-12 border-0 bg-[var(--board-metal-accent)] px-6 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-[var(--board-metal-dark)] transition-all hover:bg-[var(--board-metal-light)] hover:shadow-[0_0_20px_rgba(200,205,208,0.35)] hover:scale-[1.02]">
+                      Browse live work
+                      <ArrowRight className="h-4 w-4" />
+                    </Button>
+                  </Link>
+                </div>
               </div>
-            </div>
+            </motion.div>
           </div>
         </section>
       </main>
 
       {/* ========================= FOOTER ========================= */}
-      <footer className="border-t border-[color:var(--board-line)]">
+      <footer className="relative z-[2] border-t border-[color:var(--board-line)]">
         <div className="board-container flex flex-col gap-6 py-10 md:flex-row md:items-center md:justify-between">
           <div>
             <p className="board-eyebrow">Problem Hunt</p>
@@ -564,53 +772,25 @@ export function LandingPage() {
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
-            <Link to="/browse">
-              <Button variant="ghost" className="h-9 text-[0.72rem] font-semibold uppercase tracking-[0.14em] text-[var(--board-muted)] hover:text-[var(--board-ink)]">
-                Browse
-              </Button>
-            </Link>
-            <Link to="/leaderboard">
-              <Button variant="ghost" className="h-9 text-[0.72rem] font-semibold uppercase tracking-[0.14em] text-[var(--board-muted)] hover:text-[var(--board-ink)]">
-                Leaderboard
-              </Button>
-            </Link>
-            {user && (
-              <Link to="/dashboard">
-                <Button variant="ghost" className="h-9 text-[0.72rem] font-semibold uppercase tracking-[0.14em] text-[var(--board-muted)] hover:text-[var(--board-ink)]">
-                  Dashboard
-                </Button>
-              </Link>
-            )}
-            <Link to="/post">
-              <Button variant="ghost" className="h-9 text-[0.72rem] font-semibold uppercase tracking-[0.14em] text-[var(--board-muted)] hover:text-[var(--board-ink)]">
-                Post
-              </Button>
-            </Link>
-
-            <div className="mx-2 h-4 w-px bg-[color:var(--board-line)]" />
-
-            {user ? (
+          {user ? (
+            <Button
+              variant="outline"
+              onClick={handleSignOut}
+              className="btn-outline-animated h-9 border-[color:var(--board-line-strong)] bg-transparent px-4 text-[0.72rem] font-semibold uppercase tracking-[0.14em] text-[var(--board-muted)] hover:border-[color:rgba(219,84,97,0.4)] hover:text-[var(--board-accent)]"
+            >
+              <LogOut className="mr-1.5 h-3.5 w-3.5" />
+              Sign out
+            </Button>
+          ) : (
+            <Link to="/auth">
               <Button
                 variant="outline"
-                onClick={handleSignOut}
                 className="btn-outline-animated h-9 border-[color:var(--board-line-strong)] bg-transparent px-4 text-[0.72rem] font-semibold uppercase tracking-[0.14em] text-[var(--board-muted)] hover:border-[color:rgba(219,84,97,0.4)] hover:text-[var(--board-accent)]"
               >
-                <LogOut className="mr-1.5 h-3.5 w-3.5" />
-                Sign out
+                Sign in
               </Button>
-            ) : (
-              <Link to="/auth">
-                <Button
-                  variant="outline"
-                  className="btn-outline-animated h-9 border-[color:var(--board-line-strong)] bg-transparent px-4 text-[0.72rem] font-semibold uppercase tracking-[0.14em] text-[var(--board-muted)]"
-                >
-                  <LogIn className="mr-1.5 h-3.5 w-3.5" />
-                  Sign in
-                </Button>
-              </Link>
-            )}
-          </div>
+            </Link>
+          )}
         </div>
       </footer>
     </div>

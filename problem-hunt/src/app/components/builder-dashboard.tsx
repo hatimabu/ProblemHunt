@@ -14,7 +14,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "./ui/select";
-import { supabase } from "../../../lib/supabaseClient";
 import {
   upsertPrimaryWalletApi,
   listUserWalletsApi,
@@ -118,19 +117,7 @@ export function BuilderDashboard() {
       try {
         await upsertPrimaryWalletApi(walletChain, trimmed);
       } catch (apiErr) {
-        if (!isNetworkError(apiErr)) console.warn("[dashboard] API save failed, using Supabase fallback", apiErr);
-        if (!user) throw new Error("Not authenticated");
-        // Mimic server-side upsert: delete existing wallet for this chain, then insert
-        const { error: deleteErr } = await supabase
-          .from("wallets")
-          .delete()
-          .eq("user_id", user.id)
-          .eq("chain", walletChain);
-        if (deleteErr) throw deleteErr;
-        const { error: insertErr } = await supabase
-          .from("wallets")
-          .insert({ user_id: user.id, chain: walletChain, address: trimmed, is_primary: true });
-        if (insertErr) throw insertErr;
+        throw apiErr;
       }
       setWalletAddress("");
       setActionMessage("Wallet saved.");
@@ -154,16 +141,7 @@ export function BuilderDashboard() {
         setWallets(rows);
         setWalletCount(rows.length);
       } catch (apiErr) {
-        if (!isNetworkError(apiErr)) console.warn("[dashboard] API list failed, using Supabase", apiErr);
-        const { data, error } = await supabase
-          .from("wallets")
-          .select("*")
-          .eq("user_id", user.id)
-          .order("created_at", { ascending: true });
-        if (error) throw error;
-        const rows = (data ?? []) as UserWalletApiRow[];
-        setWallets(rows);
-        setWalletCount(rows.length);
+        throw apiErr;
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load wallets.");
@@ -177,9 +155,7 @@ export function BuilderDashboard() {
       try {
         await deleteUserWalletApi(walletId);
       } catch (apiErr) {
-        if (!isNetworkError(apiErr)) console.warn("[dashboard] API delete failed, using Supabase", apiErr);
-        const { error } = await supabase.from("wallets").delete().eq("id", walletId);
-        if (error) throw error;
+        throw apiErr;
       }
       await fetchWalletsList();
       setActionMessage("Wallet removed.");
@@ -192,20 +168,11 @@ export function BuilderDashboard() {
   const handleMakePrimary = async (walletId: string, chain: string) => {
     if (!user) return;
     try {
-      const { error: clearErr } = await supabase
-        .from("wallets")
-        .update({ is_primary: false })
-        .eq("user_id", user.id)
-        .eq("chain", chain);
-      if (clearErr) throw clearErr;
-
-      const { error: setErr } = await supabase
-        .from("wallets")
-        .update({ is_primary: true })
-        .eq("id", walletId)
-        .eq("user_id", user.id);
-      if (setErr) throw setErr;
-
+      const wallets = await listUserWalletsApi();
+      const target = wallets.find(w => w.id === walletId);
+      if (target) {
+        await upsertPrimaryWalletApi(target.chain as WalletChainDto, target.address);
+      }
       await fetchWalletsList();
       setActionMessage("Primary wallet updated.");
       void loadDashboard(false);

@@ -106,13 +106,12 @@ jobs:
         working-directory: ${{ env.FRONTEND_PATH }}
         run: rm -rf node_modules
 
-      - name: Deploy frontend + API to Static Web App
+      - name: Deploy frontend to Static Web App
         uses: Azure/static-web-apps-deploy@v1
         with:
           azure_static_web_apps_api_token: ${{ env.SWA_DEPLOYMENT_TOKEN }}
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           action: upload
           app_location: ${{ env.FRONTEND_PATH }}/dist
-          api_location: problem-hunt/python-function
           output_location: ''
           skip_app_build: true

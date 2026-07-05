@@ -7,8 +7,8 @@ import { Textarea } from "../components/ui/textarea";
 import { Label } from "../components/ui/label";
 import { Navbar } from "./navbar";
 import { useAuth } from "../contexts/AuthContext";
-import { supabase } from "../../../lib/supabaseClient";
 import { API_ENDPOINTS } from "../../lib/api-config";
+import { getAccessToken } from "../../lib/auth-helper";
 import {
   explorerUrlForChain,
   formatBudget,
@@ -66,7 +66,7 @@ export function ProblemDetail() {
   const isOwner = !!user && !!problem && user.id === problem.authorId;
   const acceptedProposal = useMemo(() => proposals.find((p) => p.id === problem?.acceptedProposalId) || null, [problem, proposals]);
   const isAcceptedBuilder = !!user && !!acceptedProposal && acceptedProposal.builderId === user.id;
-  const getToken = async () => (await supabase.auth.getSession()).data.session?.access_token;
+  const getToken = async () => getAccessToken();
 
   const fetchData = async () => {
     if (!id) return;

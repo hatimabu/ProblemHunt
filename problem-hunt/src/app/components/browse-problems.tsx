@@ -4,7 +4,6 @@ import { ArrowRight, Briefcase, Clock3, Flame, Radar, Search, Signal, TrendingUp
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Navbar } from "./navbar";
-import { supabase } from "../../../lib/supabaseClient";
 import { API_ENDPOINTS } from "../../lib/api-config";
 import { formatBudget, formatJobStatus, formatTimeAgo, isJobPost, type ProblemPost } from "../../lib/marketplace";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
@@ -47,8 +46,7 @@ export function BrowseProblems() {
       try {
         setLoading(true);
         const category = selectedCategory === "All" ? "all" : selectedCategory;
-        const { data: sessionData } = await supabase.auth.getSession();
-        const token = sessionData.session?.access_token;
+        const token = localStorage.getItem('problemhunt-token');
         const headers: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {};
         const response = await fetch(
           `${API_ENDPOINTS.PROBLEMS}?category=${encodeURIComponent(category)}&sortBy=${sortBy}&type=${selectedType}`,

@@ -11,7 +11,7 @@ export default defineConfig(({ mode }) => {
   const apiBaseUrl =
     env.VITE_API_BASE_URL ||
     env.VITE_API_BASE ||
-    'http://localhost:7071';
+    'http://localhost:3001';
 
   return {
     root: __dirname,
@@ -34,15 +34,14 @@ export default defineConfig(({ mode }) => {
       allowedHosts: true,
       middlewareMode: false,
       headers: {
-        'Content-Security-Policy': `default-src 'self' ${env.VITE_SUPABASE_URL || 'https://*.supabase.co'}; script-src 'self' 'unsafe-inline' 'unsafe-eval'; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com https://r2cdn.perplexity.ai data:; connect-src 'self' ${env.VITE_SUPABASE_URL || 'https://*.supabase.co'} https://*.supabase.co https://*.ingest.us.sentry.io https://*.grafana.net http://localhost:7072 http://localhost:7071 https://fonts.googleapis.com`
+        'Content-Security-Policy': `default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com https://r2cdn.perplexity.ai data:; connect-src 'self' https://*.ingest.us.sentry.io https://*.grafana.net https://fonts.googleapis.com`
       },
       proxy: {
         '/api': {
-          target: apiBaseUrl,
+          target: 'http://127.0.0.1:3001',
           changeOrigin: true,
-          rewrite: (path) => path.replace(/^\/api/, '/api'),
-          configure: (proxy, options) => {
-            proxy.on('proxyReq', (proxyReq, req, res) => {
+          configure: (proxy) => {
+            proxy.on('proxyReq', (proxyReq, req) => {
               if (req.headers.authorization) {
                 proxyReq.setHeader('Authorization', req.headers.authorization);
               }

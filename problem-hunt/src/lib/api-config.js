@@ -9,7 +9,8 @@
  *   const endpoint = `${API_BASE_URL}/api/problems`;
  */
 
-const DEFAULT_API_BASE_URL = 'http://localhost:7071';
+// Use relative URLs so requests go through the Vite proxy to the Express API
+const DEFAULT_API_BASE_URL = '';
 
 // Determine the API base URL based on environment
 export const getApiBaseUrl = () => {
@@ -17,12 +18,10 @@ export const getApiBaseUrl = () => {
     import.meta.env.VITE_API_BASE_URL ||
     import.meta.env.VITE_API_BASE;
 
-  // Always prefer explicit environment configuration when provided.
   if (configuredBaseUrl) {
     return configuredBaseUrl.replace(/\/+$/, '');
   }
 
-  // Production builds set VITE_API_BASE_URL from Terraform output in CI.
   return DEFAULT_API_BASE_URL;
 };
 
