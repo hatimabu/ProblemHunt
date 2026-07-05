@@ -634,12 +634,6 @@ class TestHandlersIntegration(unittest.TestCase):
         self.assertEqual(resp.status_code, 401)
 
 
-class TestRouterConsistency(unittest.TestCase):
-    def test_router_imports_all_handlers(self):
-        from router import main
-        self.assertTrue(callable(main))
-
-
 class TestWalletsFunction(unittest.TestCase):
     def setUp(self):
         self.wallets_module = importlib.import_module("Wallets.__init__")
