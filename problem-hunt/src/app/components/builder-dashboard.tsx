@@ -67,8 +67,8 @@ export function BuilderDashboard() {
       setPosts(snapshot.posts);
       setProposals(snapshot.proposals);
       setUnreadCount(snapshot.notifications.filter((n) => !n.is_read).length);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load dashboard.");
+    } catch {
+      setError("Couldn't load your dashboard right now. Please try again shortly.");
     } finally {
       if (showSpinner) setLoading(false);
     }
@@ -114,19 +114,15 @@ export function BuilderDashboard() {
 
     setWalletSaving(true);
     try {
-      try {
-        await upsertPrimaryWalletApi(walletChain, trimmed);
-      } catch (apiErr) {
-        throw apiErr;
-      }
+      await upsertPrimaryWalletApi(walletChain, trimmed);
       setWalletAddress("");
       setActionMessage("Wallet saved.");
       void loadDashboard(false);
       if (activeTab === "wallets") {
         void fetchWalletsList();
       }
-    } catch (err) {
-      setWalletError(err instanceof Error ? err.message : "Failed to save wallet.");
+    } catch {
+      setWalletError("Couldn't save that wallet right now. Please try again.");
     } finally {
       setWalletSaving(false);
     }
@@ -136,15 +132,11 @@ export function BuilderDashboard() {
     if (!user) return;
     setWalletsLoading(true);
     try {
-      try {
-        const rows = await listUserWalletsApi();
-        setWallets(rows);
-        setWalletCount(rows.length);
-      } catch (apiErr) {
-        throw apiErr;
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load wallets.");
+      const rows = await listUserWalletsApi();
+      setWallets(rows);
+      setWalletCount(rows.length);
+    } catch {
+      setError("Couldn't load your wallets right now. Please try again shortly.");
     } finally {
       setWalletsLoading(false);
     }
@@ -152,16 +144,12 @@ export function BuilderDashboard() {
 
   const handleDeleteWallet = async (walletId: string) => {
     try {
-      try {
-        await deleteUserWalletApi(walletId);
-      } catch (apiErr) {
-        throw apiErr;
-      }
+      await deleteUserWalletApi(walletId);
       await fetchWalletsList();
       setActionMessage("Wallet removed.");
       void loadDashboard(false);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to remove wallet.");
+    } catch {
+      setError("Couldn't remove that wallet right now. Please try again.");
     }
   };
 
@@ -176,8 +164,8 @@ export function BuilderDashboard() {
       await fetchWalletsList();
       setActionMessage("Primary wallet updated.");
       void loadDashboard(false);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to update primary wallet.");
+    } catch {
+      setError("Couldn't update your primary wallet right now. Please try again.");
     }
   };
 
