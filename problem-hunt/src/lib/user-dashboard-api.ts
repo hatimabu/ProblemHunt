@@ -27,7 +27,7 @@ export async function fetchDashboardSnapshot(userId: string): Promise<DashboardS
   const token = localStorage.getItem(TOKEN_KEY);
   const authHeaders = { Authorization: `Bearer ${token || ''}` };
 
-  const [profileRes, walletsRes, notificationsRes, postsRes, proposalsRes] = await Promise.all([
+  const [profileRes, walletsRes, notificationsRes, postsRes, proposalsRes] = await Promise.allSettled([
     fetch('/api/user/profile', { headers: authHeaders }),
     fetch('/api/user/wallets', { headers: authHeaders }),
     fetch('/api/user/notifications', { headers: authHeaders }),
@@ -35,14 +35,20 @@ export async function fetchDashboardSnapshot(userId: string): Promise<DashboardS
     authenticatedFetch(API_ENDPOINTS.USER_PROPOSALS, { method: 'GET' }),
   ]);
 
-  if (!postsRes.ok) throw new Error('Failed to load your posted briefs.');
-  if (!proposalsRes.ok) throw new Error('Failed to load your bids.');
+  const safeJson = async (result: PromiseSettledResult<Response>, fallback: unknown) => {
+    if (result.status !== 'fulfilled' || !result.value.ok) return fallback;
+    try {
+      return await result.value.json();
+    } catch {
+      return fallback;
+    }
+  };
 
-  const profileData = profileRes.ok ? await profileRes.json() : null;
-  const walletsData = walletsRes.ok ? await walletsRes.json() : { wallets: [] };
-  const notificationsData = notificationsRes.ok ? await notificationsRes.json() : { notifications: [] };
-  const postsData = await postsRes.json();
-  const proposalsData = await proposalsRes.json();
+  const profileData = await safeJson(profileRes, null);
+  const walletsData = await safeJson(walletsRes, { wallets: [] });
+  const notificationsData = await safeJson(notificationsRes, { notifications: [] });
+  const postsData = await safeJson(postsRes, { problems: [] });
+  const proposalsData = await safeJson(proposalsRes, { proposals: [] });
 
   return {
     profile: profileData ? {
