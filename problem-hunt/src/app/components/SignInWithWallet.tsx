@@ -3,9 +3,10 @@ import { Wallet, Loader2, AlertCircle, Check } from "lucide-react";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Alert, AlertDescription } from "./ui/alert";
-import { setSessionWithTimeout } from "../utils/sessionUtils";
+import { useNavigate } from "react-router";
 import { ethers } from "ethers";
 import type { SolanaProvider } from "../../lib/solana-payments";
+import { useAuth } from "../contexts/AuthContext";
 
 /**
  * SignInWithWallet Component
@@ -44,6 +45,8 @@ export function SignInWithWallet({
   onError,
   redirectTo = '/dashboard'
 }: SignInWithWalletProps) {
+  const { loginWithToken } = useAuth();
+  const navigate = useNavigate();
   const [isEthereumAvailable, setIsEthereumAvailable] = useState(false);
   const [isSolanaAvailable, setIsSolanaAvailable] = useState(false);
   const [isLoading, setIsLoading] = useState<ChainType | null>(null);
@@ -110,7 +113,7 @@ export function SignInWithWallet({
         throw new Error(err.error || 'Wallet authentication failed');
       }
       const authData = await authRes.json();
-      localStorage.setItem('problemhunt-token', authData.token);
+      loginWithToken(authData.token, authData.user);
 
       setSuccess(`Successfully signed in with ${chain} wallet`);
       onSuccess?.(authData.user?.id, walletAddress, chain);
@@ -118,8 +121,8 @@ export function SignInWithWallet({
       // Redirect if specified
       if (redirectTo) {
         setTimeout(() => {
-          window.location.href = redirectTo;
-        }, 1000);
+          navigate(redirectTo);
+        }, 800);
       }
 
     } catch (err: any) {
@@ -179,7 +182,7 @@ export function SignInWithWallet({
         throw new Error(err.error || 'Solana wallet authentication failed');
       }
       const authData = await authRes.json();
-      localStorage.setItem('problemhunt-token', authData.token);
+      loginWithToken(authData.token, authData.user);
 
       setSuccess("Successfully signed in with Solana wallet");
       onSuccess?.(authData.user?.id, walletAddress, 'solana');
@@ -187,8 +190,8 @@ export function SignInWithWallet({
       // Redirect if specified
       if (redirectTo) {
         setTimeout(() => {
-          window.location.href = redirectTo;
-        }, 1000);
+          navigate(redirectTo);
+        }, 800);
       }
 
     } catch (err: any) {

@@ -206,6 +206,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isLoading,
     isInitialLoad,
     login,
+    loginWithToken,
     signup,
     logout,
   };

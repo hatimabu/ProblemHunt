@@ -1,0 +1,2 @@
+- [Wallet auth SPA navigation](wallet-auth-spa-nav.md) — wallet sign-in must go through AuthContext + react-router navigate, never raw localStorage/window.location.
+- [Animated landing page pattern](landing-page-motion.md) — unified single-page landing built with `motion/react` (not framer-motion) + shared persistent canvas background.
