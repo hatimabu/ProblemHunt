@@ -1,5 +1,6 @@
 import { buildApiUrl } from './api-config';
 import { waitForAuthReady } from './auth-state';
+import { supabase } from '../../lib/supabaseClient.js';
 
 const TOKEN_KEY = 'problemhunt-token';
 
@@ -12,7 +13,17 @@ export function getStoredToken() {
 }
 
 export async function getAccessToken() {
-  return getStoredToken();
+  const storedToken = getStoredToken();
+  if (storedToken) {
+    return storedToken;
+  }
+
+  try {
+    const { data } = await supabase.auth.getSession();
+    return data?.session?.access_token || null;
+  } catch {
+    return null;
+  }
 }
 
 export async function getCurrentUser() {
@@ -72,4 +83,9 @@ export async function handleResponse(response) {
   return body;
 }
 
-export default { getAccessToken, getCurrentUser, authenticatedFetch, handleResponse };
+export default {
+  getAccessToken,
+  getCurrentUser,
+  authenticatedFetch,
+  handleResponse,
+};

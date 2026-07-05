@@ -3,41 +3,36 @@ name: Deploy ProblemHunt to Azure
 on:
   push:
     branches: [main]
+    paths:
+      - 'azureARM.json'
+      - '.github/workflows/deploy-azure.yml'
+      - 'problem-hunt/**'
   workflow_dispatch:
-    inputs:
-      terraform_force_unlock_id:
-        description: 'Optional Terraform lock ID to force-unlock before apply. Use only after confirming no apply is running.'
-        required: false
-        type: string
 
 concurrency:
   group: problemhunt-azure-deploy
   cancel-in-progress: false
 
-env:
-  NODE_VERSION: '20.x'
-  PYTHON_VERSION: '3.11'
-  FRONTEND_PATH: problem-hunt
-  BACKEND_PATH: problem-hunt/python-function
-  TF_VERSION: '1.8.0'
-  AZURE_RESOURCE_GROUP: problemhunt
-  AZURE_LOCATION: eastus2
-  AZURE_FUNCTIONAPP_NAME: problemhunt
-  AZURE_SWA_URL: https://problemhunt.azurestaticapps.net
-  TF_BACKEND_RESOURCE_GROUP: problemhunt-tfstate
-  TF_BACKEND_STORAGE_ACCOUNT: problemhuntnewtfstate
-  TF_BACKEND_CONTAINER: tfstate
-
 permissions:
   contents: read
+  id-token: write
+
+env:
+  NODE_VERSION: '20'
+  FRONTEND_PATH: problem-hunt
+  AZURE_RESOURCE_GROUP: problemhunt
+  AZURE_LOCATION: eastus2
+  AZURE_APP_NAME: problemhunt
+  AZURE_TEMPLATE_FILE: ./azureARM.json
 
 jobs:
-  infrastructure:
+  test:
+    uses: ./.github/workflows/python-tests.yml
+
+  deploy:
     runs-on: ubuntu-latest
-    name: Provision Infrastructure
-    outputs:
-      function_app_name: ${{ steps.tf-outputs.outputs.function_app_name }}
-      function_app_hostname: ${{ steps.tf-outputs.outputs.function_app_hostname }}
+    name: Deploy App
+    needs: test
 
     steps:
       - name: Checkout
@@ -48,184 +43,41 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Force ARM Login
-        run: az account get-access-token --resource https://management.azure.com/ > /dev/null
+      - name: Create or update resource group
+        run: az group create --name "$AZURE_RESOURCE_GROUP" --location "$AZURE_LOCATION"
 
-      - name: Select Azure Subscription
-        env:
-          AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
+      - name: Deploy ARM template
+        id: arm
         run: |
           set -euo pipefail
-          SUBSCRIPTION_ID=$(echo "$AZURE_CREDENTIALS" | jq -er '.subscriptionId')
-          az account set --subscription "$SUBSCRIPTION_ID"
-
-      - name: Register Azure Providers
-        env:
-          AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
-        run: |
-          set -euo pipefail
-          SUBSCRIPTION_ID=$(echo "$AZURE_CREDENTIALS" | jq -er '.subscriptionId')
-          az provider register --namespace Microsoft.Storage --subscription "$SUBSCRIPTION_ID" --wait
-          az provider register --namespace Microsoft.Web --subscription "$SUBSCRIPTION_ID" --wait
-          az provider register --namespace Microsoft.DocumentDB --subscription "$SUBSCRIPTION_ID" --wait
-
-      - name: Ensure Terraform Backend Exists
-        env:
-          AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
-        run: |
-          set -euo pipefail
-          SUBSCRIPTION_ID=$(echo "$AZURE_CREDENTIALS" | jq -er '.subscriptionId')
-
-          if ! az group show --name "$TF_BACKEND_RESOURCE_GROUP" --subscription "$SUBSCRIPTION_ID" --output none 2>/dev/null; then
-            az group create \
-              --name "$TF_BACKEND_RESOURCE_GROUP" \
-              --location "$AZURE_LOCATION" \
-              --subscription "$SUBSCRIPTION_ID" \
-              --output none
-          fi
-
-          if ! az storage account show --name "$TF_BACKEND_STORAGE_ACCOUNT" --resource-group "$TF_BACKEND_RESOURCE_GROUP" --subscription "$SUBSCRIPTION_ID" --output none 2>/dev/null; then
-            az storage account create \
-              --name "$TF_BACKEND_STORAGE_ACCOUNT" \
-              --resource-group "$TF_BACKEND_RESOURCE_GROUP" \
-              --location "$AZURE_LOCATION" \
-              --sku Standard_LRS \
-              --min-tls-version TLS1_2 \
-              --allow-blob-public-access false \
-              --subscription "$SUBSCRIPTION_ID" \
-              --output none
-          fi
-
-          az storage container create \
-            --name "$TF_BACKEND_CONTAINER" \
-            --account-name "$TF_BACKEND_STORAGE_ACCOUNT" \
-            --auth-mode login \
-            --subscription "$SUBSCRIPTION_ID" \
-            --output none
-
-      - name: Export Terraform Azure Credentials
-        env:
-          AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
-        run: |
-          set -euo pipefail
-          ARM_CLIENT_ID=$(echo "$AZURE_CREDENTIALS" | jq -er '.clientId')
-          ARM_CLIENT_SECRET=$(echo "$AZURE_CREDENTIALS" | jq -er '.clientSecret')
-          ARM_TENANT_ID=$(echo "$AZURE_CREDENTIALS" | jq -er '.tenantId')
-          ARM_SUBSCRIPTION_ID=$(echo "$AZURE_CREDENTIALS" | jq -er '.subscriptionId')
-
-          echo "::add-mask::$ARM_CLIENT_SECRET"
-          echo "ARM_CLIENT_ID=$ARM_CLIENT_ID" >> "$GITHUB_ENV"
-          echo "ARM_CLIENT_SECRET=$ARM_CLIENT_SECRET" >> "$GITHUB_ENV"
-          echo "ARM_TENANT_ID=$ARM_TENANT_ID" >> "$GITHUB_ENV"
-          echo "ARM_SUBSCRIPTION_ID=$ARM_SUBSCRIPTION_ID" >> "$GITHUB_ENV"
-
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: ${{ env.TF_VERSION }}
-
-      - name: Terraform Init
-        working-directory: infra
-        run: |
-          terraform init -reconfigure \
-            -backend-config="resource_group_name=$TF_BACKEND_RESOURCE_GROUP" \
-            -backend-config="storage_account_name=$TF_BACKEND_STORAGE_ACCOUNT" \
-            -backend-config="container_name=$TF_BACKEND_CONTAINER" \
-            -backend-config="key=problemhunt.tfstate" \
-            -backend-config="subscription_id=$ARM_SUBSCRIPTION_ID"
-
-      - name: Force Unlock Terraform State
-        if: ${{ github.event_name == 'workflow_dispatch' && inputs.terraform_force_unlock_id != '' }}
-        working-directory: infra
-        run: terraform force-unlock -force "${{ inputs.terraform_force_unlock_id }}"
-
-      - name: Terraform Apply
-        working-directory: infra
-        run: |
-          terraform apply -auto-approve -lock-timeout=10m \
-            -var="resource_group_name=$AZURE_RESOURCE_GROUP" \
-            -var="location=$AZURE_LOCATION" \
-            -var="function_app_name=$AZURE_FUNCTIONAPP_NAME" \
-            -var="swa_url=$AZURE_SWA_URL"
-
-      - name: Capture Terraform Outputs
-        id: tf-outputs
-        working-directory: infra
-        run: |
-          echo "function_app_name=$(terraform output -raw function_app_name)" >> "$GITHUB_OUTPUT"
-          echo "function_app_hostname=$(terraform output -raw function_app_default_hostname)" >> "$GITHUB_OUTPUT"
-          echo "cosmos_account_name=$(terraform output -raw cosmos_db_account_name)" >> "$GITHUB_OUTPUT"
-          echo "cosmos_endpoint=$(terraform output -raw cosmos_db_endpoint)" >> "$GITHUB_OUTPUT"
-          COSMOS_KEY=$(terraform output -raw cosmos_db_primary_key)
-          echo "::add-mask::$COSMOS_KEY"
-          echo "cosmos_key=$COSMOS_KEY" >> "$GITHUB_OUTPUT"
-
-      - name: Verify Cosmos Free-Tier Guardrails
-        env:
-          AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
-          COSMOS_ACCOUNT_NAME: ${{ steps.tf-outputs.outputs.cosmos_account_name }}
-        run: |
-          set -euo pipefail
-          SUBSCRIPTION_ID=$(echo "$AZURE_CREDENTIALS" | jq -er '.subscriptionId')
-
-          FREE_TIER=$(az cosmosdb show \
-            --name "$COSMOS_ACCOUNT_NAME" \
+          az deployment group create \
             --resource-group "$AZURE_RESOURCE_GROUP" \
-            --subscription "$SUBSCRIPTION_ID" \
-            --query enableFreeTier \
-            --output tsv)
+            --template-file "$AZURE_TEMPLATE_FILE" \
+            --parameters appName="$AZURE_APP_NAME" location="$AZURE_LOCATION" environment=prod \
+            --query properties.outputs --output json > deployment-outputs.json
 
-          THROUGHPUT=$(az cosmosdb sql database throughput show \
-            --account-name "$COSMOS_ACCOUNT_NAME" \
-            --resource-group "$AZURE_RESOURCE_GROUP" \
-            --name ProblemHuntDB \
-            --subscription "$SUBSCRIPTION_ID" \
-            --query resource.throughput \
-            --output tsv)
+          echo "STATIC_WEB_APP_NAME=$(jq -r '.staticWebAppName.value' deployment-outputs.json)" >> "$GITHUB_ENV"
 
-          if [ "$FREE_TIER" != "true" ]; then
-            echo "Cosmos DB free tier is not enabled." >&2
-            exit 1
-          fi
-
-          if [ "$THROUGHPUT" -gt 1000 ]; then
-            echo "Cosmos DB throughput is ${THROUGHPUT} RU/s, above the 1000 RU/s guardrail." >&2
-            exit 1
-          fi
-
-      - name: Configure Function App Settings
-        env:
-          AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
-          FUNCTION_APP_NAME: ${{ steps.tf-outputs.outputs.function_app_name }}
-          COSMOS_ENDPOINT: ${{ steps.tf-outputs.outputs.cosmos_endpoint }}
-          COSMOS_KEY: ${{ steps.tf-outputs.outputs.cosmos_key }}
+      - name: Fetch Static Web App deployment token
         run: |
           set -euo pipefail
-          SUBSCRIPTION_ID=$(echo "$AZURE_CREDENTIALS" | jq -er '.subscriptionId')
-          az functionapp config appsettings set \
-            --name "$FUNCTION_APP_NAME" \
+          SWA_TOKEN=$(az staticwebapp secrets list \
+            --name "$STATIC_WEB_APP_NAME" \
             --resource-group "$AZURE_RESOURCE_GROUP" \
-            --subscription "$SUBSCRIPTION_ID" \
-            --settings \
-              COSMOS_ENDPOINT="$COSMOS_ENDPOINT" \
-              COSMOS_KEY="$COSMOS_KEY" \
-              COSMOS_DATABASE="ProblemHuntDB" \
-              COSMOS_CONTAINER_PROBLEMS="Problems" \
-              COSMOS_CONTAINER_PROPOSALS="Proposals" \
-              COSMOS_CONTAINER_UPVOTES="Upvotes" \
-              COSMOS_CONTAINER_TIPS="Tips" \
+            --query "properties.apiKey" --output tsv)
+          echo "::add-mask::$SWA_TOKEN"
+          echo "SWA_DEPLOYMENT_TOKEN=$SWA_TOKEN" >> "$GITHUB_ENV"
+
+      - name: Configure Static Web App API settings
+        run: |
+          set -euo pipefail
+          az staticwebapp appsettings set \
+            --name "$STATIC_WEB_APP_NAME" \
+            --resource-group "$AZURE_RESOURCE_GROUP" \
+            --setting-names \
               SUPABASE_JWT_SECRET="${{ secrets.SUPABASE_JWT_SECRET }}" \
               SUPABASE_URL="${{ secrets.VITE_SUPABASE_URL }}" \
               SUPABASE_SERVICE_ROLE_KEY="${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}"
-
-  build-frontend:
-    runs-on: ubuntu-latest
-    needs: infrastructure
-    name: Build Frontend
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -234,101 +86,32 @@ jobs:
           cache: npm
           cache-dependency-path: ${{ env.FRONTEND_PATH }}/package-lock.json
 
-      - name: Install Frontend Dependencies
+      - name: Install frontend dependencies
         working-directory: ${{ env.FRONTEND_PATH }}
         run: npm ci
 
-      - name: Build Frontend
+      - name: Build frontend
         working-directory: ${{ env.FRONTEND_PATH }}
         env:
-          VITE_API_BASE_URL: https://${{ needs.infrastructure.outputs.function_app_hostname }}
+          VITE_API_BASE_URL: /
           VITE_FARO_URL: ${{ secrets.VITE_FARO_URL }}
           VITE_FARO_APP_NAME: ${{ secrets.VITE_FARO_APP_NAME }}
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
-          VITE_ALCHEMY_SOLANA_RPC_URL: ${{ secrets.VITE_ALCHEMY_SOLANA_RPC_URL || '' }}
+          VITE_ALCHEMY_SOLANA_RPC_URL: ${{ secrets.VITE_ALCHEMY_SOLANA_RPC_URL }}
           NODE_ENV: production
         run: npm run build
 
-      - name: Upload Frontend Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: frontend-dist
-          path: ${{ env.FRONTEND_PATH }}/dist
-          retention-days: 1
+      - name: Remove node_modules before deployment
+        working-directory: ${{ env.FRONTEND_PATH }}
+        run: rm -rf node_modules
 
-  deploy:
-    runs-on: ubuntu-latest
-    needs:
-      - infrastructure
-      - build-frontend
-    name: Deploy App
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Download Frontend Artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: frontend-dist
-          path: ${{ env.FRONTEND_PATH }}/dist
-
-      - name: Azure Login
-        uses: azure/login@v2
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
-
-      - name: Force ARM Login
-        run: az account get-access-token --resource https://management.azure.com/ > /dev/null
-
-      - name: Select Azure Subscription
-        env:
-          AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
-        run: |
-          set -euo pipefail
-          SUBSCRIPTION_ID=$(echo "$AZURE_CREDENTIALS" | jq -er '.subscriptionId')
-          az account set --subscription "$SUBSCRIPTION_ID"
-
-      - name: Deploy Static Web App
+      - name: Deploy frontend to Static Web App
         uses: Azure/static-web-apps-deploy@v1
         with:
-          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          azure_static_web_apps_api_token: ${{ env.SWA_DEPLOYMENT_TOKEN }}
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
           action: upload
-          app_location: ${{ env.FRONTEND_PATH }}
-          api_location: ''
-          output_location: dist
+          app_location: ${{ env.FRONTEND_PATH }}/dist
+          output_location: ''
           skip_app_build: true
-
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-
-      - name: Build Backend Package
-        run: |
-          set -euo pipefail
-          rm -rf api functionapp.zip
-          mkdir api
-          rsync -a "$BACKEND_PATH"/ api/ \
-            --exclude local.settings.json \
-            --exclude .pytest_cache \
-            --exclude __pycache__ \
-            --exclude .python_packages \
-            --exclude .venv
-          python -m pip install --upgrade pip
-          python -m pip install --target api/.python_packages/lib/site-packages -r api/requirements.txt
-          (cd api && zip -r ../functionapp.zip .)
-
-      - name: Deploy Function App Zip
-        env:
-          AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
-          FUNCTION_APP_NAME: ${{ needs.infrastructure.outputs.function_app_name }}
-        run: |
-          set -euo pipefail
-          SUBSCRIPTION_ID=$(echo "$AZURE_CREDENTIALS" | jq -er '.subscriptionId')
-          az functionapp deployment source config-zip \
-            --name "$FUNCTION_APP_NAME" \
-            --resource-group "$AZURE_RESOURCE_GROUP" \
-            --src functionapp.zip \
-            --subscription "$SUBSCRIPTION_ID"

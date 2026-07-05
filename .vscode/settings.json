@@ -1,0 +1,9 @@
+{
+    "azureFunctions.projectSubpath": "problem-hunt\\python-function",
+    "azureFunctions.deploySubpath": "problem-hunt\\python-function",
+    "azureFunctions.scmDoBuildDuringDeployment": true,
+    "azureFunctions.pythonVenv": ".venv",
+    "azureFunctions.projectLanguage": "Python",
+    "azureFunctions.projectRuntime": "~4",
+    "debug.internalConsoleOptions": "neverOpen"
+}

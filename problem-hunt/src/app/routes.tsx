@@ -55,5 +55,9 @@ export const router = withFaroRouterInstrumentation(
     path: "/auth",
     Component: AuthPage,
   },
+  {
+    path: "*",
+    element: <Navigate to="/" replace />,
+  },
   ]),
 );

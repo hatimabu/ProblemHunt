@@ -1,0 +1,48 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "appName": {
+      "type": "string",
+      "defaultValue": "problemhunt",
+      "metadata": {
+        "description": "Base name used for Azure resources"
+      }
+    },
+    "location": {
+      "type": "string",
+      "defaultValue": "eastus2",
+      "metadata": {
+        "description": "Azure region for the deployment. Override per deploy via template parameter (for GitHub Actions this comes from AZURE_LOCATION)."
+      }
+    },
+    "environment": {
+      "type": "string",
+      "defaultValue": "dev",
+      "allowedValues": ["dev", "staging", "prod"]
+    }
+  },
+  "variables": {
+    "uniqueSuffix": "[toLower(uniqueString(subscription().subscriptionId, resourceGroup().id, parameters('appName')))]",
+    "staticWebAppName": "[format('{0}-web-{1}', parameters('appName'), variables('uniqueSuffix'))]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Web/staticSites",
+      "apiVersion": "2023-12-01",
+      "name": "[variables('staticWebAppName')]",
+      "location": "[parameters('location')]",
+      "sku": { "name": "Standard", "tier": "Standard" },
+      "properties": {
+        "stagingEnvironmentPolicy": "Enabled",
+        "buildProperties": {
+          "appLocation": "/problem-hunt",
+          "outputLocation": "dist"
+        }
+      }
+    }
+  ],
+  "outputs": {
+    "staticWebAppName": { "type": "string", "value": "[variables('staticWebAppName')]" }
+  }
+}

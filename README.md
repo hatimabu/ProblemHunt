@@ -11,10 +11,8 @@ The real application is inside `problem-hunt/`.
 Main parts:
 
 - React + Vite frontend
-- Python Azure Functions API
-- Supabase for auth, profiles, wallets, notifications, storage, and Edge Functions
-- Cosmos DB for marketplace data
-- Mock in-memory Cosmos fallback for easier local development
+- Python API running as Azure Static Web Apps managed Functions
+- Supabase Postgres for everything: auth, profiles, problems, proposals, upvotes, tips, payments, notifications, wallets, and storage
 
 ## 2. High-Level Architecture
 
@@ -22,23 +20,22 @@ Main parts:
 Browser
   |
   v
-Azure Static Web Apps (React + Vite frontend)
+Azure Static Web App (Standard tier) — single resource
   |
-  +--> Supabase
-  |      |- auth
-  |      |- profiles
-  |      |- wallets
-  |      |- notifications
-  |      |- storage
-  |      \- optional Edge Functions
+  +--> Static content (React + Vite build, served from dist/)
   |
-  \--> Azure Functions App (Python API /api/*)
+  \--> Integrated managed Functions (Python API /api/*)
          |
-         +--> Cosmos DB
-         |      |- Problems
-         |      |- Proposals
-         |      |- Upvotes
-         |      \- Tips
+         +--> Supabase Postgres
+         |      |- auth.users
+         |      |- profiles
+         |      |- problems
+         |      |- proposals
+         |      |- upvotes
+         |      |- tips
+         |      |- payments
+         |      |- notifications
+         |      \- tip_transactions
          |
          \--> Supabase JWT validation
 ```
@@ -49,6 +46,7 @@ Azure Static Web Apps (React + Vite frontend)
 .
 |-- README.md
 |-- package.json                        # Root helper scripts
+|-- azureARM.json                       # ARM template: single Static Web App (Standard) resource
 |-- problem-hunt/
 |   |-- package.json                    # Frontend package
 |   |-- .env.example                    # Frontend env template
@@ -62,17 +60,16 @@ Azure Static Web Apps (React + Vite frontend)
 |   |   |   \-- theme.css               # Theme tokens
 |   |   \-- lib/                        # Frontend helpers
 |   |
-|   |-- python-function/
-|   |   |-- handlers/                   # API business logic
-|   |   |-- router.py                   # Route dispatch
-|   |   |-- cosmos.py                   # Cosmos + mock mode
-|   |   |-- utils.py                    # Shared helpers
-|   |   |-- host.json                   # Functions host config
-|   |   \-- local.settings.example.json # Backend env template
-|   |
-|   \-- supabase/
-|       |-- migrations/                 # SQL schema changes
-|       \-- functions/                  # Edge Functions
+|   \-- python-function/
+|       |-- handlers/                   # API business logic (one handler module per endpoint)
+|       |-- supabase_client.py          # Supabase client setup
+|       |-- utils.py                    # Shared helpers
+|       |-- host.json                   # Functions host config
+|       \-- local.settings.example.json # Backend env template
+|
+\-- supabase/
+    |-- migrations/                     # SQL schema changes
+    \-- functions/                      # Edge Functions
 ```
 
 ## 4. Main User Flow
@@ -106,7 +103,7 @@ Think of signal flow as "which service talks to which other service."
 1. Browser opens `/browse` or `/problem/:id`.
 2. Frontend calls the API.
 3. Azure Functions routes the request to a handler.
-4. Handler reads Cosmos DB.
+4. Handler reads Supabase Postgres.
 5. JSON is returned to the frontend.
 6. UI renders the result.
 
@@ -117,7 +114,7 @@ Example actions: create post, submit proposal, upvote, delete.
 1. Frontend collects form data.
 2. Frontend sends a request to the API.
 3. API validates auth and payload.
-4. Handler writes to Cosmos DB.
+4. Handler writes to Supabase Postgres.
 5. Frontend refreshes state and updates the UI.
 
 <img width="1422" height="789" alt="signal flow" src="https://github.com/user-attachments/assets/deddcc93-14e8-4498-8d34-033f9cf080e6" />
@@ -147,9 +144,9 @@ One workflow provisions infrastructure and deploys code automatically on every p
 
 | Resource | Azure Service | Purpose |
 |----------|--------------|---------|
-| Frontend | Static Web Apps (already exists) | Your `problemhunt` SWA |
-| Backend API | Function App (Linux, Python 3.11) | Terraform creates this; workflow deploys code |
-| Database | Cosmos DB (Free Tier) | **1000 RU/s + 25 GB free for life** |
+| Frontend + Backend API | Static Web Apps (Standard) with managed Azure Functions (Python 3.11) | One SWA deployment uploads `dist/` and builds/deploys `problem-hunt/python-function` as the integrated `/api/*` backend |
+
+> Database: Supabase Postgres, managed outside of Azure (not part of `azureARM.json`). Static Web Apps **Standard** is required for Python managed Functions and is approximately **$9/month** (plus any additional Azure usage).
 
 ### 7.2 One-Time Setup
 
@@ -175,14 +172,14 @@ Copy the JSON output. Its `subscriptionId` must be the target Azure subscription
 | Secret | Value |
 |--------|-------|
 | `AZURE_CREDENTIALS` | The JSON from above |
-| `AZURE_STATIC_WEB_APPS_API_TOKEN` | Azure Portal → SWA `problemhunt` → Manage deployment token |
-| `AZURE_FUNCTIONAPP_NAME` | The name you want for your Function App (`problemhunt`) |
 | `VITE_SUPABASE_URL` | From Supabase Dashboard |
 | `VITE_SUPABASE_ANON_KEY` | From Supabase Dashboard |
 | `VITE_ALCHEMY_SOLANA_RPC_URL` | From Alchemy Dashboard |
 | `VITE_FARO_URL` | *(optional)* From Grafana Cloud |
 | `SUPABASE_JWT_SECRET` | Supabase Dashboard → Settings → API |
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase Dashboard → Settings → API |
+
+Secrets currently live as plain GitHub Actions secrets (no Key Vault, no managed identity). The workflow authenticates to Azure with the `AZURE_CREDENTIALS` service principal, then fetches the Static Web App's deployment token dynamically at deploy time via `az staticwebapp secrets list` — there is no `AZURE_STATIC_WEB_APPS_API_TOKEN` secret to manage.
 
 ### 7.3 Deploy
 
@@ -194,12 +191,12 @@ git commit -m "deploy"
 git push origin main
 ```
 
-The workflow `.github/workflows/deploy-azure.yml` runs four jobs in order:
+The workflow `.github/workflows/deploy-azure.yml` runs these deployment stages:
 
-1. **Terraform** — creates Function App and Cosmos DB (if they don't exist)
-2. **Build Frontend** — `npm ci` + `vite build` with the Function App URL injected automatically
-3. **Deploy Frontend** — uploads `dist/` to your existing SWA
-4. **Deploy Backend** — deploys `python-function/` to the Function App
+1. **ARM Deployment** — creates/updates the resource group infrastructure from `azureARM.json` (a single Static Web App, Standard tier).
+2. **Configure SWA API settings** — writes Supabase app settings (URL, JWT secret, service role key) to the Static Web App, used by the managed Functions runtime.
+3. **Build Frontend** — `npm ci` + `vite build` with `VITE_API_BASE_URL=/` for same-origin `/api/*` calls.
+4. **Single SWA Deploy Step** — `Azure/static-web-apps-deploy@v1` uploads `dist/` and deploys `problem-hunt/python-function` via `api_location`.
 
 Watch it at **GitHub → Actions**.
 
@@ -208,10 +205,15 @@ Watch it at **GitHub → Actions**.
 | Error | Fix |
 |-------|-----|
 | `AZURE_CREDENTIALS` invalid | Re-run the `az ad sp create-for-rbac` command and update the secret |
-| Terraform backend missing | The workflow auto-creates the resource group, `problemhuntnewtfstate` storage account, and container in the subscription from `AZURE_CREDENTIALS`; if it fails, run `scripts/bootstrap-azure.ps1 -SubscriptionId $(az account show --query id -o tsv)` after selecting the target subscription |
-| CORS errors | Edit `infra/main.tf` → `var.swa_url` and push |
+| ARM deployment fails by region | Change `AZURE_LOCATION` in `.github/workflows/deploy-azure.yml` to a supported region and rerun |
+| SWA deployment fails with API build/runtime errors | Verify `problem-hunt/python-function/requirements.txt` installs cleanly and that `host.json` stays on Functions v4 extension bundle |
 | `401` from API | Check `SUPABASE_JWT_SECRET` matches your Supabase project |
-| Cosmos errors | Re-run the workflow; it auto-configures the Function App with fresh Cosmos credentials from Terraform |
+
+### 7.5 Managed Functions compatibility checklist (Python)
+
+- `problem-hunt/python-function/host.json` uses Functions runtime `version: "2.0"` and extension bundle `[4.*, 5.0.0)`, which is compatible with Python Functions v4 on Static Web Apps.
+- Function bindings under `problem-hunt/python-function/**/function.json` are HTTP trigger/output only (`httpTrigger` + `http`), so there are no unsupported queue/event/timer/durable bindings in this API.
+- `problem-hunt/python-function/requirements.txt` targets the Python worker/runtime stack in use (`azure-functions`, `supabase`, and standard Python packages) and remains compatible with SWA-managed Functions on Python 3.11.
 
 ## 8. Recommended Local Mode
 
@@ -220,15 +222,12 @@ Start with the easiest working mode:
 - frontend local
 - Azure Functions local
 - Supabase real remote project
-- Cosmos in mock mode
 
 Why this is best first:
 
 - fewer moving parts
 - faster setup
 - enough to test most of the app
-
-Later, switch to real Cosmos DB if you need persistent data between API restarts.
 
 ## 9. Step-By-Step Local Setup
 
@@ -295,23 +294,10 @@ Edit `problem-hunt/python-function/local.settings.json` and start with:
     "FUNCTIONS_WORKER_RUNTIME": "python",
     "SUPABASE_JWT_SECRET": "your-supabase-jwt-secret",
     "SUPABASE_URL": "https://your-project-ref.supabase.co",
-    "SUPABASE_SERVICE_ROLE_KEY": "your-service-role-key",
-    "COSMOS_ENDPOINT": "placeholder-endpoint",
-    "COSMOS_KEY": "placeholder-key",
-    "COSMOS_DATABASE": "ProblemHuntDB",
-    "COSMOS_CONTAINER_PROBLEMS": "Problems",
-    "COSMOS_CONTAINER_PROPOSALS": "Proposals",
-    "COSMOS_CONTAINER_UPVOTES": "Upvotes",
-    "COSMOS_CONTAINER_TIPS": "Tips"
+    "SUPABASE_SERVICE_ROLE_KEY": "your-service-role-key"
   }
 }
 ```
-
-Why fake Cosmos values are okay at first:
-
-- this repo supports mock in-memory Cosmos mode
-- placeholder values trigger the fallback
-- that is enough for basic local testing
 
 ### Step 6. Create and activate a Python virtual environment
 
@@ -339,20 +325,20 @@ cd ../..
 ### Step 8. Apply Supabase migrations
 
 ```powershell
-cd problem-hunt
 supabase login
 supabase link --project-ref <your-project-ref>
 supabase db push
-cd ..
 ```
 
 Minimum database areas you should expect after migrations:
 
 - profiles
-- wallets
+- problems
+- proposals
+- upvotes
 - payments
 - notifications
-- tip-related tables
+- tip_transactions
 
 ### Step 9. Start Azurite
 
@@ -466,31 +452,7 @@ Best done with two accounts:
 2. Submit the tip details
 3. Confirm the request succeeds
 
-## 11. Mock Cosmos vs Real Cosmos
-
-### Mock Cosmos Mode
-
-Good for:
-
-- learning the codebase
-- fast local testing
-- UI and route testing
-
-Limitation:
-
-- data disappears when the Functions host restarts
-
-### Real Cosmos Mode
-
-Good for:
-
-- persistent local data
-- closer production behavior
-- shared testing
-
-To use it, replace the placeholder Cosmos values in `local.settings.json` with real account values.
-
-## 12. Important Routes
+## 11. Important Routes
 
 Frontend:
 
@@ -519,13 +481,13 @@ API:
 - `POST /api/problems/{id}/payments`
 - `POST /api/proposals/{id}/tip`
 
-## 13. Optional Web3 / Edge Function Setup
+## 12. Optional Web3 / Edge Function Setup
 
 Do this only after the core app works.
 
 Relevant folder:
 
-- `problem-hunt/supabase/functions`
+- `supabase/functions`
 
 Suggested order:
 
@@ -535,7 +497,7 @@ Suggested order:
 4. deploy or serve the Edge Functions
 5. test with testnet wallets first
 
-## 14. Troubleshooting
+## 13. Troubleshooting
 
 ### Frontend still calls Azure instead of local API
 
@@ -562,14 +524,6 @@ Fix:
 2. keep `AzureWebJobsStorage=UseDevelopmentStorage=true`
 3. restart `func start`
 
-### Data disappears after restart
-
-Cause:
-
-- you are using mock Cosmos mode
-
-That is expected.
-
 ### Wallet / payment flows fail
 
 Check:
@@ -578,7 +532,7 @@ Check:
 2. Edge Functions are deployed or served
 3. RPC values are set
 
-## 15. Useful Commands
+## 14. Useful Commands
 
 Root helpers:
 
@@ -608,11 +562,10 @@ func start
 Supabase migrations:
 
 ```powershell
-cd problem-hunt
 supabase db push
 ```
 
-## 16. Final Advice
+## 15. Final Advice
 
 Do not debug everything at once.
 
@@ -621,9 +574,7 @@ Use this order:
 1. frontend loads
 2. auth works
 3. API starts
-4. mock Cosmos mode works
-5. create / browse / proposal / delete work
-6. real Cosmos
-7. wallet / payment extras
+4. create / browse / proposal / delete work
+5. wallet / payment extras
 
 That gives the fastest feedback loop and the lowest confusion.
