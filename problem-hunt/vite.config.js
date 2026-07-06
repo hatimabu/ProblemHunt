@@ -34,7 +34,7 @@ export default defineConfig(({ mode }) => {
       allowedHosts: true,
       middlewareMode: false,
       headers: {
-        'Content-Security-Policy': `default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com https://r2cdn.perplexity.ai data:; connect-src 'self' https://*.ingest.us.sentry.io https://*.grafana.net https://fonts.googleapis.com`
+        'Content-Security-Policy': `default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com https://r2cdn.perplexity.ai data:; connect-src 'self' https://*.ingest.us.sentry.io https://fonts.googleapis.com`
       },
       proxy: {
         '/api': {

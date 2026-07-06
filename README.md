@@ -175,7 +175,6 @@ Copy the JSON output. Its `subscriptionId` must be the target Azure subscription
 | `VITE_SUPABASE_URL` | From Supabase Dashboard |
 | `VITE_SUPABASE_ANON_KEY` | From Supabase Dashboard |
 | `VITE_ALCHEMY_SOLANA_RPC_URL` | From Alchemy Dashboard |
-| `VITE_FARO_URL` | *(optional)* From Grafana Cloud |
 | `SUPABASE_JWT_SECRET` | Supabase Dashboard → Settings → API |
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase Dashboard → Settings → API |
 
