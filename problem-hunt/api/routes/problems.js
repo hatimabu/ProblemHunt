@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { query } from '../db.js';
+import { supabase } from '../../lib/supabase.js';
 import { authenticate, optionalAuth } from '../auth.js';
 import {
   generateId, getTimestamp, normalizeProblem, normalizeProposal,
@@ -83,27 +83,79 @@ async function saveProposal(p) {
 // GET /api/problems
 router.get('/', async (req, res) => {
   try {
-    const { category = 'all', sortBy = 'upvotes', type: postType = 'all', budgetMin = 0, budgetMax = 999999999, limit = 100, offset = 0 } = req.query;
-    const rows = await query('SELECT * FROM problems', []);
-    let problems = rows.rows.map(normalizeProblem);
+    const category = req.query.category || 'all';
+    const sortBy = req.query.sortBy || 'newest';
+    const postType = req.query.type || 'all';
+    const requestedPage = parseInt(req.query.page, 10);
+    const requestedLimit = parseInt(req.query.limit, 10);
 
-    problems = problems.filter(p =>
-      parseFloat(p.budgetValue || 0) >= parseFloat(budgetMin) &&
-      parseFloat(p.budgetValue || 0) <= parseFloat(budgetMax)
-    );
-    if (category !== 'all') problems = problems.filter(p => p.category === category);
-    if (postType === 'problem' || postType === 'job') problems = problems.filter(p => p.type === postType);
+    const page = Number.isFinite(requestedPage) && requestedPage > 0 ? requestedPage : 1;
+    const limit = Number.isFinite(requestedLimit) && requestedLimit > 0
+      ? Math.min(requestedLimit, 100)
+      : 20;
+    const offset = (page - 1) * limit;
 
-    if (sortBy === 'newest') problems.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
-    else if (sortBy === 'budget') problems.sort((a, b) => (b.budgetValue || 0) - (a.budgetValue || 0));
-    else if (sortBy === 'proposals') problems.sort((a, b) => (b.proposals || 0) - (a.proposals || 0));
-    else problems.sort((a, b) => (b.upvotes || 0) - (a.upvotes || 0));
+    let countQuery = supabase
+      .from('problems')
+      .select('*', { count: 'exact', head: true });
+    let dataQuery = supabase
+      .from('problems')
+      .select('*');
 
-    const paginated = problems.slice(parseInt(offset), parseInt(offset) + parseInt(limit));
-    return res.json({ problems: paginated, total: problems.length, limit: parseInt(limit), offset: parseInt(offset) });
+    if (category !== 'all') {
+      countQuery = countQuery.eq('category', category);
+      dataQuery = dataQuery.eq('category', category);
+    }
+    if (postType === 'problem' || postType === 'job') {
+      countQuery = countQuery.eq('type', postType);
+      dataQuery = dataQuery.eq('type', postType);
+    }
+
+    let orderColumn = 'created_at';
+    let ascending = false;
+    switch (sortBy) {
+      case 'oldest':
+        orderColumn = 'created_at';
+        ascending = true;
+        break;
+      case 'popular':
+        orderColumn = 'upvotes';
+        ascending = false;
+        break;
+      case 'difficulty':
+        orderColumn = 'budget_value';
+        ascending = false;
+        break;
+      case 'newest':
+      default:
+        orderColumn = 'created_at';
+        ascending = false;
+        break;
+    }
+    dataQuery = dataQuery.order(orderColumn, { ascending });
+    dataQuery = dataQuery.range(offset, offset + limit - 1);
+
+    const { count, error: countError } = await countQuery;
+    const { data: rows, error: dataError } = await dataQuery;
+
+    if (countError) throw countError;
+    if (dataError) throw dataError;
+
+    const problems = (rows || []).map(normalizeProblem);
+    const total = count || 0;
+    const totalPages = Math.ceil(total / limit);
+
+    return res.json({
+      data: problems,
+      pagination: { page, limit, total, totalPages },
+    });
   } catch (e) {
-    console.error(e);
-    return res.status(500).json({ error: 'Failed to fetch problems', details: e.message });
+    console.error('Problems GET error:', e);
+    const isDev = process.env.NODE_ENV === 'development';
+    return res.status(500).json({
+      error: 'Failed to fetch problems',
+      ...(isDev ? { message: e.message } : {}),
+    });
   }
 });
 
