@@ -1,4 +1,3 @@
-import { withFaroRouterInstrumentation } from "@grafana/faro-react";
 import { createBrowserRouter, Navigate } from "react-router";
 import { LandingPage } from "./components/landing-page.tsx";
 import { BrowseProblems } from "./components/browse-problems.tsx";
@@ -9,8 +8,7 @@ import { AuthPage } from "./components/auth-page.tsx";
 import { Leaderboard } from "./components/leaderboard.tsx";
 import { ProtectedRoute } from "./components/ProtectedRoute.tsx";
 
-export const router = withFaroRouterInstrumentation(
-  createBrowserRouter([
+export const router = createBrowserRouter([
   {
     path: "/",
     Component: LandingPage,
@@ -59,5 +57,4 @@ export const router = withFaroRouterInstrumentation(
     path: "*",
     element: <Navigate to="/" replace />,
   },
-  ]),
-);
+]);
