@@ -9,6 +9,7 @@ import {
   type Variants,
 } from "motion/react";
 import {
+  AlertTriangle,
   ArrowRight,
   BarChart3,
   Briefcase,
@@ -465,12 +466,28 @@ export function LandingPage() {
             >
               <motion.div
                 variants={fadeUp}
-                className="mb-8 inline-flex items-center gap-2.5 rounded-full border border-[color:var(--board-line)] bg-[rgba(10,14,22,0.6)] px-4 py-2 backdrop-blur-md"
+                className="group relative mb-8 inline-flex items-center gap-2.5 rounded-full border border-[color:rgba(232,197,71,0.3)] bg-[linear-gradient(120deg,rgba(232,197,71,0.12),rgba(10,14,22,0.7)_45%)] px-4 py-2 shadow-[0_0_20px_-8px_rgba(232,197,71,0.5)] backdrop-blur-md transition-shadow hover:shadow-[0_0_28px_-6px_rgba(232,197,71,0.65)]"
               >
-                <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-500 shadow-[0_0_0_4px_rgba(34,197,94,0.15)]" />
-                <span className="font-mono text-[0.65rem] font-semibold uppercase tracking-[0.22em] text-[var(--board-metal-steel)]">
-                  System Operational
+                <span className="relative flex h-2 w-2 items-center justify-center">
+                  <span className="absolute h-full w-full animate-ping rounded-full bg-[#e8c547] opacity-60" />
+                  <span className="relative h-2 w-2 rounded-full bg-[#e8c547]" />
                 </span>
+                <AlertTriangle
+                  className="h-3.5 w-3.5 text-[#e8c547]"
+                  strokeWidth={2.25}
+                />
+                <span className="font-mono text-[0.65rem] font-semibold uppercase tracking-[0.22em] text-[#e8c547]">
+                  Under Construction
+                </span>
+
+                <div
+                  role="tooltip"
+                  className="pointer-events-none absolute left-1/2 top-full z-20 mt-3 w-64 -translate-x-1/2 rounded-xl border border-[color:rgba(232,197,71,0.25)] bg-[rgba(10,14,22,0.97)] px-3.5 py-2.5 text-center font-sans text-[0.72rem] font-normal normal-case tracking-normal text-[var(--board-metal-steel)] opacity-0 shadow-[0_12px_32px_-8px_rgba(0,0,0,0.6)] backdrop-blur-md transition-all duration-200 ease-out group-hover:pointer-events-auto group-hover:translate-y-1 group-hover:opacity-100"
+                >
+                  <span className="absolute -top-1.5 left-1/2 h-3 w-3 -translate-x-1/2 rotate-45 border-l border-t border-[color:rgba(232,197,71,0.25)] bg-[rgba(10,14,22,0.97)]" />
+                  This website is currently under development. Some features
+                  might be unavailable or temporarily down.
+                </div>
               </motion.div>
 
               <motion.h1
