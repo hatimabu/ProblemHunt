@@ -9,6 +9,7 @@ import {
   type Variants,
 } from "motion/react";
 import {
+  AlertTriangle,
   ArrowRight,
   BarChart3,
   Briefcase,
@@ -465,11 +466,19 @@ export function LandingPage() {
             >
               <motion.div
                 variants={fadeUp}
-                className="mb-8 inline-flex items-center gap-2.5 rounded-full border border-[color:var(--board-line)] bg-[rgba(10,14,22,0.6)] px-4 py-2 backdrop-blur-md"
+                className="mb-8 inline-flex items-center gap-2.5 rounded-full border border-[color:rgba(232,197,71,0.35)] bg-[rgba(10,14,22,0.6)] px-4 py-2 backdrop-blur-md"
               >
-                <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-500 shadow-[0_0_0_4px_rgba(34,197,94,0.15)]" />
-                <span className="font-mono text-[0.65rem] font-semibold uppercase tracking-[0.22em] text-[var(--board-metal-steel)]">
-                  System Operational
+                <span className="h-2 w-2 animate-pulse rounded-full bg-[#e8c547] shadow-[0_0_0_4px_rgba(232,197,71,0.18)]" />
+                <span className="font-mono text-[0.65rem] font-semibold uppercase tracking-[0.22em] text-[#e8c547]">
+                  System Under Construction
+                </span>
+                <span
+                  role="img"
+                  aria-label="Notice"
+                  title="This website is currently under development. Some features might be unavailable or temporarily down."
+                  className="ml-0.5 flex h-3.5 w-3.5 cursor-help items-center justify-center rounded-full border border-[color:rgba(232,197,71,0.5)] text-[#e8c547] transition-colors hover:bg-[rgba(232,197,71,0.15)]"
+                >
+                  <AlertTriangle className="h-2.5 w-2.5" strokeWidth={2.5} />
                 </span>
               </motion.div>
 
