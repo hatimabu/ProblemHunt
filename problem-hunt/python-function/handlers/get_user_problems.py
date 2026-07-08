@@ -1,0 +1,49 @@
+"""Get User Problems Handler."""
+
+import logging
+
+import azure.functions as func
+
+from handlers.marketplace_helpers import _pg_problem_to_camel, json_response, normalize_problem
+from supabase_client import get_supabase_client
+from utils import get_authenticated_user_id
+
+
+logger = logging.getLogger(__name__)
+
+
+def handle(req: func.HttpRequest) -> func.HttpResponse:
+    """Get problems/jobs created by the authenticated user."""
+    try:
+        user_id = get_authenticated_user_id(req)
+
+        if not user_id:
+            return json_response({'error': 'Authentication required'}, 401)
+
+        sort_by = req.params.get('sortBy', 'newest')
+        limit = int(req.params.get('limit', 100))
+        offset = int(req.params.get('offset', 0))
+
+        sb = get_supabase_client()
+        resp = sb.table('problems').select('*').eq('author_id', user_id).execute()
+        user_problems = [normalize_problem(_pg_problem_to_camel(row)) for row in (resp.data or [])]
+
+        if sort_by == 'upvotes':
+            user_problems = sorted(user_problems, key=lambda x: x.get('upvotes', 0), reverse=True)
+        elif sort_by == 'budget':
+            user_problems = sorted(user_problems, key=lambda x: x.get('budgetValue', 0), reverse=True)
+        else:
+            user_problems = sorted(user_problems, key=lambda x: x.get('createdAt', ''), reverse=True)
+
+        paginated = user_problems[offset:offset + limit]
+
+        return json_response({
+            'problems': paginated,
+            'total': len(user_problems),
+            'limit': limit,
+            'offset': offset,
+        })
+
+    except Exception:
+        logger.exception("Handler error")
+        return json_response({'error': 'Failed to fetch user problems'}, 500)

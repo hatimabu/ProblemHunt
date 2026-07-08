@@ -1,0 +1,15 @@
+.git*
+.gitignore
+__pycache__
+*.pyc
+.python_packages
+.pytest_cache
+.vscode
+local.settings.json
+local.settings.example.json
+test_all.py
+test_handler_shapes.py
+pytest.ini
+*.md
+
+.venv
