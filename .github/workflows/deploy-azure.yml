@@ -57,6 +57,7 @@ jobs:
             --query properties.outputs --output json > deployment-outputs.json
 
           echo "STATIC_WEB_APP_NAME=$(jq -r '.staticWebAppName.value' deployment-outputs.json)" >> "$GITHUB_ENV"
+          echo "APPINSIGHTS_CONNECTION_STRING=$(jq -r '.appInsightsConnectionString.value' deployment-outputs.json)" >> "$GITHUB_ENV"
 
       - name: Fetch Static Web App deployment token
         run: |
@@ -79,6 +80,7 @@ jobs:
               SUPABASE_URL="${{ secrets.VITE_SUPABASE_URL }}" \
               SUPABASE_SERVICE_ROLE_KEY="${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
               SUPABASE_ANON_KEY="${{ secrets.VITE_SUPABASE_ANON_KEY }}" \
+              APPLICATIONINSIGHTS_CONNECTION_STRING="${{ env.APPINSIGHTS_CONNECTION_STRING }}"
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
