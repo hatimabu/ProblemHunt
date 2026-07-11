@@ -287,6 +287,7 @@ def authenticate_request(req: HttpRequest) -> Tuple[str, Dict[str, Any]]:
     """
     Complete authentication flow: extract, validate, and return user ID.
     """
+    logger.warning("AUTH_MODULE_BUILD_MARKER=2026-07-11-es256-fallback-v1")
     try:
         token = extract_token(req)
         payload = validate_jwt(token)
@@ -308,8 +309,8 @@ def auth_required(f):
     def wrapper(req: HttpRequest, *args, **kwargs):
         try:
             user_id, payload = authenticate_request(req)
-            req.user_id = user_id
-            req.auth_payload = payload
+            setattr(req, "user_id", user_id)
+            setattr(req, "auth_payload", payload)
             return f(req, *args, **kwargs)
         except AuthError as e:
             logger.warning("Authentication failed: %s", str(e))
