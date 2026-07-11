@@ -19,6 +19,8 @@ npm run server       # Serve dist/ via Express (for production preview)
 npm start            # build + server
 ```
 
+Whenever any `package.json` is modified in this repo, run `npm install` in the affected package directory as part of the same task and verify `npm ci` succeeds before considering the task done.
+
 The Python Azure Functions run separately — start them with the Azure Functions Core Tools from `problem-hunt/python-function/`:
 ```bash
 func start
