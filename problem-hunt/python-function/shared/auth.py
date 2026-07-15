@@ -243,20 +243,35 @@ def validate_jwt(token: str) -> Dict[str, Any]:
     """
     try:
         algorithm = get_token_algorithm(token)
+        logger.warning("DIAG: detected algorithm=%s", algorithm)
 
         if algorithm == "HS256":
+            logger.warning("DIAG: taking HS256 branch")
             return validate_hs256_jwt(token)
 
         if algorithm in SUPPORTED_ASYMMETRIC_ALGORITHMS:
+            logger.warning("DIAG: taking asymmetric branch for %s", algorithm)
             try:
-                return validate_asymmetric_jwt(token, algorithm)
+                result = validate_asymmetric_jwt(token, algorithm)
+                logger.warning("DIAG: asymmetric validation succeeded")
+                return result
             except Exception as e:
                 logger.warning(
-                    "Asymmetric JWT verification failed for %s; falling back to Supabase introspection: %s",
-                    algorithm,
+                    "DIAG: asymmetric validation raised %s: %s -- falling back to introspection",
+                    type(e).__name__,
                     str(e),
                 )
-                return introspect_token_with_supabase(token)
+                try:
+                    result = introspect_token_with_supabase(token)
+                    logger.warning("DIAG: introspection succeeded")
+                    return result
+                except Exception as introspect_error:
+                    logger.warning(
+                        "DIAG: introspection raised %s: %s",
+                        type(introspect_error).__name__,
+                        str(introspect_error),
+                    )
+                    raise
 
         raise AuthError(f"Unsupported token algorithm: {algorithm}")
     except jwt.ExpiredSignatureError:
@@ -264,10 +279,10 @@ def validate_jwt(token: str) -> Dict[str, Any]:
     except AuthError:
         raise
     except jwt.InvalidTokenError as e:
-        logger.error("JWT validation error: %s", str(e))
+        logger.error("DIAG: OUTER handler caught jwt.InvalidTokenError type=%s: %s", type(e).__name__, str(e))
         raise AuthError(f"Invalid token: {str(e)}") from e
     except Exception as e:
-        logger.error("Unexpected error during token validation: %s", str(e))
+        logger.error("DIAG: OUTER handler caught generic Exception type=%s: %s", type(e).__name__, str(e))
         raise AuthError(f"Token validation failed: {str(e)}") from e
 
 
