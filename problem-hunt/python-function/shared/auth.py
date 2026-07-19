@@ -246,34 +246,28 @@ def validate_jwt(token: str) -> Dict[str, Any]:
         logger.warning("DIAG: detected algorithm=%s", algorithm)
 
         if algorithm == "HS256":
-            logger.warning("DIAG: taking HS256 branch")
-            return validate_hs256_jwt(token)
+            validate_token = lambda: validate_hs256_jwt(token)
+        elif algorithm in SUPPORTED_ASYMMETRIC_ALGORITHMS:
+            validate_token = lambda: validate_asymmetric_jwt(token, algorithm)
+        else:
+            raise AuthError(f"Unsupported token algorithm: {algorithm}")
 
-        if algorithm in SUPPORTED_ASYMMETRIC_ALGORITHMS:
-            logger.warning("DIAG: taking asymmetric branch for %s", algorithm)
-            try:
-                result = validate_asymmetric_jwt(token, algorithm)
-                logger.warning("DIAG: asymmetric validation succeeded")
-                return result
-            except Exception as e:
-                logger.warning(
-                    "DIAG: asymmetric validation raised %s: %s -- falling back to introspection",
-                    type(e).__name__,
-                    str(e),
-                )
-                try:
-                    result = introspect_token_with_supabase(token)
-                    logger.warning("DIAG: introspection succeeded")
-                    return result
-                except Exception as introspect_error:
-                    logger.warning(
-                        "DIAG: introspection raised %s: %s",
-                        type(introspect_error).__name__,
-                        str(introspect_error),
-                    )
-                    raise
-
-        raise AuthError(f"Unsupported token algorithm: {algorithm}")
+        try:
+            return validate_token()
+        except jwt.ExpiredSignatureError:
+            # Preserve the explicit expired-session response instead of
+            # treating it as a configuration mismatch.
+            raise
+        except Exception as validation_error:
+            # Supabase Auth is the source of truth for a session.  This keeps
+            # valid sessions working when a Function App still has an old
+            # HS256 secret or when Supabase has rotated signing keys.
+            logger.warning(
+                "Local JWT validation failed for %s (%s); validating with Supabase Auth",
+                algorithm,
+                type(validation_error).__name__,
+            )
+            return introspect_token_with_supabase(token)
     except jwt.ExpiredSignatureError:
         raise AuthError("Token has expired")
     except AuthError:

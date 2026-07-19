@@ -78,6 +78,7 @@ from handlers import (
     get_user_proposals,
     get_leaderboard,
 )
+from shared import auth
 
 
 # ─── in-memory Supabase mock ──────────────────────────────────────────────────
@@ -294,6 +295,22 @@ def make_auth_headers(user_id="test-user-123"):
         algorithm="HS256",
     )
     return {"Authorization": f"Bearer {token}"}
+
+
+# ─── Authentication tests ────────────────────────────────────────────────────
+
+class TestAuthentication(unittest.TestCase):
+    def test_hs256_falls_back_to_supabase_introspection_when_secret_is_stale(self):
+        expected_payload = {"sub": "supabase-user", "role": "authenticated"}
+
+        with (
+            patch.object(auth, "get_token_algorithm", return_value="HS256"),
+            patch.object(auth, "validate_hs256_jwt", side_effect=auth.AuthError("Signature verification failed")),
+            patch.object(auth, "introspect_token_with_supabase", return_value=expected_payload) as introspect,
+        ):
+            self.assertEqual(auth.validate_jwt("valid-supabase-session"), expected_payload)
+
+        introspect.assert_called_once_with("valid-supabase-session")
 
 
 # ─── TestUtils ────────────────────────────────────────────────────────────────
