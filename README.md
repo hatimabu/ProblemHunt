@@ -295,7 +295,6 @@ Edit `problem-hunt/python-function/local.settings.json` and start with:
     "FUNCTIONS_WORKER_RUNTIME": "python",
     "SUPABASE_JWT_SECRET": "your-supabase-jwt-secret",
     "SUPABASE_URL": "https://your-project-ref.supabase.co",
-    "SUPABASE_ANON_KEY": "your-anon-key",
     "SUPABASE_SERVICE_ROLE_KEY": "your-service-role-key"
   }
 }
