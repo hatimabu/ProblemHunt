@@ -177,6 +177,7 @@ Copy the JSON output. Its `subscriptionId` must be the target Azure subscription
 | `VITE_ALCHEMY_SOLANA_RPC_URL` | From Alchemy Dashboard |
 | `SUPABASE_JWT_SECRET` | Supabase Dashboard → Settings → API |
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase Dashboard → Settings → API |
+| `SUPABASE_DB_URL` | Supabase Dashboard → Connect → Direct connection string |
 
 Secrets currently live as plain GitHub Actions secrets (no Key Vault, no managed identity). The workflow authenticates to Azure with the `AZURE_CREDENTIALS` service principal, then fetches the Static Web App's deployment token dynamically at deploy time via `az staticwebapp secrets list` — there is no `AZURE_STATIC_WEB_APPS_API_TOKEN` secret to manage.
 
@@ -194,8 +195,9 @@ The workflow `.github/workflows/deploy-azure.yml` runs these deployment stages:
 
 1. **ARM Deployment** — creates/updates the resource group infrastructure from `azureARM.json` (a single Static Web App, Standard tier).
 2. **Configure SWA API settings** — writes Supabase app settings (URL, JWT secret, service role key) to the Static Web App, used by the managed Functions runtime.
-3. **Build Frontend** — `npm ci` + `vite build` with `VITE_API_BASE_URL=/` for same-origin `/api/*` calls.
-4. **Single SWA Deploy Step** — `Azure/static-web-apps-deploy@v1` uploads `dist/` and deploys `problem-hunt/python-function` via `api_location`.
+3. **Apply Supabase migrations** — applies the versioned schema migrations using `SUPABASE_DB_URL` before deploying the API.
+4. **Build Frontend** — `npm ci` + `vite build` with `VITE_API_BASE_URL=/` for same-origin `/api/*` calls.
+5. **Single SWA Deploy Step** — `Azure/static-web-apps-deploy@v1` uploads `dist/` and deploys `problem-hunt/python-function` via `api_location`.
 
 Watch it at **GitHub → Actions**.
 
@@ -293,6 +295,7 @@ Edit `problem-hunt/python-function/local.settings.json` and start with:
     "FUNCTIONS_WORKER_RUNTIME": "python",
     "SUPABASE_JWT_SECRET": "your-supabase-jwt-secret",
     "SUPABASE_URL": "https://your-project-ref.supabase.co",
+    "SUPABASE_ANON_KEY": "your-anon-key",
     "SUPABASE_SERVICE_ROLE_KEY": "your-service-role-key"
   }
 }
