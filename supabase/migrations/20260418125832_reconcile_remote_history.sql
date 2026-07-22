@@ -1,0 +1,7 @@
+-- Historical migration marker.
+--
+-- This version is present in the linked project's migration history but its
+-- original SQL is not present in the repository or reachable git objects.
+-- The following 20260418133000 migration contains the recoverable marketplace
+-- schema changes. Keep this marker so local and remote migration IDs remain
+-- aligned; do not add inferred DDL here without confirming the live schema.
