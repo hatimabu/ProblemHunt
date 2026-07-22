@@ -40,7 +40,15 @@ jobs:
         with:
           version: 2.109.1
       - name: Push migrations
-        run: supabase db push --db-url "${{ secrets.SUPABASE_DB_URL }}"
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          set -euo pipefail
+          if [ -z "$SUPABASE_DB_URL" ]; then
+            echo "::error::Missing SUPABASE_DB_URL. Add it as a GitHub Actions repository secret using the Supabase direct Postgres connection string (with sslmode=require)."
+            exit 1
+          fi
+          supabase db push --db-url "$SUPABASE_DB_URL"
 
   deploy:
     runs-on: ubuntu-latest
