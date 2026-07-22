@@ -27,8 +27,8 @@ import {
 import { Button } from "./ui/button";
 import { Navbar } from "./navbar";
 import { useAuth } from "../contexts/AuthContext";
-import { API_ENDPOINTS } from "../../lib/api-config";
 import { formatTimeAgo, type ProblemPost } from "../../lib/marketplace";
+import { getLeaderboard, listProblems } from "../../lib/supabase-marketplace";
 
 /* ================================================================== */
 /*  Types                                                             */
@@ -406,14 +406,9 @@ export function LandingPage() {
     const fetchPosts = async () => {
       try {
         setPostsLoading(true);
-        const token = localStorage.getItem("problemhunt-token");
-        const headers: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {};
-        const res = await fetch(`${API_ENDPOINTS.PROBLEMS}?category=all&sortBy=newest&type=all`, { headers });
-        if (!res.ok) throw new Error("fail");
-        const data = await res.json();
-        const problems = Array.isArray(data.problems) ? data.problems : [];
+        const problems = await listProblems({ category: "all", sortBy: "newest", type: "all" });
         setLatestPosts(problems.slice(0, 3));
-        setLiveCount(typeof data.total === "number" ? data.total : problems.length);
+        setLiveCount(problems.length);
       } catch {
         setLatestPosts([]);
       } finally {
@@ -427,13 +422,7 @@ export function LandingPage() {
     const fetchLb = async () => {
       try {
         setLeaderboardLoading(true);
-        const token = localStorage.getItem("problemhunt-token");
-        const res = await fetch(`${API_ENDPOINTS.LEADERBOARD}?period=alltime&limit=3`, {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-        });
-        if (!res.ok) throw new Error("fail");
-        const data = await res.json();
-        setTopBuilders(data.leaderboard || []);
+        setTopBuilders(await getLeaderboard(3));
       } catch {
         setTopBuilders([]);
       } finally {

@@ -4,7 +4,6 @@ import {
   PublicKey,
   SystemProgram,
   Transaction,
-  clusterApiUrl,
 } from "@solana/web3.js";
 
 export type SolanaProvider = {
@@ -41,7 +40,7 @@ export function getSolanaRpcUrl(): string {
     return `https://solana-mainnet.g.alchemy.com/v2/${alchemyApiKey}`;
   }
 
-  return clusterApiUrl("mainnet-beta");
+  return "https://api.mainnet-beta.solana.com";
 }
 
 export function getAvailableSolanaWallets(): { id: "phantom" | "solflare"; provider: SolanaProvider }[] {

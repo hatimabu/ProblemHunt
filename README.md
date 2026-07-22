@@ -1,329 +1,35 @@
 # ProblemHunt
 
-ProblemHunt is a marketplace for technical work. A requester posts a problem or paid job, builders submit proposals, the community can upvote interest, and the owner can track the work through acceptance, completion, payment, tipping, and deletion.
+ProblemHunt is a marketplace for technical work. Requesters post problems or paid jobs, builders submit proposals, and the community can upvote, tip, and track work through payment.
 
-This README is the single project guide. It is written for a fresh graduate or early junior DevOps / platform engineer who wants to understand the repo, run it locally, and test the main flows step by step.
-
-## 1. What Lives In This Repo
-
-The real application is inside `problem-hunt/`.
-
-Main parts:
-
-- React + Vite frontend
-- Python API running as Azure Static Web Apps managed Functions
-- Supabase Postgres for everything: auth, profiles, problems, proposals, upvotes, tips, payments, notifications, wallets, and storage
-
-## 2. High-Level Architecture
+## Architecture
 
 ```text
-Browser
-  |
-  v
-Azure Static Web App (Standard tier) — single resource
-  |
-  +--> Static content (React + Vite build, served from dist/)
-  |
-  \--> Integrated managed Functions (Python API /api/*)
-         |
-         +--> Supabase Postgres
-         |      |- auth.users
-         |      |- profiles
-         |      |- problems
-         |      |- proposals
-         |      |- upvotes
-         |      |- tips
-         |      |- payments
-         |      |- notifications
-         |      \- tip_transactions
-         |
-         \--> Supabase JWT validation
+React + Vite static site
+        |
+        v
+Supabase: Auth, Postgres, RLS/RPC, Storage
 ```
 
-## 3. Project Structure
+There is no application server, Python runtime, Azure Function, Cosmos DB dependency, or service-role key in the browser. Azure Static Web Apps is retained only as an optional static-file host.
 
-```text
-.
-|-- README.md
-|-- package.json                        # Root helper scripts
-|-- azureARM.json                       # ARM template: single Static Web App (Standard) resource
-|-- problem-hunt/
-|   |-- package.json                    # Frontend package
-|   |-- .env.example                    # Frontend env template
-|   |-- server.js                       # Serves built frontend
-|   |-- src/
-|   |   |-- app/
-|   |   |   |-- components/             # Pages and shared UI
-|   |   |   |-- contexts/               # Auth context
-|   |   |   |-- routes.tsx              # Frontend routes
-|   |   |   |-- index.css               # Shared styling and motion
-|   |   |   \-- theme.css               # Theme tokens
-|   |   \-- lib/                        # Frontend helpers
-|   |
-|   \-- python-function/
-|       |-- handlers/                   # API business logic (one handler module per endpoint)
-|       |-- supabase_client.py          # Supabase client setup
-|       |-- utils.py                    # Shared helpers
-|       |-- host.json                   # Functions host config
-|       \-- local.settings.example.json # Backend env template
-|
-\-- supabase/
-    |-- migrations/                     # SQL schema changes
-    \-- functions/                      # Edge Functions
-```
+## Local setup
 
-## 4. Main User Flow
-
-This is the product flow in plain English:
-
-1. A user signs in with Supabase.
-2. A requester creates a problem or a paid job.
-3. Builders browse posts and submit proposals.
-4. Users upvote posts to show demand.
-5. A requester can accept one proposal for a paid job.
-6. The accepted builder can mark the job complete.
-7. The requester can record payment.
-8. Users can record tips.
-9. The owner can delete their own post.
-
-## 5. Signal Flow
-
-Think of signal flow as "which service talks to which other service."
-
-### Auth Flow
-
-1. Frontend signs in through Supabase.
-2. Supabase returns a session token.
-3. Frontend sends `Authorization: Bearer <token>` to the Python API.
-4. Python API validates the token with the Supabase JWT secret.
-5. API uses the user ID from the token to authorize protected actions.
-
-### Read Flow
-
-1. Browser opens `/browse` or `/problem/:id`.
-2. Frontend calls the API.
-3. Azure Functions routes the request to a handler.
-4. Handler reads Supabase Postgres.
-5. JSON is returned to the frontend.
-6. UI renders the result.
-
-### Write Flow
-
-Example actions: create post, submit proposal, upvote, delete.
-
-1. Frontend collects form data.
-2. Frontend sends a request to the API.
-3. API validates auth and payload.
-4. Handler writes to Supabase Postgres.
-5. Frontend refreshes state and updates the UI.
-
-<img width="1422" height="789" alt="signal flow" src="https://github.com/user-attachments/assets/deddcc93-14e8-4498-8d34-033f9cf080e6" />
-
-## 6. Services You Need
-
-Required:
-
-1. Node.js 20+
-2. npm
-3. Python 3.11+
-4. Azure Functions Core Tools v4
-5. Azurite
-6. Git
-
-Recommended:
-
-1. Supabase CLI
-2. Azure CLI
-3. VS Code
-
-## 7. Deploy to Azure (Production)
-
-One workflow provisions infrastructure and deploys code automatically on every push to `main`.
-
-### 7.1 What Gets Deployed
-
-| Resource | Azure Service | Purpose |
-|----------|--------------|---------|
-| Frontend + Backend API | Static Web Apps (Standard) with managed Azure Functions (Python 3.11) | One SWA deployment uploads `dist/` and builds/deploys `problem-hunt/python-function` as the integrated `/api/*` backend |
-
-> Database: Supabase Postgres, managed outside of Azure (not part of `azureARM.json`). Static Web Apps **Standard** is required for Python managed Functions and is approximately **$9/month** (plus any additional Azure usage).
-
-### 7.2 One-Time Setup
-
-Run these commands **once** on your local machine:
-
-```powershell
-# 1. Log into Azure
-az login
-
-# 2. Select the target subscription
-az account set --subscription "NEW"
-
-# 3. Create a Service Principal for GitHub Actions
-az ad sp create-for-rbac `
-  --name "problemhunt-gha" `
-  --role contributor `
-  --scopes "/subscriptions/$(az account show --query id -o tsv)" `
-  --sdk-auth
-```
-
-Copy the JSON output. Its `subscriptionId` must be the target Azure subscription. Then go to **GitHub → Settings → Secrets → Actions** and add:
-
-| Secret | Value |
-|--------|-------|
-| `AZURE_CREDENTIALS` | The JSON from above |
-| `VITE_SUPABASE_URL` | From Supabase Dashboard |
-| `VITE_SUPABASE_ANON_KEY` | From Supabase Dashboard |
-| `VITE_ALCHEMY_SOLANA_RPC_URL` | From Alchemy Dashboard |
-| `SUPABASE_JWT_SECRET` | Supabase Dashboard → Settings → API |
-| `SUPABASE_SERVICE_ROLE_KEY` | Supabase Dashboard → Settings → API |
-| `SUPABASE_DB_URL` | Supabase Dashboard → Connect → Direct connection string |
-
-Secrets currently live as plain GitHub Actions secrets (no Key Vault, no managed identity). The workflow authenticates to Azure with the `AZURE_CREDENTIALS` service principal, then fetches the Static Web App's deployment token dynamically at deploy time via `az staticwebapp secrets list` — there is no `AZURE_STATIC_WEB_APPS_API_TOKEN` secret to manage.
-
-### 7.3 Deploy
-
-Push to `main`. That's it.
-
-```powershell
-git add .
-git commit -m "deploy"
-git push origin main
-```
-
-The workflow `.github/workflows/deploy-azure.yml` runs these deployment stages:
-
-1. **ARM Deployment** — creates/updates the resource group infrastructure from `azureARM.json` (a single Static Web App, Standard tier).
-2. **Configure SWA API settings** — writes Supabase app settings (URL, JWT secret, service role key) to the Static Web App, used by the managed Functions runtime.
-3. **Apply Supabase migrations** — applies the versioned schema migrations using `SUPABASE_DB_URL` before deploying the API.
-4. **Build Frontend** — `npm ci` + `vite build` with `VITE_API_BASE_URL=/` for same-origin `/api/*` calls.
-5. **Single SWA Deploy Step** — `Azure/static-web-apps-deploy@v1` uploads `dist/` and deploys `problem-hunt/python-function` via `api_location`.
-
-Watch it at **GitHub → Actions**.
-
-### 7.4 Troubleshooting
-
-| Error | Fix |
-|-------|-----|
-| `AZURE_CREDENTIALS` invalid | Re-run the `az ad sp create-for-rbac` command and update the secret |
-| ARM deployment fails by region | Change `AZURE_LOCATION` in `.github/workflows/deploy-azure.yml` to a supported region and rerun |
-| SWA deployment fails with API build/runtime errors | Verify `problem-hunt/python-function/requirements.txt` installs cleanly and that `host.json` stays on Functions v4 extension bundle |
-| `401` from API | Check `SUPABASE_JWT_SECRET` matches your Supabase project |
-
-### 7.5 Managed Functions compatibility checklist (Python)
-
-- `problem-hunt/python-function/host.json` uses Functions runtime `version: "2.0"` and extension bundle `[4.*, 5.0.0)`, which is compatible with Python Functions v4 on Static Web Apps.
-- Function bindings under `problem-hunt/python-function/**/function.json` are HTTP trigger/output only (`httpTrigger` + `http`), so there are no unsupported queue/event/timer/durable bindings in this API.
-- `problem-hunt/python-function/requirements.txt` targets the Python worker/runtime stack in use (`azure-functions`, `supabase`, and standard Python packages) and remains compatible with SWA-managed Functions on Python 3.11.
-
-## 8. Recommended Local Mode
-
-Start with the easiest working mode:
-
-- frontend local
-- Azure Functions local
-- Supabase real remote project
-
-Why this is best first:
-
-- fewer moving parts
-- faster setup
-- enough to test most of the app
-
-## 9. Step-By-Step Local Setup
-
-### Step 1. Clone the repo
-
-```powershell
-git clone <your-repo-url>
-cd ProblemHunt
-```
-
-### Step 2. Install root helper dependencies
-
-```powershell
-npm install
-```
-
-### Step 3. Install frontend dependencies
-
-```powershell
-cd problem-hunt
-npm install
-cd ..
-```
-
-Or use the helper:
-
-```powershell
-npm run install:all
-```
-
-### Step 4. Create the frontend env file
+Requirements: Node.js 20+, npm, and the Supabase CLI.
 
 ```powershell
 Copy-Item problem-hunt/.env.example problem-hunt/.env.local
 ```
 
-Set these values in `problem-hunt/.env.local`:
+Set the public values from your Supabase project in `problem-hunt/.env.local`:
 
 ```env
 VITE_SUPABASE_URL=https://your-project-ref.supabase.co
-VITE_SUPABASE_ANON_KEY=your-anon-key
-VITE_API_BASE_URL=http://localhost:7071
+VITE_SUPABASE_ANON_KEY=your-publishable-anon-key
 VITE_ALCHEMY_SOLANA_RPC_URL=https://solana-mainnet.g.alchemy.com/v2/YOUR_KEY
 ```
 
-Important:
-
-- `VITE_API_BASE_URL=http://localhost:7071` makes the browser call your local API
-- if you forget this, the frontend may still talk to the deployed Azure API
-
-### Step 5. Create the backend local settings file
-
-```powershell
-Copy-Item problem-hunt/python-function/local.settings.example.json problem-hunt/python-function/local.settings.json
-```
-
-Edit `problem-hunt/python-function/local.settings.json` and start with:
-
-```json
-{
-  "IsEncrypted": false,
-  "Values": {
-    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
-    "FUNCTIONS_WORKER_RUNTIME": "python",
-    "SUPABASE_JWT_SECRET": "your-supabase-jwt-secret",
-    "SUPABASE_URL": "https://your-project-ref.supabase.co",
-    "SUPABASE_SERVICE_ROLE_KEY": "your-service-role-key"
-  }
-}
-```
-
-### Step 6. Create and activate a Python virtual environment
-
-```powershell
-py -3 -m venv .venv
-.\.venv\Scripts\Activate.ps1
-```
-
-If `py` does not work on your machine, use:
-
-```powershell
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-```
-
-### Step 7. Install Python dependencies
-
-```powershell
-cd problem-hunt/python-function
-python -m pip install --upgrade pip
-python -m pip install -r requirements.txt
-cd ../..
-```
-
-### Step 8. Apply Supabase migrations
+Apply the versioned database schema before starting the UI:
 
 ```powershell
 supabase login
@@ -331,251 +37,47 @@ supabase link --project-ref <your-project-ref>
 supabase db push
 ```
 
-Minimum database areas you should expect after migrations:
-
-- profiles
-- problems
-- proposals
-- upvotes
-- payments
-- notifications
-- tip_transactions
-
-### Step 9. Start Azurite
-
-```powershell
-azurite
-```
-
-Or:
-
-```powershell
-npx azurite
-```
-
-Leave Azurite running in its own terminal.
-
-### Step 10. Start the Python API
-
-Open a new terminal:
-
-```powershell
-cd problem-hunt/python-function
-func start
-```
-
-Expected local API base URL:
-
-```text
-http://localhost:7071
-```
-
-### Step 11. Start the frontend
-
-Open another terminal:
+Then run the app:
 
 ```powershell
 cd problem-hunt
+npm ci
 npm run dev
 ```
 
-Expected frontend URL:
+The Vite dev server prints the local URL. It talks directly to Supabase.
 
-```text
-http://localhost:5173
-```
-
-### Step 12. Optional: test the built frontend
+## Verification
 
 ```powershell
 cd problem-hunt
+npx tsc --noEmit
+npm test
 npm run build
-npm run server
 ```
 
-## 10. How To Test Everything
+## Deploy
 
-Use this order:
+The GitHub workflow in `.github/workflows/deploy-azure.yml` first applies `supabase/migrations/`, then deploys the built static site to Azure Static Web Apps. It requires these GitHub Actions secrets:
 
-### Smoke Test
+- `SUPABASE_DB_URL` — direct database connection string, used only by the migration job
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_ANON_KEY`
+- `VITE_ALCHEMY_SOLANA_RPC_URL` (optional for payment features)
+- `AZURE_CREDENTIALS` — only if using the included Azure Static Web Apps host
 
-1. Open `http://localhost:5173`
-2. Confirm the landing page loads
-3. Open `/browse`
-4. Open `/auth`
+Any static host is compatible as long as it serves the `problem-hunt/dist/` output with SPA fallback to `index.html`, and injects the `VITE_*` values during the build.
 
-### Auth Test
+## Main routes
 
-1. Sign up or sign in
-2. Confirm `/dashboard` opens
-3. Confirm protected routes like `/post` are blocked when signed out
+- `/` — landing page
+- `/browse` — marketplace
+- `/problem/:id` — problem or job detail
+- `/post` — create a listing
+- `/dashboard` — profile, listings, proposals, wallets, and notifications
+- `/leaderboard` — rankings
+- `/auth` — Supabase authentication
 
-### Create Post Test
+## Security model
 
-1. Go to `/post`
-2. Create a problem or paid job
-3. Confirm it appears in `/browse`
-4. Open its detail page
-
-### Proposal Test
-
-1. Submit a proposal
-2. Refresh the page
-3. Confirm the proposal appears
-4. Confirm related dashboard sections update
-
-### Upvote Test
-
-1. Upvote a problem
-2. Confirm the count changes
-
-### Delete Test
-
-If you are the post owner:
-
-1. Open your post
-2. Click delete
-3. Confirm it disappears from your dashboard and browse views
-
-### Paid Job Lifecycle Test
-
-Best done with two accounts:
-
-1. Account A creates a paid job
-2. Account B submits a proposal
-3. Account A accepts it
-4. Account B marks it complete
-5. Account A records payment
-
-### Tip Test
-
-1. Open the tip flow from a proposal
-2. Submit the tip details
-3. Confirm the request succeeds
-
-## 11. Important Routes
-
-Frontend:
-
-- `/`
-- `/browse`
-- `/problem/:id`
-- `/post`
-- `/dashboard`
-- `/leaderboard`
-- `/auth`
-
-API:
-
-- `GET /api/problems`
-- `POST /api/problems`
-- `GET /api/problems/{id}`
-- `DELETE /api/problems/{id}`
-- `POST /api/problems/{id}/proposals`
-- `GET /api/problems/{id}/proposals`
-- `POST /api/problems/{id}/upvote`
-- `DELETE /api/problems/{id}/upvote`
-- `GET /api/user/problems`
-- `GET /api/user/proposals`
-- `GET /api/leaderboard`
-- `POST /api/problems/{id}/complete`
-- `POST /api/problems/{id}/payments`
-- `POST /api/proposals/{id}/tip`
-
-## 12. Optional Web3 / Edge Function Setup
-
-Do this only after the core app works.
-
-Relevant folder:
-
-- `supabase/functions`
-
-Suggested order:
-
-1. make frontend + auth + API work
-2. apply all Supabase migrations
-3. configure RPC environment values
-4. deploy or serve the Edge Functions
-5. test with testnet wallets first
-
-## 13. Troubleshooting
-
-### Frontend still calls Azure instead of local API
-
-Fix:
-
-1. set `VITE_API_BASE_URL=http://localhost:7071`
-2. restart the Vite dev server
-
-### API returns `401`
-
-Check:
-
-1. `SUPABASE_JWT_SECRET`
-2. frontend Supabase URL
-3. backend Supabase URL
-
-They must all point to the same Supabase project.
-
-### Functions fail because of storage
-
-Fix:
-
-1. start Azurite
-2. keep `AzureWebJobsStorage=UseDevelopmentStorage=true`
-3. restart `func start`
-
-### Wallet / payment flows fail
-
-Check:
-
-1. migrations ran
-2. Edge Functions are deployed or served
-3. RPC values are set
-
-## 14. Useful Commands
-
-Root helpers:
-
-```powershell
-npm run install:all
-npm run dev
-npm run build
-npm run server
-```
-
-Frontend:
-
-```powershell
-cd problem-hunt
-npm run dev
-npm run build
-npm run server
-```
-
-Backend:
-
-```powershell
-cd problem-hunt/python-function
-func start
-```
-
-Supabase migrations:
-
-```powershell
-supabase db push
-```
-
-## 15. Final Advice
-
-Do not debug everything at once.
-
-Use this order:
-
-1. frontend loads
-2. auth works
-3. API starts
-4. create / browse / proposal / delete work
-5. wallet / payment extras
-
-That gives the fastest feedback loop and the lowest confusion.
+The browser uses only the Supabase publishable/anon key. Authorization is enforced by Supabase Auth, Row Level Security, and the SQL RPC functions in `supabase/migrations/20260722100000_supabase_only_workflows.sql`. Never place `SUPABASE_SERVICE_ROLE_KEY` in a frontend environment file or a GitHub build variable.

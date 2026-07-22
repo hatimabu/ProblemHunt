@@ -17,6 +17,9 @@ export interface ProblemPost {
   jobStatus?: JobStatus | null;
   skillsRequired?: string[];
   acceptedProposalId?: string | null;
+  acceptedBuilderId?: string | null;
+  acceptedBuilderName?: string | null;
+  acceptedBuilderWalletAddress?: string | null;
   author?: string;
   authorId: string;
   upvotes: number;

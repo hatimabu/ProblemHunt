@@ -4,7 +4,18 @@ import { MemoryRouter, Route, Routes } from "react-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ProblemDetail } from "../problem-detail";
 
-const { sessionToken } = vi.hoisted(() => ({ sessionToken: "test-token" }));
+const marketplaceMocks = vi.hoisted(() => ({
+  acceptProposal: vi.fn(),
+  createProposal: vi.fn(),
+  deleteProblem: vi.fn(),
+  getProblem: vi.fn(),
+  listProposals: vi.fn(),
+  markJobComplete: vi.fn(),
+  recordJobPayment: vi.fn(),
+  recordTip: vi.fn(),
+  toggleProblemUpvote: vi.fn(),
+}));
+
 const currentUser = {
   id: "builder-1",
   email: "builder@example.com",
@@ -27,10 +38,6 @@ const baseProblem = {
   updatedAt: "2026-06-01T00:00:00Z",
 };
 
-const fetchMock = vi.fn();
-
-vi.stubGlobal("fetch", fetchMock);
-
 vi.mock("../../contexts/AuthContext", () => ({
   useAuth: () => ({
     user: currentUser,
@@ -41,16 +48,7 @@ vi.mock("../../contexts/AuthContext", () => ({
   }),
 }));
 
-vi.mock("../../../../lib/supabaseClient", () => ({
-  supabase: {
-    auth: {
-      getSession: vi.fn().mockResolvedValue({
-        data: { session: { access_token: sessionToken } },
-        error: null,
-      }),
-    },
-  },
-}));
+vi.mock("../../../lib/supabase-marketplace", () => marketplaceMocks);
 
 vi.mock("../../../lib/wallets", () => ({
   getUserSolanaWallet: vi.fn().mockResolvedValue(null),
@@ -61,14 +59,6 @@ vi.mock("../../../lib/solana-payments", () => ({
   connectSolanaWallet: vi.fn(),
   sendSolTransfer: vi.fn(),
 }));
-
-function jsonResponse(body: unknown, init: ResponseInit = {}) {
-  return new Response(JSON.stringify(body), {
-    status: init.status ?? 200,
-    headers: { "Content-Type": "application/json" },
-    ...init,
-  });
-}
 
 function renderProblemDetail() {
   render(
@@ -82,30 +72,27 @@ function renderProblemDetail() {
 
 describe("ProblemDetail", () => {
   beforeEach(() => {
-    fetchMock.mockReset();
+    Object.values(marketplaceMocks).forEach((mock) => mock.mockReset());
   });
 
   it("submits a proposal and refreshes the proposal list", async () => {
     const user = userEvent.setup();
-    fetchMock
-      .mockResolvedValueOnce(jsonResponse(baseProblem))
-      .mockResolvedValueOnce(jsonResponse({ proposals: [] }))
-      .mockResolvedValueOnce(jsonResponse({ id: "proposal-1" }, { status: 201 }))
-      .mockResolvedValueOnce(jsonResponse({ ...baseProblem, proposals: 1 }))
-      .mockResolvedValueOnce(jsonResponse({
-        proposals: [
-          {
-            id: "proposal-1",
-            problemId: "problem-1",
-            title: "I can help",
-            description: "I will automate the deployment.",
-            builderId: "builder-1",
-            builderName: "Builder",
-            status: "pending",
-            createdAt: "2026-06-02T00:00:00Z",
-          },
-        ],
-      }));
+    marketplaceMocks.getProblem
+      .mockResolvedValueOnce(baseProblem)
+      .mockResolvedValueOnce({ ...baseProblem, proposals: 1 });
+    marketplaceMocks.listProposals
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([{
+        id: "proposal-1",
+        problemId: "problem-1",
+        title: "I can help",
+        description: "I will automate the deployment.",
+        builderId: "builder-1",
+        builderName: "Builder",
+        status: "pending",
+        createdAt: "2026-06-02T00:00:00Z",
+      }]);
+    marketplaceMocks.createProposal.mockResolvedValue({ id: "proposal-1" });
 
     renderProblemDetail();
 
@@ -117,41 +104,29 @@ describe("ProblemDetail", () => {
     await user.click(screen.getAllByRole("button", { name: /^submit proposal$/i }).at(-1)!);
 
     await waitFor(() => {
-      expect(fetchMock).toHaveBeenCalledWith(
-        "http://localhost:7071/api/problems/problem-1/proposals",
-        expect.objectContaining({
-          method: "POST",
-          headers: expect.objectContaining({
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${sessionToken}`,
-          }),
-          body: JSON.stringify({
-            title: "I can help",
-            description: "I will automate the deployment.",
-            briefSolution: "",
-            timeline: "",
-            estimatedDelivery: "",
-            cost: "",
-            proposedPriceSol: undefined,
-            projectUrl: undefined,
-            expertise: [],
-          }),
-        })
-      );
+      expect(marketplaceMocks.createProposal).toHaveBeenCalledWith("problem-1", {
+        title: "I can help",
+        description: "I will automate the deployment.",
+        briefSolution: "",
+        timeline: "",
+        estimatedDelivery: "",
+        cost: "",
+        proposedPriceSol: undefined,
+        projectUrl: undefined,
+        expertise: [],
+      });
     });
     expect(await screen.findByText("Proposal submitted successfully.")).toBeInTheDocument();
     expect(await screen.findByText("I will automate the deployment.")).toBeInTheDocument();
   });
 
-  it("toggles an existing upvote by deleting after a duplicate response", async () => {
+  it("toggles an existing upvote through the Supabase workflow", async () => {
     const user = userEvent.setup();
-    fetchMock
-      .mockResolvedValueOnce(jsonResponse(baseProblem))
-      .mockResolvedValueOnce(jsonResponse({ proposals: [] }))
-      .mockResolvedValueOnce(new Response(JSON.stringify({ error: "duplicate" }), { status: 409 }))
-      .mockResolvedValueOnce(jsonResponse({ problem: { ...baseProblem, upvotes: 1 } }))
-      .mockResolvedValueOnce(jsonResponse({ ...baseProblem, upvotes: 1 }))
-      .mockResolvedValueOnce(jsonResponse({ proposals: [] }));
+    marketplaceMocks.getProblem
+      .mockResolvedValueOnce(baseProblem)
+      .mockResolvedValueOnce({ ...baseProblem, upvotes: 1 });
+    marketplaceMocks.listProposals.mockResolvedValue([]);
+    marketplaceMocks.toggleProblemUpvote.mockResolvedValue({ ...baseProblem, upvotes: 1 });
 
     renderProblemDetail();
 
@@ -159,20 +134,7 @@ describe("ProblemDetail", () => {
     await user.click(screen.getByRole("button", { name: /upvote/i }));
 
     await waitFor(() => {
-      expect(fetchMock).toHaveBeenCalledWith(
-        "http://localhost:7071/api/problems/problem-1/upvote",
-        expect.objectContaining({
-          method: "POST",
-          headers: { Authorization: `Bearer ${sessionToken}` },
-        })
-      );
-      expect(fetchMock).toHaveBeenCalledWith(
-        "http://localhost:7071/api/problems/problem-1/upvote",
-        expect.objectContaining({
-          method: "DELETE",
-          headers: { Authorization: `Bearer ${sessionToken}` },
-        })
-      );
+      expect(marketplaceMocks.toggleProblemUpvote).toHaveBeenCalledWith("problem-1");
     });
     expect(await screen.findByText(/1 upvotes/i)).toBeInTheDocument();
   });

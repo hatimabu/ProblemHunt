@@ -1,16 +1,15 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { Briefcase, Calendar, Coins, FileText, Rocket, Tag } from "lucide-react";
-import { authenticatedFetch, handleResponse } from "../../lib/auth-helper";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Textarea } from "../components/ui/textarea";
 import { Label } from "../components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import { useAuth } from "../contexts/AuthContext";
-import { API_ENDPOINTS } from "../../lib/api-config";
 import { Navbar } from "./navbar";
 import { splitListInput } from "../../lib/marketplace";
+import { createProblem } from "../../lib/supabase-marketplace";
 
 const CATEGORIES = ["AI/ML", "Web3", "Finance", "Governance", "Trading", "Infrastructure", "Security", "Data Engineering", "DevOps", "Backend", "Frontend", "Mobile", "Automation"];
 const JOB_TYPES = [
@@ -49,33 +48,20 @@ export function PostProblem() {
     setError(null);
 
     try {
-      const payload = {
+      const problem = await createProblem({
         type: formData.type,
         title: formData.title,
         description: formData.description,
         category: formData.category,
-        requirements: formData.requirements,
+        requirements: splitListInput(formData.requirements),
         deadline: formData.deadline || null,
-        author: user?.username || user?.email || "Anonymous User",
         ...(isJob
           ? { budget: `${formData.budgetSol} SOL`, budgetSol: Number(formData.budgetSol), jobType: formData.jobType, skillsRequired: splitListInput(formData.skillsRequired) }
           : { budget: formData.budget }),
-      };
-      const response = await authenticatedFetch(API_ENDPOINTS.PROBLEMS, {
-        method: "POST",
-        body: payload,
       });
-      const problem = await handleResponse(response);
       navigate(`/problem/${problem.id}`);
     } catch (err) {
       let msg = err instanceof Error ? err.message : "Failed to create post";
-      if (msg.includes("401") || msg.toLowerCase().includes("authentication required")) {
-        msg =
-          "Authentication failed (401). The API couldn't validate your session token. Common fixes:\n" +
-          "1. Make sure your backend SUPABASE_URL, SUPABASE_ANON_KEY and SUPABASE_JWT_SECRET match the frontend values.\n" +
-          "2. If running locally, set VITE_API_BASE_URL=http://localhost:7071 in problem-hunt/.env and start the Functions app (func start in python-function/).\n" +
-          "3. Check the browser console and the Azure Function logs for the exact auth failure.";
-      }
       setError(msg);
     } finally {
       setIsSubmitting(false);

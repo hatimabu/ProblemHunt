@@ -4,8 +4,8 @@ import { ArrowRight, Briefcase, Clock3, Flame, Radar, Search, Signal, TrendingUp
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Navbar } from "./navbar";
-import { API_ENDPOINTS } from "../../lib/api-config";
 import { formatBudget, formatJobStatus, formatTimeAgo, isJobPost, type ProblemPost } from "../../lib/marketplace";
+import { listProblems } from "../../lib/supabase-marketplace";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 
 const CATEGORIES = ["All", "AI/ML", "Web3", "Finance", "Governance", "Trading", "Infrastructure", "Security", "Data Engineering", "DevOps", "Backend", "Frontend", "Mobile", "Automation"];
@@ -46,15 +46,7 @@ export function BrowseProblems() {
       try {
         setLoading(true);
         const category = selectedCategory === "All" ? "all" : selectedCategory;
-        const token = localStorage.getItem('problemhunt-token');
-        const headers: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {};
-        const response = await fetch(
-          `${API_ENDPOINTS.PROBLEMS}?category=${encodeURIComponent(category)}&sortBy=${sortBy}&type=${selectedType}`,
-          { headers }
-        );
-        if (!response.ok) throw new Error(`API Error ${response.status}: ${await response.text()}`);
-        const data = await response.json();
-        setPosts(Array.isArray(data.problems) ? data.problems : []);
+        setPosts(await listProblems({ category, sortBy, type: selectedType }));
       } catch {
         setPosts([]);
       } finally {

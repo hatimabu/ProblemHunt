@@ -7,8 +7,6 @@ import { Textarea } from "../components/ui/textarea";
 import { Label } from "../components/ui/label";
 import { Navbar } from "./navbar";
 import { useAuth } from "../contexts/AuthContext";
-import { API_ENDPOINTS } from "../../lib/api-config";
-import { getAccessToken } from "../../lib/auth-helper";
 import {
   explorerUrlForChain,
   formatBudget,
@@ -23,6 +21,17 @@ import {
 } from "../../lib/marketplace";
 import { connectSolanaWallet, sendSolTransfer } from "../../lib/solana-payments";
 import { getUserSolanaWallet, syncUserSolanaWallet } from "../../lib/wallets";
+import {
+  acceptProposal,
+  createProposal,
+  deleteProblem,
+  getProblem,
+  listProposals,
+  markJobComplete,
+  recordJobPayment,
+  recordTip,
+  toggleProblemUpvote,
+} from "../../lib/supabase-marketplace";
 
 const EMPTY_PROPOSAL_FORM = { title: "", description: "", briefSolution: "", timeline: "", estimatedDelivery: "", cost: "", proposedPriceSol: "", projectUrl: "", expertise: "" };
 const EMPTY_TIP_FORM = { amount: "", chain: "solana", txHash: "", message: "" };
@@ -66,23 +75,14 @@ export function ProblemDetail() {
   const isOwner = !!user && !!problem && user.id === problem.authorId;
   const acceptedProposal = useMemo(() => proposals.find((p) => p.id === problem?.acceptedProposalId) || null, [problem, proposals]);
   const isAcceptedBuilder = !!user && !!acceptedProposal && acceptedProposal.builderId === user.id;
-  const getToken = async () => getAccessToken();
-
   const fetchData = async () => {
     if (!id) return;
     try {
       setLoading(true);
-      const token = await getToken();
-      const headers = token ? { Authorization: `Bearer ${token}` } : {};
-      const [problemResponse, proposalsResponse] = await Promise.all([
-        fetch(API_ENDPOINTS.PROBLEM_BY_ID(id), { headers }),
-        fetch(API_ENDPOINTS.PROPOSALS(id), { headers }),
-      ]);
-      if (!problemResponse.ok || !proposalsResponse.ok) throw new Error("Failed to load post details");
-      const problemData = await problemResponse.json();
-      const proposalData = await proposalsResponse.json();
+      const problemData = await getProblem(id);
+      if (!problemData) throw new Error("Post not found");
       setProblem(problemData);
-      setProposals(Array.isArray(proposalData.proposals) ? proposalData.proposals : []);
+      setProposals(await listProposals(id, problemData.acceptedProposalId, problemData.acceptedBuilderWalletAddress));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load post");
     } finally {
@@ -98,11 +98,7 @@ export function ProblemDetail() {
     if (!id) return;
     try {
       setSubmittingProposal(true);
-      const token = await getToken();
-      const response = await fetch(API_ENDPOINTS.PROPOSALS(id), {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({
+      await createProposal(id, {
           title: proposalForm.title,
           description: proposalForm.description,
           briefSolution: proposalForm.briefSolution,
@@ -112,9 +108,7 @@ export function ProblemDetail() {
           proposedPriceSol: proposalForm.proposedPriceSol ? Number(proposalForm.proposedPriceSol) : undefined,
           projectUrl: proposalForm.projectUrl || undefined,
           expertise: splitListInput(proposalForm.expertise),
-        }),
       });
-      if (!response.ok) throw new Error(await response.text());
       setProposalForm(EMPTY_PROPOSAL_FORM);
       setShowProposalForm(false);
       setStatusMessage("Proposal submitted successfully.");
@@ -130,20 +124,14 @@ export function ProblemDetail() {
     event.preventDefault();
     if (!selectedTipProposal) return;
     try {
-      const token = await getToken();
-      const response = await fetch(API_ENDPOINTS.TIP_PROPOSAL(selectedTipProposal.id), {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({
+      await recordTip(selectedTipProposal.id, {
           amount: Number(tipForm.amount),
           currency: tipForm.chain === "solana" ? "SOL" : tipForm.chain.toUpperCase(),
           txHash: tipForm.txHash,
           chain: tipForm.chain,
           message: tipForm.message,
           toWallet: selectedTipProposal.builderWallets?.[tipForm.chain] || selectedTipProposal.builderWalletAddress,
-        }),
       });
-      if (!response.ok) throw new Error(await response.text());
       setStatusMessage(`Tip recorded: ${explorerUrlForChain(tipForm.chain, tipForm.txHash)}`);
       setSelectedTipProposal(null);
       setTipForm(EMPTY_TIP_FORM);
@@ -169,12 +157,7 @@ export function ProblemDetail() {
     if (!id) return;
     try {
       setUpvotePending(true);
-      const token = await getToken();
-      let response = await fetch(API_ENDPOINTS.UPVOTE_PROBLEM(id), { method: "POST", headers: { Authorization: `Bearer ${token}` } });
-      if (response.status === 409) {
-        response = await fetch(API_ENDPOINTS.REMOVE_UPVOTE(id), { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
-      }
-      if (!response.ok) throw new Error(await response.text());
+      await toggleProblemUpvote(id);
       await fetchData();
     } catch (err) {
       setStatusMessage(err instanceof Error ? err.message : "Failed to update upvote");
@@ -191,13 +174,7 @@ export function ProblemDetail() {
     await syncUserSolanaWallet(user.id, wallet.address);
     setMySolanaWallet(wallet.address);
     const transfer = await sendSolTransfer({ provider: wallet.provider, toAddress: acceptedProposal.builderWalletAddress, amountSol });
-    const token = await getToken();
-    const response = await fetch(API_ENDPOINTS.RECORD_PAYMENT(id), {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ txHash: transfer.signature, amountSol, fromWalletAddress: transfer.fromAddress }),
-    });
-    if (!response.ok) throw new Error(await response.text());
+    await recordJobPayment(id, amountSol, transfer.signature, transfer.fromAddress);
     setStatusMessage(`Payment recorded: ${transfer.signature}`);
   };
 
@@ -207,9 +184,7 @@ export function ProblemDetail() {
     if (!confirmed) return;
     try {
       setDeletePending(true);
-      const token = await getToken();
-      const response = await fetch(API_ENDPOINTS.DELETE_PROBLEM(id), { method: "DELETE", headers: token ? { Authorization: `Bearer ${token}` } : {} });
-      if (!response.ok) throw new Error(await response.text());
+      await deleteProblem(id);
       navigate("/dashboard", { replace: true });
     } catch (err) {
       setStatusMessage(err instanceof Error ? err.message : "Failed to delete post");
@@ -326,11 +301,9 @@ export function ProblemDetail() {
                         </div>
                         <div className="flex flex-col gap-3 md:items-end">
                           <Button variant="outline" onClick={() => { setSelectedTipProposal(proposal); setTipForm(EMPTY_TIP_FORM); }} className={secondaryBtn}>Tip builder</Button>
-                          {isJob && isOwner && problem.jobStatus === "open" ? (
-                            <Button onClick={() => runAction("accept", async () => {
-                              const token = await getToken();
-                              const response = await fetch(API_ENDPOINTS.ACCEPT_PROPOSAL(id!, proposal.id), { method: "POST", headers: { Authorization: `Bearer ${token}` } });
-                              if (!response.ok) throw new Error(await response.text());
+                            {isJob && isOwner && problem.jobStatus === "open" ? (
+                              <Button onClick={() => runAction("accept", async () => {
+                              await acceptProposal(id!, proposal.id);
                               setStatusMessage("Proposal accepted.");
                             })} disabled={actionPending === "accept"} className={primaryBtn}>{actionPending === "accept" ? "Accepting..." : "Accept proposal"}</Button>
                           ) : null}
@@ -360,9 +333,7 @@ export function ProblemDetail() {
                   <Button variant="outline" onClick={handleUpvote} disabled={upvotePending} className={`w-full ${secondaryBtn}`}><ArrowUp className="mr-2 h-4 w-4" />{upvotePending ? "Updating..." : "Upvote"}</Button>
                   {isJob && isAcceptedBuilder && problem.jobStatus === "in_progress" ? (
                     <Button onClick={() => runAction("complete", async () => {
-                      const token = await getToken();
-                      const response = await fetch(API_ENDPOINTS.MARK_JOB_COMPLETE(id!), { method: "POST", headers: { Authorization: `Bearer ${token}` } });
-                      if (!response.ok) throw new Error(await response.text());
+                      await markJobComplete(id!);
                       setStatusMessage("Job marked complete.");
                     })} disabled={actionPending === "complete"} className={`w-full ${primaryBtn}`}>{actionPending === "complete" ? "Marking..." : "Mark complete"}</Button>
                   ) : null}

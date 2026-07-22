@@ -2,8 +2,8 @@ import { useEffect, useState } from "react";
 import { Award, Crown, Radar, Send, Signal, Trophy } from "lucide-react";
 import { Navbar } from "./navbar";
 import { Badge } from "./ui/badge";
-import { API_ENDPOINTS } from "../../lib/api-config";
 import { useAuth } from "../contexts/AuthContext";
+import { getLeaderboard } from "../../lib/supabase-marketplace";
 
 interface LeaderboardEntry {
   rank: number;
@@ -35,11 +35,7 @@ export function Leaderboard() {
     const fetchLeaderboard = async () => {
       try {
         setLoading(true);
-        const token = localStorage.getItem('problemhunt-token');
-        const response = await fetch(`${API_ENDPOINTS.LEADERBOARD}?period=${period}&limit=20`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
-        if (!response.ok) throw new Error(`API Error ${response.status}: ${await response.text()}`);
-        const data = await response.json();
-        const entries: LeaderboardEntry[] = data.leaderboard || [];
+        const entries: LeaderboardEntry[] = await getLeaderboard(20);
         setLeaderboard(entries);
         setUserRank(user ? entries.find((entry) => entry.builderId === user.id) || null : null);
       } catch {

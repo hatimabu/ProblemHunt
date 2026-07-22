@@ -1,16 +1,17 @@
-name: Deploy ProblemHunt to Azure
+name: Deploy ProblemHunt static app
 
 on:
   push:
     branches: [main]
     paths:
       - 'azureARM.json'
+      - 'supabase/migrations/**'
       - '.github/workflows/deploy-azure.yml'
       - 'problem-hunt/**'
   workflow_dispatch:
 
 concurrency:
-  group: problemhunt-azure-deploy
+  group: problemhunt-static-deploy
   cancel-in-progress: false
 
 permissions:
@@ -24,17 +25,27 @@ env:
   AZURE_LOCATION: eastus2
   AZURE_APP_NAME: problemhunt
   AZURE_TEMPLATE_FILE: ./azureARM.json
-  SWA_DEPLOYMENT_TOKEN: ''
 
 jobs:
   test:
-    uses: ./.github/workflows/python-tests.yml
+    uses: ./.github/workflows/frontend-tests.yml
+
+  migrate:
+    name: Apply Supabase migrations
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.109.1
+      - name: Push migrations
+        run: supabase db push --db-url "${{ secrets.SUPABASE_DB_URL }}"
 
   deploy:
     runs-on: ubuntu-latest
-    name: Deploy App
-    needs: test
-
+    name: Deploy static app
+    needs: migrate
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -44,21 +55,17 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Create or update resource group
-        run: az group create --name "$AZURE_RESOURCE_GROUP" --location "$AZURE_LOCATION"
-
-      - name: Deploy ARM template
+      - name: Create or update static-hosting resource
         id: arm
         run: |
           set -euo pipefail
+          az group create --name "$AZURE_RESOURCE_GROUP" --location "$AZURE_LOCATION"
           az deployment group create \
             --resource-group "$AZURE_RESOURCE_GROUP" \
             --template-file "$AZURE_TEMPLATE_FILE" \
             --parameters appName="$AZURE_APP_NAME" location="$AZURE_LOCATION" environment=prod \
             --query properties.outputs --output json > deployment-outputs.json
-
           echo "STATIC_WEB_APP_NAME=$(jq -r '.staticWebAppName.value' deployment-outputs.json)" >> "$GITHUB_ENV"
-          echo "APPINSIGHTS_CONNECTION_STRING=$(jq -r '.appInsightsConnectionString.value' deployment-outputs.json)" >> "$GITHUB_ENV"
 
       - name: Fetch Static Web App deployment token
         run: |
@@ -69,19 +76,6 @@ jobs:
             --query "properties.apiKey" --output tsv)
           echo "::add-mask::$SWA_TOKEN"
           echo "SWA_DEPLOYMENT_TOKEN=$SWA_TOKEN" >> "$GITHUB_ENV"
-
-      - name: Configure Static Web App API settings
-        run: |
-          set -euo pipefail
-          az staticwebapp appsettings set \
-            --name "$STATIC_WEB_APP_NAME" \
-            --resource-group "$AZURE_RESOURCE_GROUP" \
-            --setting-names \
-              SUPABASE_JWT_SECRET="${{ secrets.SUPABASE_JWT_SECRET }}" \
-              SUPABASE_URL="${{ secrets.VITE_SUPABASE_URL }}" \
-              SUPABASE_SERVICE_ROLE_KEY="${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
-              SUPABASE_ANON_KEY="${{ secrets.VITE_SUPABASE_ANON_KEY }}" \
-              APPLICATIONINSIGHTS_CONNECTION_STRING="$APPINSIGHTS_CONNECTION_STRING"
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -97,24 +91,18 @@ jobs:
       - name: Build frontend
         working-directory: ${{ env.FRONTEND_PATH }}
         env:
-          VITE_API_BASE_URL: /
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
           VITE_ALCHEMY_SOLANA_RPC_URL: ${{ secrets.VITE_ALCHEMY_SOLANA_RPC_URL }}
           NODE_ENV: production
         run: npm run build
 
-      - name: Remove node_modules before deployment
-        working-directory: ${{ env.FRONTEND_PATH }}
-        run: rm -rf node_modules
-
-      - name: Deploy frontend + API to Static Web App
+      - name: Deploy static app
         uses: Azure/static-web-apps-deploy@v1
         with:
           azure_static_web_apps_api_token: ${{ env.SWA_DEPLOYMENT_TOKEN }}
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           action: upload
           app_location: ${{ env.FRONTEND_PATH }}/dist
-          api_location: problem-hunt/python-function
           output_location: ''
           skip_app_build: true

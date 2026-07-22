@@ -1,36 +1,22 @@
-import { authenticatedFetch, handleResponse } from "./auth-helper";
+import {
+  deleteWallet,
+  listWallets,
+  upsertPrimaryWallet,
+  type WalletChain,
+  type WalletRow,
+} from "./supabase-marketplace";
 
-export type WalletChainDto = "ethereum" | "polygon" | "arbitrum" | "solana";
+export type WalletChainDto = WalletChain;
+export type UserWalletApiRow = WalletRow;
 
-export interface UserWalletApiRow {
-  id: string;
-  chain: WalletChainDto;
-  address: string;
-  is_primary: boolean;
-  created_at: string;
-}
-
-/** GET /api/user/wallets — list wallets for the authenticated user (Python Functions). */
 export async function listUserWalletsApi(): Promise<UserWalletApiRow[]> {
-  const res = await authenticatedFetch("/api/user/wallets", { method: "GET" });
-  const body = await handleResponse(res);
-  const list = (body as { wallets?: UserWalletApiRow[] }).wallets;
-  return Array.isArray(list) ? list : [];
+  return listWallets();
 }
 
-/**
- * POST /api/user/wallets — set the primary payout address for a chain (replaces other rows for that chain server-side).
- */
 export async function upsertPrimaryWalletApi(chain: WalletChainDto, address: string): Promise<UserWalletApiRow> {
-  const res = await authenticatedFetch("/api/user/wallets", {
-    method: "POST",
-    body: { chain, address },
-  });
-  return (await handleResponse(res)) as UserWalletApiRow;
+  return upsertPrimaryWallet(chain, address);
 }
 
-/** DELETE /api/user/wallets/{id} */
 export async function deleteUserWalletApi(walletId: string): Promise<void> {
-  const res = await authenticatedFetch(`/api/user/wallets/${walletId}`, { method: "DELETE" });
-  await handleResponse(res);
+  await deleteWallet(walletId);
 }

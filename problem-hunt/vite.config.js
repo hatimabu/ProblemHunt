@@ -7,11 +7,7 @@ import react from '@vitejs/plugin-react';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, __dirname, '');
-  const apiBaseUrl =
-    env.VITE_API_BASE_URL ||
-    env.VITE_API_BASE ||
-    'http://localhost:3001';
+  loadEnv(mode, __dirname, '');
 
   return {
     root: __dirname,
@@ -34,20 +30,7 @@ export default defineConfig(({ mode }) => {
       allowedHosts: true,
       middlewareMode: false,
       headers: {
-        'Content-Security-Policy': `default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com https://r2cdn.perplexity.ai data:; connect-src 'self' https://*.ingest.us.sentry.io https://fonts.googleapis.com`
-      },
-      proxy: {
-        '/api': {
-          target: 'http://127.0.0.1:3001',
-          changeOrigin: true,
-          configure: (proxy) => {
-            proxy.on('proxyReq', (proxyReq, req) => {
-              if (req.headers.authorization) {
-                proxyReq.setHeader('Authorization', req.headers.authorization);
-              }
-            });
-          },
-        },
+        'Content-Security-Policy': `default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com https://r2cdn.perplexity.ai data:; connect-src 'self' https://*.supabase.co https://*.ingest.us.sentry.io https://fonts.googleapis.com`
       },
     },
     test: {

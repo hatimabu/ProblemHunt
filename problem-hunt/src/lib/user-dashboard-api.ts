@@ -1,19 +1,14 @@
-import { API_ENDPOINTS } from "./api-config";
-import { authenticatedFetch, handleResponse } from "./auth-helper";
 import type { NotificationRow, ProblemPost, ProposalRecord } from "./marketplace";
+import {
+  deleteProblem,
+  getDashboardSnapshot as getSupabaseDashboardSnapshot,
+  markNotificationRead as markSupabaseNotificationRead,
+  updateProfile as updateSupabaseProfile,
+  uploadAvatar,
+  type DashboardProfile,
+} from "./supabase-marketplace";
 
-const TOKEN_KEY = 'problemhunt-token';
-
-export interface DashboardProfile {
-  username: string;
-  full_name: string | null;
-  bio: string | null;
-  reputation_score: number;
-  user_type: string;
-  created_at: string;
-  wallet_address?: string | null;
-  avatar_url?: string | null;
-}
+export type { DashboardProfile };
 
 export interface DashboardSnapshot {
   profile: DashboardProfile | null;
@@ -23,74 +18,22 @@ export interface DashboardSnapshot {
   proposals: ProposalRecord[];
 }
 
-export async function fetchDashboardSnapshot(userId: string): Promise<DashboardSnapshot> {
-  const token = localStorage.getItem(TOKEN_KEY);
-  const authHeaders = { Authorization: `Bearer ${token || ''}` };
-
-  const [profileRes, walletsRes, notificationsRes, postsRes, proposalsRes] = await Promise.allSettled([
-    fetch('/api/user/profile', { headers: authHeaders }),
-    fetch('/api/user/wallets', { headers: authHeaders }),
-    fetch('/api/user/notifications', { headers: authHeaders }),
-    authenticatedFetch(`${API_ENDPOINTS.USER_PROBLEMS}?sortBy=newest`, { method: 'GET' }),
-    authenticatedFetch(API_ENDPOINTS.USER_PROPOSALS, { method: 'GET' }),
-  ]);
-
-  const safeJson = async (result: PromiseSettledResult<Response>, fallback: unknown) => {
-    if (result.status !== 'fulfilled' || !result.value.ok) return fallback;
-    try {
-      return await result.value.json();
-    } catch {
-      return fallback;
-    }
-  };
-
-  const profileData = await safeJson(profileRes, null);
-  const walletsData = await safeJson(walletsRes, { wallets: [] });
-  const notificationsData = await safeJson(notificationsRes, { notifications: [] });
-  const postsData = await safeJson(postsRes, { problems: [] });
-  const proposalsData = await safeJson(proposalsRes, { proposals: [] });
-
-  return {
-    profile: profileData ? {
-      username: profileData.username,
-      full_name: profileData.full_name,
-      bio: profileData.bio,
-      reputation_score: profileData.reputation_score || 0,
-      user_type: profileData.user_type,
-      created_at: profileData.created_at,
-      wallet_address: profileData.wallet_address,
-      avatar_url: profileData.avatar_url,
-    } : null,
-    walletCount: (walletsData.wallets || []).length,
-    notifications: notificationsData.notifications || [],
-    posts: Array.isArray(postsData.problems) ? postsData.problems : [],
-    proposals: Array.isArray(proposalsData.proposals) ? proposalsData.proposals : [],
-  };
+export async function fetchDashboardSnapshot(_userId: string): Promise<DashboardSnapshot> {
+  return getSupabaseDashboardSnapshot();
 }
 
-export async function updateDashboardProfile(
-  userId: string,
-  input: { full_name: string; bio: string }
-): Promise<DashboardProfile> {
-  const res = await authenticatedFetch('/api/user/profile', {
-    method: 'PATCH',
-    body: JSON.stringify(input),
-  });
-  const data = await handleResponse(res);
-  return data;
+export async function updateDashboardProfile(_userId: string, input: { full_name: string; bio: string }): Promise<DashboardProfile> {
+  return updateSupabaseProfile(input);
 }
 
 export async function uploadDashboardAvatar(userId: string, file: File): Promise<string> {
-  throw new Error('Avatar upload not yet supported in this version.');
+  return uploadAvatar(userId, file);
 }
 
 export async function markNotificationRead(notificationId: string): Promise<void> {
-  await authenticatedFetch(`/api/user/notifications/${notificationId}`, { method: 'PATCH' });
+  await markSupabaseNotificationRead(notificationId);
 }
 
 export async function deleteProblemById(problemId: string): Promise<void> {
-  const response = await authenticatedFetch(API_ENDPOINTS.DELETE_PROBLEM(problemId), {
-    method: 'DELETE',
-  });
-  await handleResponse(response);
+  await deleteProblem(problemId);
 }
