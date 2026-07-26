@@ -18,8 +18,8 @@ export interface DashboardSnapshot {
   proposals: ProposalRecord[];
 }
 
-export async function fetchDashboardSnapshot(_userId: string): Promise<DashboardSnapshot> {
-  return getSupabaseDashboardSnapshot();
+export async function fetchDashboardSnapshot(userId: string): Promise<DashboardSnapshot> {
+  return getSupabaseDashboardSnapshot(userId);
 }
 
 export async function updateDashboardProfile(_userId: string, input: { full_name: string; bio: string }): Promise<DashboardProfile> {

@@ -662,14 +662,14 @@ samp,
 
 .board-pill--accent {
   border-color: rgba(219, 84, 97, 0.38);
-  background: rgba(219, 84, 97, 0.14);
-  color: var(--board-accent);
+  background: rgba(219, 84, 97, 0.22);
+  color: #ffd9dd;
 }
 
 .board-pill--rust {
   border-color: rgba(219, 84, 97, 0.38);
-  background: rgba(219, 84, 97, 0.14);
-  color: var(--board-accent);
+  background: rgba(219, 84, 97, 0.22);
+  color: #ffd9dd;
 }
 
 .board-pill--gold {
@@ -1220,8 +1220,8 @@ button:focus-visible,
   min-height: 2.75rem;
   border: 1px solid rgba(219, 84, 97, 0.34);
   border-radius: 8px;
-  background: rgba(219, 84, 97, 0.12);
-  color: var(--board-accent);
+  background: rgba(219, 84, 97, 0.2);
+  color: #ffd9dd;
   text-transform: uppercase;
   letter-spacing: 0.14em;
   font-size: 0.75rem;
@@ -1229,8 +1229,8 @@ button:focus-visible,
 }
 
 .board-danger-btn:hover {
-  background: rgba(219, 84, 97, 0.2);
-  color: var(--color-accent-hover);
+  background: rgba(219, 84, 97, 0.3);
+  color: #fff;
 }
 
 .board-inline-note {

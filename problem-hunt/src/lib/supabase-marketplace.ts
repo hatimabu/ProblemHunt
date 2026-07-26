@@ -212,9 +212,9 @@ export async function getPrimaryWallet(chain: WalletChain) {
   return wallets.find((wallet) => wallet.chain === chain && wallet.is_primary)?.address || wallets.find((wallet) => wallet.chain === chain)?.address || null;
 }
 
-export async function getDashboardSnapshot(): Promise<{ profile: DashboardProfile | null; walletCount: number; notifications: NotificationRow[]; posts: ProblemPost[]; proposals: ProposalRecord[] }> {
+export async function getDashboardSnapshot(userId: string): Promise<{ profile: DashboardProfile | null; walletCount: number; notifications: NotificationRow[]; posts: ProblemPost[]; proposals: ProposalRecord[] }> {
   const [profileResult, walletResult, notificationResult, postResult, proposalResult] = await Promise.all([
-    supabase.from("profiles").select("username,full_name,bio,reputation_score,user_type,created_at,wallet_address,avatar_url").maybeSingle(),
+    supabase.from("profiles").select("username,full_name,bio,reputation_score,user_type,created_at,wallet_address,avatar_url").eq("id", userId).maybeSingle(),
     supabase.from("wallets").select("id", { count: "exact", head: true }),
     supabase.from("notifications").select("id,message,link,is_read,created_at").order("created_at", { ascending: false }),
     supabase.from("problems").select("*").order("created_at", { ascending: false }),
@@ -248,7 +248,7 @@ export async function uploadAvatar(userId: string, file: File) {
   const { error: uploadError } = await supabase.storage.from("avatars").upload(path, file, { upsert: false, contentType: file.type });
   throwIfError(uploadError);
   const { data } = supabase.storage.from("avatars").getPublicUrl(path);
-  const { error: profileError } = await supabase.from("profiles").update({ avatar_url: data.publicUrl }).eq("user_id", userId);
+  const { error: profileError } = await supabase.from("profiles").update({ avatar_url: data.publicUrl }).eq("id", userId);
   throwIfError(profileError);
   return data.publicUrl;
 }
