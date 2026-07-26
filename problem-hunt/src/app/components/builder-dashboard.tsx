@@ -90,6 +90,7 @@ export function BuilderDashboard() {
     try {
       const publicUrl = await uploadDashboardAvatar(user.id, file);
       setProfile((prev) => (prev ? { ...prev, avatar_url: publicUrl } : prev));
+      window.dispatchEvent(new Event("profile-avatar-updated"));
       setActionMessage("Profile picture updated.");
       URL.revokeObjectURL(previewUrl);
       setAvatarPreviewUrl(null);
