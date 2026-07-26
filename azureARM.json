@@ -28,7 +28,7 @@
       "apiVersion": "2019-08-01",
       "name": "[variables('staticWebAppName')]",
       "location": "[parameters('location')]",
-      "sku": { "name": "Standard", "tier": "Standard" },
+      "sku": { "name": "Free", "tier": "Free" },
       "properties": {
         "stagingEnvironmentPolicy": "Enabled",
         "buildProperties": { "appLocation": "/problem-hunt", "outputLocation": "dist" }
