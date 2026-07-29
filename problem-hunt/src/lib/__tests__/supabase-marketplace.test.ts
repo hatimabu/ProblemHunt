@@ -30,5 +30,6 @@ describe("getDashboardSnapshot", () => {
     expect(profileQuery.eq).toHaveBeenCalledWith("user_id", "user-123");
     expect(postQuery.eq).toHaveBeenCalledWith("author_id", "user-123");
     expect(proposalQuery.eq).toHaveBeenCalledWith("builder_id", "user-123");
+    expect(supabaseMock.from.mock.results[0].value.select).toHaveBeenCalledWith("username,full_name,bio,reputation_score,user_type,created_at,avatar_url");
   });
 });

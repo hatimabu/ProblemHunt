@@ -19,7 +19,6 @@ export interface DashboardProfile {
   reputation_score: number;
   user_type: string;
   created_at: string;
-  wallet_address?: string | null;
   avatar_url?: string | null;
 }
 
@@ -214,7 +213,7 @@ export async function getPrimaryWallet(chain: WalletChain) {
 
 export async function getDashboardSnapshot(userId: string): Promise<{ profile: DashboardProfile | null; walletCount: number; notifications: NotificationRow[]; posts: ProblemPost[]; proposals: ProposalRecord[] }> {
   const [profileResult, walletResult, notificationResult, postResult, proposalResult] = await Promise.all([
-    supabase.from("profiles").select("username,full_name,bio,reputation_score,user_type,created_at,wallet_address,avatar_url").eq("user_id", userId).maybeSingle(),
+    supabase.from("profiles").select("username,full_name,bio,reputation_score,user_type,created_at,avatar_url").eq("user_id", userId).maybeSingle(),
     supabase.from("wallets").select("id", { count: "exact", head: true }),
     supabase.from("notifications").select("id,message,link,is_read,created_at").order("created_at", { ascending: false }),
     supabase.from("problems").select("*").eq("author_id", userId).order("created_at", { ascending: false }),
@@ -232,7 +231,7 @@ export async function getDashboardSnapshot(userId: string): Promise<{ profile: D
 }
 
 export async function updateProfile(input: { full_name: string; bio: string }) {
-  const { data, error } = await supabase.from("profiles").update(input).select("username,full_name,bio,reputation_score,user_type,created_at,wallet_address,avatar_url").single();
+  const { data, error } = await supabase.from("profiles").update(input).select("username,full_name,bio,reputation_score,user_type,created_at,avatar_url").single();
   throwIfError(error);
   return data as DashboardProfile;
 }
