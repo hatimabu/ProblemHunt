@@ -21,7 +21,7 @@ import {
   type WalletChainDto,
   type UserWalletApiRow,
 } from "../../lib/user-wallets-api";
-import { fetchDashboardSnapshot, uploadDashboardAvatar, type DashboardProfile } from "../../lib/user-dashboard-api";
+import { deleteDashboardAvatar, fetchDashboardSnapshot, uploadDashboardAvatar, type DashboardProfile } from "../../lib/user-dashboard-api";
 import { formatTimeAgo, type ProblemPost, type ProposalRecord } from "../../lib/marketplace";
 
 function isNetworkError(err: unknown): boolean {
@@ -47,13 +47,27 @@ export function BuilderDashboard() {
   const [wallets, setWallets] = useState<UserWalletApiRow[]>([]);
   const [walletsLoading, setWalletsLoading] = useState(false);
   const [avatarUploading, setAvatarUploading] = useState(false);
+  const [avatarRemoving, setAvatarRemoving] = useState(false);
   const [avatarError, setAvatarError] = useState<string | null>(null);
   const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null);
   const [showAddresses, setShowAddresses] = useState(false);
+  const [now, setNow] = useState(() => Date.now());
 
   function maskAddress(address: string) {
     if (address.length <= 12) return address;
     return `${address.slice(0, 6)}...${address.slice(-4)}`;
+  }
+
+  function formatDeadlineCountdown(deadline?: string | null) {
+    if (!deadline) return "No deadline";
+    const milliseconds = new Date(deadline).getTime() - now;
+    if (Number.isNaN(milliseconds)) return "No deadline";
+    if (milliseconds <= 0) return "Deadline passed";
+    const totalMinutes = Math.ceil(milliseconds / 60000);
+    const days = Math.floor(totalMinutes / 1440);
+    const hours = Math.floor((totalMinutes % 1440) / 60);
+    const minutes = totalMinutes % 60;
+    return `${days ? `${days}d ` : ""}${hours ? `${hours}h ` : ""}${minutes}m remaining`;
   }
 
   const loadDashboard = async (showSpinner = false) => {
@@ -76,6 +90,10 @@ export function BuilderDashboard() {
 
   useEffect(() => { void loadDashboard(true); }, [user]);
   useEffect(() => { return () => { if (avatarPreviewUrl) URL.revokeObjectURL(avatarPreviewUrl); }; }, [avatarPreviewUrl]);
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 60_000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   const handleAvatarUpload = async (file: File) => {
     if (!user) return;
@@ -90,7 +108,6 @@ export function BuilderDashboard() {
     try {
       const publicUrl = await uploadDashboardAvatar(user.id, file);
       setProfile((prev) => (prev ? { ...prev, avatar_url: publicUrl } : prev));
-      window.dispatchEvent(new Event("profile-avatar-updated"));
       setActionMessage("Profile picture updated.");
       URL.revokeObjectURL(previewUrl);
       setAvatarPreviewUrl(null);
@@ -99,6 +116,21 @@ export function BuilderDashboard() {
       setAvatarPreviewUrl(null);
     } finally {
       setAvatarUploading(false);
+    }
+  };
+
+  const handleAvatarDelete = async () => {
+    if (!user || !profile?.avatar_url || !window.confirm("Remove your profile picture?")) return;
+    setAvatarError(null);
+    setAvatarRemoving(true);
+    try {
+      await deleteDashboardAvatar(user.id, profile.avatar_url);
+      setProfile((prev) => (prev ? { ...prev, avatar_url: null } : prev));
+      setActionMessage("Profile picture removed.");
+    } catch (err) {
+      setAvatarError(err instanceof Error ? err.message : "Failed to remove avatar.");
+    } finally {
+      setAvatarRemoving(false);
     }
   };
 
@@ -223,7 +255,7 @@ export function BuilderDashboard() {
               <div className="mt-8 grid gap-3 border-t border-[color:var(--board-line)] pt-5 sm:grid-cols-2 xl:grid-cols-4">
                 <button
                   type="button"
-                  onClick={() => setActiveTab("posted")}
+                  onClick={() => { setActiveTab("posted"); void loadDashboard(); }}
                   className="group nav-link-shine-teal rounded-xl border border-[color:var(--board-line)] bg-[var(--board-panel-strong)] p-4 text-left transition-colors"
                 >
                   <div className="flex items-center gap-2">
@@ -285,6 +317,12 @@ export function BuilderDashboard() {
               )}
               <input type="file" accept="image/*" disabled={avatarUploading} className="hidden" onChange={(e) => { const file = e.target.files?.[0]; e.target.value = ""; if (!file) return; void handleAvatarUpload(file); }} />
             </label>
+            {profile?.avatar_url ? (
+              <Button type="button" variant="outline" disabled={avatarUploading || avatarRemoving} onClick={() => void handleAvatarDelete()} className="mt-2 h-10 w-full border-[color:rgba(219,84,97,0.45)] bg-[rgba(219,84,97,0.12)] text-xs font-semibold uppercase tracking-[0.12em] text-[#ffd9dd] hover:bg-[rgba(219,84,97,0.24)] hover:text-white">
+                {avatarRemoving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+                Remove picture
+              </Button>
+            ) : null}
             {avatarError ? (
               <div className="mt-4 flex items-center gap-2 rounded-xl border border-[color:rgba(201,84,94,0.34)] bg-[rgba(201,84,94,0.12)] px-3 py-2 text-sm text-[var(--board-accent)]">
                 <AlertCircle className="h-4 w-4" />{avatarError}
@@ -355,7 +393,7 @@ export function BuilderDashboard() {
                     <div>
                       <p className="text-sm font-medium text-[var(--board-ink)]">{post.title}</p>
                       <p className="mt-1 text-xs text-[var(--board-muted)]">
-                        {post.category} • {formatTimeAgo(post.createdAt)}
+                        {post.category} • Posted {formatTimeAgo(post.createdAt)} • {formatDeadlineCountdown(post.deadline)}
                       </p>
                     </div>
                     <ArrowRight className="h-4 w-4 text-[var(--board-accent)]" />

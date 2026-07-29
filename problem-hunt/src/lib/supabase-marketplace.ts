@@ -253,6 +253,19 @@ export async function uploadAvatar(userId: string, file: File) {
   return data.publicUrl;
 }
 
+export async function deleteAvatar(userId: string, avatarUrl?: string | null) {
+  const { error: profileError } = await supabase.from("profiles").update({ avatar_url: null }).eq("user_id", userId);
+  throwIfError(profileError);
+
+  if (!avatarUrl) return;
+  const marker = "/storage/v1/object/public/avatars/";
+  const path = avatarUrl.includes(marker) ? decodeURIComponent(avatarUrl.split(marker)[1]?.split("?")[0] || "") : "";
+  if (!path) return;
+
+  const { error: storageError } = await supabase.storage.from("avatars").remove([path]);
+  if (storageError) console.warn("Avatar file could not be removed from storage:", storageError.message);
+}
+
 export async function getLeaderboard(limit = 20): Promise<Array<{ rank: number; builderId: string; builderName: string; proposalsSubmitted: number; proposalsAccepted: number; tipsReceived: number; reputationScore: number; tier: string }>> {
   const { data, error } = await supabase.rpc("get_leaderboard", { p_limit: limit });
   throwIfError(error);

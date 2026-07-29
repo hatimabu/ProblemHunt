@@ -1,6 +1,7 @@
 import type { NotificationRow, ProblemPost, ProposalRecord } from "./marketplace";
 import {
   deleteProblem,
+  deleteAvatar,
   getDashboardSnapshot as getSupabaseDashboardSnapshot,
   markNotificationRead as markSupabaseNotificationRead,
   updateProfile as updateSupabaseProfile,
@@ -28,6 +29,10 @@ export async function updateDashboardProfile(_userId: string, input: { full_name
 
 export async function uploadDashboardAvatar(userId: string, file: File): Promise<string> {
   return uploadAvatar(userId, file);
+}
+
+export async function deleteDashboardAvatar(userId: string, avatarUrl?: string | null): Promise<void> {
+  await deleteAvatar(userId, avatarUrl);
 }
 
 export async function markNotificationRead(notificationId: string): Promise<void> {

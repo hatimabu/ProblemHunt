@@ -1,11 +1,9 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router";
-import { LogOut, Menu, Rocket, User, X } from "lucide-react";
+import { LogOut, Menu, Rocket, X } from "lucide-react";
 import { Button } from "./ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { useAuth } from "../contexts/AuthContext";
 import { BrandLogo } from "./brand-logo";
-import { supabase } from "../../../lib/supabaseClient";
 
 const CORE_NAV_LINKS = [
   { path: "/", label: "Home" },
@@ -18,7 +16,6 @@ export function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const navLinks = useMemo(
     () => (user ? [...CORE_NAV_LINKS, { path: "/dashboard", label: "Dashboard" }] : CORE_NAV_LINKS),
     [user]
@@ -27,25 +24,6 @@ export function Navbar() {
   useEffect(() => {
     setMobileOpen(false);
   }, [location.pathname]);
-
-  const loadAvatar = useCallback(async () => {
-    if (!user) {
-      setAvatarUrl(null);
-      return;
-    }
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("avatar_url")
-      .eq("user_id", user.id)
-      .maybeSingle();
-    if (!error) setAvatarUrl(data?.avatar_url || null);
-  }, [user]);
-
-  useEffect(() => {
-    void loadAvatar();
-    window.addEventListener("profile-avatar-updated", loadAvatar);
-    return () => window.removeEventListener("profile-avatar-updated", loadAvatar);
-  }, [loadAvatar]);
 
   const isActive = (path: string) => {
     if (path === "/dashboard") {
@@ -111,22 +89,13 @@ export function Navbar() {
           </Link>
 
           {user ? (
-            <>
-              <Link to="/dashboard" className="flex items-center gap-2 rounded-full" aria-label="Open your dashboard">
-                <Avatar className="size-9 border border-[color:var(--board-line-strong)] bg-[var(--board-panel-strong)]">
-                  {avatarUrl ? <AvatarImage src={avatarUrl} alt={`${user.username}'s profile`} className="object-cover" /> : null}
-                  <AvatarFallback><User className="h-4 w-4 text-[var(--board-muted)]" /></AvatarFallback>
-                </Avatar>
-                <span className="hidden max-w-28 truncate text-sm text-[var(--board-ink)] lg:block">{user.username}</span>
-              </Link>
-              <Button
-                variant="outline"
-                onClick={handleSignOut}
-                className="h-10 border-[color:var(--board-line-strong)] bg-transparent px-3 text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-[var(--board-muted)] hover:bg-[var(--board-panel-strong)] hover:text-[var(--board-ink)]"
-              >
-                <LogOut className="h-4 w-4" />
-              </Button>
-            </>
+            <Button
+              variant="outline"
+              onClick={handleSignOut}
+              className="h-10 border-[color:var(--board-line-strong)] bg-transparent px-3 text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-[var(--board-muted)] hover:bg-[var(--board-panel-strong)] hover:text-[var(--board-ink)]"
+            >
+              <LogOut className="h-4 w-4" />
+            </Button>
           ) : (
             <Link to="/auth">
               <Button
