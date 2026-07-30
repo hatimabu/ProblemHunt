@@ -8,5 +8,8 @@
     "start": "cd problem-hunt && npm start",
     "build": "cd problem-hunt && npm run build",
     "server": "cd problem-hunt && npm run server"
+  },
+  "dependencies": {
+    "@openai/codex-security": "^0.1.1"
   }
 }

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router";
-import { Briefcase, Calendar, Coins, FileText, Rocket, Tag } from "lucide-react";
+import { Briefcase, Calendar, CheckCircle2, Coins, FileText, ShieldCheck, Tag } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Textarea } from "../components/ui/textarea";
@@ -22,12 +22,10 @@ export function PostProblem() {
   const navigate = useNavigate();
   const { user, isLoading } = useAuth();
   const [formData, setFormData] = useState({
-    type: "problem",
     title: "",
     description: "",
     requirements: "",
     category: "",
-    budget: "",
     budgetSol: "",
     deadline: "",
     jobType: "",
@@ -36,28 +34,23 @@ export function PostProblem() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const isJob = formData.type === "job";
-
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     if (isLoading || !user) { setError("Please wait for authentication to complete before posting."); return; }
-    if (isJob && (!formData.budgetSol || !formData.deadline || !formData.jobType)) { setError("Jobs require a budget in SOL, deadline, and job type."); return; }
-    if (!isJob && !formData.budget) { setError("Problem posts still require a bounty."); return; }
+    if (!formData.budgetSol || Number(formData.budgetSol) <= 0 || !formData.deadline || !formData.jobType || !formData.category) { setError("Jobs require a category, positive SOL payment, deadline, and job type."); return; }
 
     setIsSubmitting(true);
     setError(null);
 
     try {
       const problem = await createProblem({
-        type: formData.type,
+        type: "job",
         title: formData.title,
         description: formData.description,
         category: formData.category,
         requirements: splitListInput(formData.requirements),
         deadline: formData.deadline || null,
-        ...(isJob
-          ? { budget: `${formData.budgetSol} SOL`, budgetSol: Number(formData.budgetSol), jobType: formData.jobType, skillsRequired: splitListInput(formData.skillsRequired) }
-          : { budget: formData.budget }),
+        budget: `${formData.budgetSol} SOL`, budgetSol: Number(formData.budgetSol), jobType: formData.jobType, skillsRequired: splitListInput(formData.skillsRequired),
       });
       navigate(`/problem/${problem.id}`);
     } catch (err) {
@@ -75,28 +68,25 @@ export function PostProblem() {
       <main className="board-container py-8 md:py-10">
         <section className="grid gap-8 border-b border-[color:var(--board-line)] pb-10 lg:grid-cols-[minmax(0,1fr)_320px]">
           <div>
-            <div className="flex items-center gap-2">
-              <Rocket className="h-4 w-4 text-white" />
-              <p className="board-kicker">New Listing</p>
-            </div>
-            <h1 className="board-title mt-3">Post a brief, a scoped task, or a bounty.</h1>
+            <p className="board-kicker">Create paid job</p>
+            <h1 className="board-title mt-3">Set a clear scope. Pay the builder directly.</h1>
             <p className="board-copy mt-5">
-              Keep the title sharp, write the scope like someone will price it, and make the payout path obvious before builders respond.
+              Publish one paid task, accept one builder, and approve the final SOL transfer from Phantom or Solflare once the work is complete.
             </p>
           </div>
 
           <aside className="space-y-5">
             <div className="board-stat">
-              <div className="board-stat__value">{isJob ? "Job" : "Brief"}</div>
-              <div className="board-stat__label">Current listing type</div>
+              <div className="board-stat__value">Paid job</div>
+              <div className="board-stat__label">Listing type</div>
             </div>
             <div className="board-stat">
-              <div className="board-stat__value">{isJob ? "SOL" : "Flexible"}</div>
-              <div className="board-stat__label">Primary payout mode</div>
+              <div className="board-stat__value">SOL</div>
+              <div className="board-stat__label">Direct wallet payment</div>
             </div>
             <div className="board-stat">
-              <div className="board-stat__value">Clear</div>
-              <div className="board-stat__label">Scope beats hype here</div>
+              <div className="board-stat__value">On-chain</div>
+              <div className="board-stat__label">Transaction hash recorded</div>
             </div>
           </aside>
         </section>
@@ -111,41 +101,17 @@ export function PostProblem() {
           <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
             <div className="space-y-8">
               <section className="board-panel p-6 md:p-8">
-                <p className="board-kicker">Type</p>
-                <div className="mt-5 grid gap-4 md:grid-cols-2">
-                  {[
-                    { value: "problem", title: "Problem brief", copy: "Use this when you want ideas, approaches, or broad technical help around a blocker." },
-                    { value: "job", title: "Paid task", copy: "Use this when the work is scoped enough to accept one builder and pay them directly." },
-                  ].map((option) => (
-                    <button
-                      key={option.value}
-                      type="button"
-                      onClick={() => setFormData((current) => ({ ...current, type: option.value }))}
-                      className={`border px-5 py-5 text-left transition-all ${
-                        formData.type === option.value
-                          ? "border-[color:rgba(201,84,94,0.34)] bg-[rgba(201,84,94,0.14)]"
-                          : "border-[color:var(--board-line)] bg-[var(--board-panel)] hover:bg-[var(--board-panel-strong)]"
-                      }`}
-                    >
-                      <p className="font-display text-2xl font-semibold tracking-[-0.04em] text-[var(--board-ink)]">{option.title}</p>
-                      <p className="mt-2 text-sm leading-7 text-[var(--board-muted)]">{option.copy}</p>
-                    </button>
-                  ))}
-                </div>
-              </section>
-
-              <section className="board-panel p-6 md:p-8">
                 <div className="grid gap-6">
                   <div>
                     <Label htmlFor="title" className="mb-2 flex items-center gap-2 text-sm text-[var(--board-ink)]">
                       <FileText className="h-4 w-4 text-white" />
-                      {isJob ? "Task title" : "Brief title"}
+                      Job title
                     </Label>
-                    <Input id="title" placeholder={isJob ? "Harden our CI deployment workflow" : "Need a better Terraform drift workflow"} value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} className="board-field" required />
+                    <Input id="title" placeholder="Harden our CI deployment workflow" value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} className="board-field" required />
                   </div>
                   <div>
-                    <Label htmlFor="description" className="mb-2 block text-sm text-[var(--board-ink)]">Scope</Label>
-                    <Textarea id="description" placeholder={isJob ? "Describe the deliverable, constraints, handoff, and what done means." : "Describe the problem, why it matters, and what kind of help you want."} value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} className="board-field min-h-[170px]" required />
+                    <Label htmlFor="description" className="mb-2 block text-sm text-[var(--board-ink)]">Deliverable and scope</Label>
+                    <Textarea id="description" placeholder="Describe the deliverable, constraints, handoff, and what done means." value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} className="board-field min-h-[170px]" required />
                   </div>
                   <div>
                     <Label htmlFor="requirements" className="mb-2 block text-sm text-[var(--board-ink)]">Requirements</Label>
@@ -155,7 +121,7 @@ export function PostProblem() {
               </section>
 
               <section className="board-panel p-6 md:p-8">
-                <div className={`grid gap-6 ${isJob ? "md:grid-cols-2" : "md:grid-cols-3"}`}>
+                <div className="grid gap-6 md:grid-cols-2">
                   <div>
                     <Label htmlFor="category" className="mb-2 flex items-center gap-2 text-sm text-[var(--board-ink)]">
                       <Tag className="h-4 w-4 text-white" />
@@ -169,22 +135,21 @@ export function PostProblem() {
                     </Select>
                   </div>
                   <div>
-                    <Label htmlFor={isJob ? "budgetSol" : "budget"} className="mb-2 flex items-center gap-2 text-sm text-[var(--board-ink)]">
+                    <Label htmlFor="budgetSol" className="mb-2 flex items-center gap-2 text-sm text-[var(--board-ink)]">
                       <Coins className="h-4 w-4 text-white" />
-                      {isJob ? "Budget (SOL)" : "Bounty"}
+                      Agreed payment (SOL)
                     </Label>
-                    <Input id={isJob ? "budgetSol" : "budget"} type={isJob ? "number" : "text"} step={isJob ? "0.000001" : undefined} placeholder={isJob ? "3.5" : "$900 / 1.25 SOL / fixed fee"} value={isJob ? formData.budgetSol : formData.budget} onChange={(e) => setFormData({ ...formData, [isJob ? "budgetSol" : "budget"]: e.target.value })} className="board-field" required />
+                    <Input id="budgetSol" type="number" min="0.000001" step="0.000001" placeholder="3.5" value={formData.budgetSol} onChange={(e) => setFormData({ ...formData, budgetSol: e.target.value })} className="board-field" required />
                   </div>
                   <div>
                     <Label htmlFor="deadline" className="mb-2 flex items-center gap-2 text-sm text-[var(--board-ink)]">
                       <Calendar className="h-4 w-4 text-white" />
                       Deadline
                     </Label>
-                    <Input id="deadline" type="date" value={formData.deadline} onChange={(e) => setFormData({ ...formData, deadline: e.target.value })} className="board-field" required={isJob} />
+                    <Input id="deadline" type="date" value={formData.deadline} onChange={(e) => setFormData({ ...formData, deadline: e.target.value })} className="board-field" required />
                   </div>
                 </div>
-                {isJob ? (
-                  <div className="mt-6 grid gap-6 md:grid-cols-2">
+                <div className="mt-6 grid gap-6 md:grid-cols-2">
                     <div>
                       <Label htmlFor="jobType" className="mb-2 flex items-center gap-2 text-sm text-[var(--board-ink)]">
                         <Briefcase className="h-4 w-4 text-white" />
@@ -201,8 +166,7 @@ export function PostProblem() {
                       <Label htmlFor="skillsRequired" className="mb-2 block text-sm text-[var(--board-ink)]">Skills required</Label>
                       <Input id="skillsRequired" placeholder="Terraform, Kubernetes, GitHub Actions" value={formData.skillsRequired} onChange={(e) => setFormData({ ...formData, skillsRequired: e.target.value })} className="board-field" />
                     </div>
-                  </div>
-                ) : null}
+                </div>
               </section>
             </div>
 
@@ -221,16 +185,26 @@ export function PostProblem() {
                 <div className="mt-5 space-y-4 text-sm leading-7 text-[var(--board-muted)]">
                   <p>State the deliverable, not just the mood of the project.</p>
                   <p>Use the requirements section for constraints and non-negotiables.</p>
-                  <p>For jobs, include a real deadline and a payout in SOL.</p>
+                  <p>Include a real deadline and the exact SOL payment.</p>
+                  <p className="flex gap-2 text-[var(--board-ink)]"><ShieldCheck className="mt-1 h-4 w-4 shrink-0 text-emerald-400" />After completion, approve the transfer in Phantom or Solflare. The transaction hash is saved to this job.</p>
+                </div>
+              </section>
+
+              <section className="board-panel p-6">
+                <p className="board-kicker">Payment flow</p>
+                <div className="mt-5 space-y-3 text-sm leading-6 text-[var(--board-muted)]">
+                  <p className="flex gap-2"><CheckCircle2 className="mt-1 h-4 w-4 shrink-0 text-emerald-400" />Accept one proposal.</p>
+                  <p className="flex gap-2"><CheckCircle2 className="mt-1 h-4 w-4 shrink-0 text-emerald-400" />Builder marks the work complete.</p>
+                  <p className="flex gap-2"><CheckCircle2 className="mt-1 h-4 w-4 shrink-0 text-emerald-400" />Approve payment in Phantom or Solflare; the transaction hash marks the job paid.</p>
                 </div>
               </section>
 
               <div className="flex flex-col gap-3">
                 <Link to="/browse">
-                  <Button variant="outline" className="h-11 w-full border-[color:var(--board-line-strong)] bg-transparent text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-[var(--board-muted)] transition-all hover:bg-[var(--board-panel-strong)] hover:text-[var(--board-ink)] hover:shadow-[0_0_20px_rgba(200,205,208,0.35)] hover:scale-[1.02]">Cancel</Button>
+                  <Button variant="outline" className="h-11 w-full border-[color:var(--board-line-strong)] bg-transparent text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-[var(--board-muted)] transition-all hover:bg-[var(--board-panel-strong)] hover:text-[var(--board-ink)] hover:shadow-[0_0_20px_rgba(200,205,208,0.35)] hover:scale-[1.02]">Back to browse</Button>
                 </Link>
                 <Button type="submit" disabled={isSubmitting || isLoading || !user} className="h-11 border-0 bg-[var(--board-accent)] text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-white transition-all hover:bg-[var(--color-accent-hover)] hover:shadow-[0_0_20px_rgba(200,205,208,0.35)] hover:scale-[1.02] disabled:opacity-50">
-                  {isSubmitting ? "Posting..." : isJob ? "Post job" : "Post brief"}
+                  {isSubmitting ? "Publishing..." : "Publish paid job"}
                 </Button>
               </div>
             </aside>

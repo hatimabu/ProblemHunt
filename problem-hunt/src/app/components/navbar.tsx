@@ -84,7 +84,7 @@ export function Navbar() {
           <Link to="/post" className="hidden sm:block">
             <Button className="h-10 border-0 bg-[var(--board-accent)] px-4 text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-white hover:bg-[var(--color-accent-hover)]">
               <Rocket className="mr-1.5 h-3.5 w-3.5" />
-              Post brief
+              Post job
             </Button>
           </Link>
 
@@ -138,7 +138,7 @@ export function Navbar() {
             <Link to="/post" onClick={() => setMobileOpen(false)}>
               <Button className="mt-2 h-11 w-full border-0 bg-[var(--board-accent)] text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-white hover:bg-[var(--color-accent-hover)]">
                 <Rocket className="mr-1.5 h-3.5 w-3.5" />
-                Post brief
+                Post job
               </Button>
             </Link>
 

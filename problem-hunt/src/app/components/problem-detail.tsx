@@ -166,11 +166,11 @@ export function ProblemDetail() {
     }
   };
 
-  const handlePayBuilder = async () => {
+  const handlePayBuilder = async (preferredWallet: "phantom" | "solflare") => {
     if (!id || !user || !acceptedProposal || !problem) return;
     const amountSol = acceptedProposal.proposedPriceSol || problem.budgetSol;
     if (!amountSol || !acceptedProposal.builderWalletAddress) throw new Error("Missing payout amount or builder wallet.");
-    const wallet = await connectSolanaWallet();
+    const wallet = await connectSolanaWallet(preferredWallet);
     await syncUserSolanaWallet(user.id, wallet.address);
     setMySolanaWallet(wallet.address);
     const transfer = await sendSolTransfer({ provider: wallet.provider, toAddress: acceptedProposal.builderWalletAddress, amountSol });
@@ -338,7 +338,10 @@ export function ProblemDetail() {
                     })} disabled={actionPending === "complete"} className={`w-full ${primaryBtn}`}>{actionPending === "complete" ? "Marking..." : "Mark complete"}</Button>
                   ) : null}
                   {isJob && isOwner && problem.jobStatus === "completed" ? (
-                    <Button onClick={() => runAction("pay", handlePayBuilder)} disabled={actionPending === "pay"} className={`w-full ${primaryBtn}`}><Wallet className="mr-2 h-4 w-4" />{actionPending === "pay" ? "Paying..." : "Pay builder"}</Button>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Button onClick={() => runAction("pay", () => handlePayBuilder("phantom"))} disabled={actionPending === "pay"} className={`w-full ${primaryBtn}`}><Wallet className="mr-2 h-4 w-4" />{actionPending === "pay" ? "Paying..." : "Phantom"}</Button>
+                      <Button onClick={() => runAction("pay", () => handlePayBuilder("solflare"))} disabled={actionPending === "pay"} className={`w-full ${secondaryBtn}`}>{actionPending === "pay" ? "Paying..." : "Solflare"}</Button>
+                    </div>
                   ) : null}
                   {isOwner ? (
                     <Button type="button" variant="outline" onClick={handleDeleteProblem} disabled={deletePending} className="board-danger-btn w-full">
