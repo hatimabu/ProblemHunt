@@ -13,17 +13,14 @@ BEGIN
   RETURN NEW;
 END;
 $$;
-
 DROP TRIGGER IF EXISTS problems_set_updated_at ON public.problems;
 CREATE TRIGGER problems_set_updated_at
 BEFORE UPDATE ON public.problems
 FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
-
 DROP TRIGGER IF EXISTS proposals_set_updated_at ON public.proposals;
 CREATE TRIGGER proposals_set_updated_at
 BEFORE UPDATE ON public.proposals
 FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
-
 CREATE OR REPLACE FUNCTION public.create_problem(
   p_type text,
   p_title text,
@@ -72,7 +69,6 @@ BEGIN
   RETURN result;
 END;
 $$;
-
 CREATE OR REPLACE FUNCTION public.update_problem(
   p_problem_id uuid,
   p_title text DEFAULT NULL,
@@ -110,7 +106,6 @@ BEGIN
   RETURN result;
 END;
 $$;
-
 CREATE OR REPLACE FUNCTION public.create_proposal(
   p_problem_id uuid,
   p_title text,
@@ -153,7 +148,6 @@ BEGIN
   RETURN result;
 END;
 $$;
-
 CREATE OR REPLACE FUNCTION public.toggle_problem_upvote(p_problem_id uuid)
 RETURNS public.problems
 LANGUAGE plpgsql
@@ -174,7 +168,6 @@ BEGIN
   RETURN result;
 END;
 $$;
-
 CREATE OR REPLACE FUNCTION public.accept_proposal(p_problem_id uuid, p_proposal_id uuid)
 RETURNS public.problems
 LANGUAGE plpgsql
@@ -198,7 +191,6 @@ BEGIN
   RETURN result;
 END;
 $$;
-
 CREATE OR REPLACE FUNCTION public.mark_job_complete(p_problem_id uuid)
 RETURNS public.problems
 LANGUAGE plpgsql
@@ -217,7 +209,6 @@ BEGIN
   RETURN result;
 END;
 $$;
-
 CREATE OR REPLACE FUNCTION public.record_job_payment(
   p_problem_id uuid, p_amount_sol numeric, p_tx_hash text, p_from_wallet_address text DEFAULT NULL
 )
@@ -247,7 +238,6 @@ BEGIN
   RETURN result;
 END;
 $$;
-
 CREATE OR REPLACE FUNCTION public.record_tip(
   p_proposal_id uuid, p_amount numeric, p_chain text, p_currency text, p_tx_hash text DEFAULT NULL,
   p_message text DEFAULT NULL, p_to_wallet text DEFAULT NULL
@@ -274,54 +264,6 @@ BEGIN
   RETURN result;
 END;
 $$;
-
-CREATE OR REPLACE FUNCTION public.get_leaderboard(p_limit integer DEFAULT 20)
-RETURNS TABLE (
-  rank bigint,
-  builder_id uuid,
-  builder_name text,
-  proposals_submitted bigint,
-  proposals_accepted bigint,
-  tips_received numeric,
-  reputation_score bigint,
-  tier text
-)
-LANGUAGE sql
-SECURITY DEFINER
-SET search_path = public
-AS $$
-  WITH proposal_stats AS (
-    SELECT p.builder_id,
-      max(coalesce(nullif(p.builder_name, ''), 'Anonymous Builder')) AS builder_name,
-      count(*)::bigint AS proposals_submitted,
-      count(*) FILTER (WHERE p.status = 'accepted')::bigint AS proposals_accepted
-    FROM public.proposals p
-    WHERE p.builder_id IS NOT NULL
-    GROUP BY p.builder_id
-  ), tip_stats AS (
-    SELECT t.builder_id, coalesce(sum(t.amount), 0) AS tips_received
-    FROM public.tips t
-    WHERE t.builder_id IS NOT NULL
-    GROUP BY t.builder_id
-  ), scored AS (
-    SELECT ps.builder_id, ps.builder_name, ps.proposals_submitted, ps.proposals_accepted,
-      coalesce(ts.tips_received, 0) AS tips_received,
-      (ps.proposals_accepted * 100 + floor(coalesce(ts.tips_received, 0) * 10)::bigint + ps.proposals_submitted * 5) AS reputation_score
-    FROM proposal_stats ps
-    LEFT JOIN tip_stats ts ON ts.builder_id = ps.builder_id
-  )
-  SELECT row_number() OVER (ORDER BY reputation_score DESC, builder_name ASC), builder_id, builder_name,
-    proposals_submitted, proposals_accepted, tips_received, reputation_score,
-    CASE WHEN reputation_score >= 5000 THEN 'Legend'
-         WHEN reputation_score >= 1500 THEN 'Expert'
-         WHEN reputation_score >= 500 THEN 'Senior'
-         WHEN reputation_score >= 100 THEN 'Builder'
-         ELSE 'Newcomer' END
-  FROM scored
-  ORDER BY reputation_score DESC, builder_name ASC
-  LIMIT greatest(1, least(coalesce(p_limit, 20), 100));
-$$;
-
 REVOKE ALL ON FUNCTION public.create_problem(text,text,text,text,text,text[],timestamptz,numeric,text,text[]) FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.update_problem(uuid,text,text,text,text,text[],timestamptz,numeric,text,text[]) FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.create_proposal(uuid,text,text,text,text,text,text,text[],numeric,text) FROM PUBLIC;
@@ -330,7 +272,6 @@ REVOKE ALL ON FUNCTION public.accept_proposal(uuid,uuid) FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.mark_job_complete(uuid) FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.record_job_payment(uuid,numeric,text,text) FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.record_tip(uuid,numeric,text,text,text,text,text) FROM PUBLIC;
-REVOKE ALL ON FUNCTION public.get_leaderboard(integer) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.create_problem(text,text,text,text,text,text[],timestamptz,numeric,text,text[]) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.update_problem(uuid,text,text,text,text,text[],timestamptz,numeric,text,text[]) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.create_proposal(uuid,text,text,text,text,text,text,text[],numeric,text) TO authenticated;
@@ -339,4 +280,3 @@ GRANT EXECUTE ON FUNCTION public.accept_proposal(uuid,uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.mark_job_complete(uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.record_job_payment(uuid,numeric,text,text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.record_tip(uuid,numeric,text,text,text,text,text) TO authenticated;
-GRANT EXECUTE ON FUNCTION public.get_leaderboard(integer) TO anon, authenticated;

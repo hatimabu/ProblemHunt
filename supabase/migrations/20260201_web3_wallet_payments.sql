@@ -1,6 +1,3 @@
-Exit code: 0
-Wall time: 1.3 seconds
-Output:
 -- Migration: Web3 Wallet Authentication and Payment Verification
 -- Date: 2026-02-01
 -- Description: Tables for wallet linking, payment orders, and transaction verification
@@ -26,7 +23,6 @@ CREATE TABLE IF NOT EXISTS public.wallets (
         OR (chain = 'solana' AND length(address) BETWEEN 32 AND 44)
     )
 );
-
 -- Index for fast user lookup
 CREATE INDEX IF NOT EXISTS idx_wallets_user_id ON public.wallets(user_id);
 CREATE INDEX IF NOT EXISTS idx_wallets_address ON public.wallets(address);
@@ -36,7 +32,6 @@ CREATE INDEX IF NOT EXISTS idx_wallets_address ON public.wallets(address);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_wallets_one_primary_per_user_chain 
     ON public.wallets(user_id, chain) 
     WHERE is_primary = true;
-
 -- Updated at trigger
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
@@ -45,13 +40,11 @@ BEGIN
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
-
 DROP TRIGGER IF EXISTS update_wallets_updated_at ON public.wallets;
 CREATE TRIGGER update_wallets_updated_at
     BEFORE UPDATE ON public.wallets
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();
-
 -- ============================================================================
 -- ORDERS TABLE: Store payment orders and verification status
 -- ============================================================================
@@ -87,24 +80,20 @@ CREATE TABLE IF NOT EXISTS public.orders (
     created_at timestamptz DEFAULT now(),
     updated_at timestamptz DEFAULT now()
 );
-
 -- Indexes for performance
 CREATE INDEX IF NOT EXISTS idx_orders_user_id ON public.orders(user_id);
 CREATE INDEX IF NOT EXISTS idx_orders_status ON public.orders(status);
 CREATE INDEX IF NOT EXISTS idx_orders_wallet_address ON public.orders(wallet_address);
 CREATE INDEX IF NOT EXISTS idx_orders_created_at ON public.orders(created_at DESC);
-
 -- Ensure unique transaction hash (partial unique index - only non-NULL values)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_orders_unique_tx_hash 
     ON public.orders(tx_hash) 
     WHERE tx_hash IS NOT NULL;
-
 DROP TRIGGER IF EXISTS update_orders_updated_at ON public.orders;
 CREATE TRIGGER update_orders_updated_at
     BEFORE UPDATE ON public.orders
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();
-
 -- ============================================================================
 -- ROW LEVEL SECURITY (RLS) POLICIES
 -- ============================================================================
@@ -112,57 +101,47 @@ CREATE TRIGGER update_orders_updated_at
 -- Enable RLS
 ALTER TABLE public.wallets ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.orders ENABLE ROW LEVEL SECURITY;
-
 -- Wallets Policies
 -- Drop existing policies to avoid conflicts
 DROP POLICY IF EXISTS "Users can view own wallets" ON public.wallets;
 DROP POLICY IF EXISTS "Users can insert own wallets" ON public.wallets;
 DROP POLICY IF EXISTS "Users can update own wallets" ON public.wallets;
 DROP POLICY IF EXISTS "Users can delete own wallets" ON public.wallets;
-
 -- Users can view their own wallets
 CREATE POLICY "Users can view own wallets"
     ON public.wallets FOR SELECT
     USING (auth.uid() = user_id);
-
 -- Users can insert their own wallets
 CREATE POLICY "Users can insert own wallets"
     ON public.wallets FOR INSERT
     WITH CHECK (auth.uid() = user_id);
-
 -- Users can update their own wallets (e.g., set primary)
 CREATE POLICY "Users can update own wallets"
     ON public.wallets FOR UPDATE
     USING (auth.uid() = user_id)
     WITH CHECK (auth.uid() = user_id);
-
 -- Users can delete their own wallets
 CREATE POLICY "Users can delete own wallets"
     ON public.wallets FOR DELETE
     USING (auth.uid() = user_id);
-
 -- Orders Policies
 -- Drop existing policies to avoid conflicts
 DROP POLICY IF EXISTS "Users can view own orders" ON public.orders;
 DROP POLICY IF EXISTS "Users can insert own orders" ON public.orders;
 DROP POLICY IF EXISTS "Users can update own pending orders" ON public.orders;
-
 -- Users can view their own orders
 CREATE POLICY "Users can view own orders"
     ON public.orders FOR SELECT
     USING (auth.uid() = user_id);
-
 -- Users can create their own orders
 CREATE POLICY "Users can insert own orders"
     ON public.orders FOR INSERT
     WITH CHECK (auth.uid() = user_id);
-
 -- Users can update their own pending orders
 CREATE POLICY "Users can update own pending orders"
     ON public.orders FOR UPDATE
     USING (auth.uid() = user_id AND status = 'pending')
     WITH CHECK (auth.uid() = user_id);
-
 -- ============================================================================
 -- HELPER FUNCTIONS
 -- ============================================================================
@@ -192,7 +171,6 @@ BEGIN
     RETURN wallet_address;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
 -- Function to mark order as paid (called by Edge Function with service_role)
 CREATE OR REPLACE FUNCTION mark_order_paid(
     p_order_id uuid,
@@ -234,19 +212,15 @@ BEGIN
     RETURN true;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
 -- Security: Revoke public access to SECURITY DEFINER functions
 REVOKE EXECUTE ON FUNCTION get_primary_wallet(uuid, text) FROM public, anon;
 REVOKE EXECUTE ON FUNCTION mark_order_paid(uuid, text, numeric) FROM public, anon, authenticated;
-
 -- Grant execute permissions
 -- get_primary_wallet: Allow authenticated users to call
 GRANT EXECUTE ON FUNCTION get_primary_wallet(uuid, text) TO authenticated;
-
 -- mark_order_paid: Only callable via service_role key (Edge Functions)
 -- Service role bypasses RLS and function permissions, but we grant to postgres for safety
 GRANT EXECUTE ON FUNCTION mark_order_paid(uuid, text, numeric) TO postgres;
-
 -- ============================================================================
 -- INITIAL DATA / EXAMPLES
 -- ============================================================================

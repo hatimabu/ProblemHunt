@@ -54,7 +54,6 @@ BEGIN
   RETURN result;
 END;
 $$;
-
 CREATE OR REPLACE FUNCTION public.accept_proposal(p_problem_id uuid, p_proposal_id uuid)
 RETURNS public.problems
 LANGUAGE plpgsql
@@ -83,7 +82,6 @@ BEGIN
   RETURN result;
 END;
 $$;
-
 CREATE OR REPLACE FUNCTION public.toggle_problem_upvote(p_problem_id uuid)
 RETURNS public.problems
 LANGUAGE plpgsql
@@ -106,7 +104,6 @@ BEGIN
   RETURN result;
 END;
 $$;
-
 REVOKE ALL ON FUNCTION public.create_proposal(uuid,text,text,text,text,text,text,text[],numeric,text) FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.accept_proposal(uuid,uuid) FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.toggle_problem_upvote(uuid) FROM PUBLIC;

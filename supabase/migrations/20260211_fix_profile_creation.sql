@@ -1,6 +1,3 @@
-Exit code: 0
-Wall time: 1.3 seconds
-Output:
 -- Migration: Fix Profile Creation
 -- Date: 2026-02-11
 -- Description: Add trigger to auto-create profiles and backfill existing users
@@ -18,11 +15,9 @@ CREATE TABLE IF NOT EXISTS public.profiles (
     created_at timestamptz DEFAULT now(),
     updated_at timestamptz DEFAULT now()
 );
-
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_profiles_username ON public.profiles(username);
 CREATE INDEX IF NOT EXISTS idx_profiles_user_type ON public.profiles(user_type);
-
 -- ============================================================================
 -- AUTO-CREATE PROFILE TRIGGER
 -- ============================================================================
@@ -53,14 +48,12 @@ BEGIN
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
 -- Trigger on auth.users insert
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW
   EXECUTE FUNCTION public.handle_new_user();
-
 -- ============================================================================
 -- BACKFILL EXISTING USERS WITHOUT PROFILES
 -- ============================================================================
@@ -77,7 +70,8 @@ SELECT
 FROM auth.users au
 LEFT JOIN public.profiles p ON au.id = p.id
 WHERE p.id IS NULL
-ON CONFLICT (username) DO NOTHING; -- Skip if username already exists
+ON CONFLICT (username) DO NOTHING;
+-- Skip if username already exists
 
 -- ============================================================================
 -- RLS POLICIES
@@ -85,28 +79,24 @@ ON CONFLICT (username) DO NOTHING; -- Skip if username already exists
 
 -- Enable RLS
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
-
 -- Policy: Users can read all profiles
 DROP POLICY IF EXISTS "Profiles are viewable by everyone" ON public.profiles;
 CREATE POLICY "Profiles are viewable by everyone"
   ON public.profiles
   FOR SELECT
   USING (true);
-
 -- Policy: Users can update their own profile
 DROP POLICY IF EXISTS "Users can update own profile" ON public.profiles;
 CREATE POLICY "Users can update own profile"
   ON public.profiles
   FOR UPDATE
   USING ((SELECT auth.uid()) = id);
-
 -- Policy: Users can insert their own profile (for manual creation)
 DROP POLICY IF EXISTS "Users can insert own profile" ON public.profiles;
 CREATE POLICY "Users can insert own profile"
   ON public.profiles
   FOR INSERT
   WITH CHECK ((SELECT auth.uid()) = id);
-
 -- ============================================================================
 -- UPDATED AT TRIGGER
 -- ============================================================================
@@ -115,7 +105,6 @@ CREATE TRIGGER update_profiles_updated_at
   BEFORE UPDATE ON public.profiles
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
-
 -- ============================================================================
 -- VERIFICATION QUERY
 -- ============================================================================
