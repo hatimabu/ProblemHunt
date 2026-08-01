@@ -30,10 +30,10 @@ function deadlineLabel(deadline?: string | null, now = Date.now()) {
 
 function walletTone(chain: WalletChainDto) {
   switch (chain) {
-    case "solana": return "border-violet-300 bg-violet-50 text-violet-800";
-    case "ethereum": return "border-sky-300 bg-sky-50 text-sky-800";
-    case "polygon": return "border-fuchsia-300 bg-fuchsia-50 text-fuchsia-800";
-    case "arbitrum": return "border-blue-300 bg-blue-50 text-blue-800";
+    case "solana": return "border-violet-400/40 bg-violet-400/15 text-violet-100";
+    case "ethereum": return "border-sky-400/40 bg-sky-400/15 text-sky-100";
+    case "polygon": return "border-fuchsia-400/40 bg-fuchsia-400/15 text-fuchsia-100";
+    case "arbitrum": return "border-blue-400/40 bg-blue-400/15 text-blue-100";
   }
 }
 
@@ -195,7 +195,7 @@ export function BuilderDashboard() {
       <main className="board-container py-8 md:py-12">
         <div className="mb-8 flex flex-col gap-5 border-b border-[color:var(--board-line)] pb-7 md:flex-row md:items-end md:justify-between">
           <div><p className="board-kicker">Account workspace</p><h1 className="board-title mt-3">Your dashboard</h1><p className="mt-3 max-w-2xl text-[var(--board-muted)]">Manage your profile, payout wallets, and every brief you have posted.</p></div>
-          <Button variant="outline" onClick={() => void handleRefresh()} className="border-[color:var(--board-line-strong)] bg-white text-[var(--board-ink)] hover:-translate-y-0.5 hover:border-violet-300 hover:bg-violet-50"><RefreshCw className="mr-2 h-4 w-4" />Refresh</Button>
+          <Button variant="outline" onClick={() => void handleRefresh()} className="border-[color:var(--board-line-strong)] bg-transparent text-[var(--board-ink)] hover:bg-[var(--board-panel-strong)]"><RefreshCw className="mr-2 h-4 w-4" />Refresh</Button>
         </div>
 
         {error ? <div role="alert" className="mb-6 flex gap-2 rounded-xl border border-[color:rgba(219,84,97,0.5)] bg-[rgba(219,84,97,0.14)] p-4 text-sm text-[#ffd9dd]"><AlertCircle className="h-5 w-5 shrink-0" />{error}</div> : null}
