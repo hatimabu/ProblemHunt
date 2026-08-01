@@ -1,6 +1,8 @@
 import {
+  addWallet,
   deleteWallet,
   listWallets,
+  setPrimaryWallet,
   upsertPrimaryWallet,
   type WalletChain,
   type WalletRow,
@@ -15,6 +17,14 @@ export async function listUserWalletsApi(): Promise<UserWalletApiRow[]> {
 
 export async function upsertPrimaryWalletApi(chain: WalletChainDto, address: string): Promise<UserWalletApiRow> {
   return upsertPrimaryWallet(chain, address);
+}
+
+export async function addUserWalletApi(chain: WalletChainDto, address: string): Promise<UserWalletApiRow> {
+  return addWallet(chain, address);
+}
+
+export async function setPrimaryUserWalletApi(walletId: string): Promise<UserWalletApiRow> {
+  return setPrimaryWallet(walletId);
 }
 
 export async function deleteUserWalletApi(walletId: string): Promise<void> {

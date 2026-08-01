@@ -15,13 +15,13 @@
   --board-accent: var(--color-accent);
   --board-cyan: var(--color-accent-hover);
   --board-orange: var(--color-accent-hover);
-  --board-accent-soft: rgba(201, 84, 94, 0.12);
+  --board-accent-soft: rgba(109, 74, 255, 0.12);
   --board-rust: var(--color-accent);
   --board-gold: var(--color-gold);
-  --board-night: #070a0f;
-  --board-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
-  --board-shadow-soft: 0 10px 24px rgba(0, 0, 0, 0.25);
-  --board-focus-ring: 0 0 0 2px rgba(201, 84, 94, 0.4);
+  --board-night: #f7f7ff;
+  --board-shadow: 0 18px 40px rgba(79, 70, 229, 0.12);
+  --board-shadow-soft: 0 10px 24px rgba(79, 70, 229, 0.08);
+  --board-focus-ring: 0 0 0 2px rgba(109, 74, 255, 0.35);
 
   /* Metal theme tokens */
   --board-metal-dark: #070a0f;
@@ -49,7 +49,7 @@ html {
 
 body {
   min-height: 100vh;
-  background: #070a0f;
+  background: linear-gradient(135deg, #f8f7ff 0%, #effcff 48%, #fff6eb 100%);
   color: var(--board-ink);
   font-family: var(--font-body);
   line-height: 1.65;
@@ -589,7 +589,7 @@ samp,
 [data-slot='dialog-content'] {
   position: relative;
   overflow: hidden;
-  border: 0.5px solid var(--color-border-subtle);
+  border: 1px solid var(--color-border-subtle);
   border-radius: 12px;
   background: var(--board-panel);
   box-shadow: var(--board-shadow);
@@ -630,7 +630,7 @@ samp,
 .board-panel:hover {
   background: var(--board-panel-strong);
   transform: translateY(-2px);
-  box-shadow: 0 20px 44px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255,255,255,0.03);
+  box-shadow: 0 22px 46px rgba(79, 70, 229, 0.16);
 }
 
 .board-panel--soft,

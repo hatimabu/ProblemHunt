@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router";
-import { AlertCircle, ArrowRight, Camera, CheckCircle2, ClipboardList, Eye, EyeOff, Loader2, Plus, RefreshCw, ShieldCheck, Trash2, User, Wallet } from "lucide-react";
+import { AlertCircle, ArrowRight, Camera, CheckCircle2, ClipboardList, Eye, EyeOff, Loader2, Plus, RefreshCw, Trash2, User, Wallet } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { Navbar } from "./navbar";
 import { Button } from "./ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { Input } from "./ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
-import { deleteUserWalletApi, listUserWalletsApi, upsertPrimaryWalletApi, type UserWalletApiRow, type WalletChainDto } from "../../lib/user-wallets-api";
+import { addUserWalletApi, deleteUserWalletApi, listUserWalletsApi, setPrimaryUserWalletApi, type UserWalletApiRow, type WalletChainDto } from "../../lib/user-wallets-api";
 import { deleteDashboardAvatar, fetchDashboardSnapshot, uploadDashboardAvatar, type DashboardProfile } from "../../lib/user-dashboard-api";
 import { formatTimeAgo, type ProblemPost } from "../../lib/marketplace";
 
@@ -30,10 +30,10 @@ function deadlineLabel(deadline?: string | null, now = Date.now()) {
 
 function walletTone(chain: WalletChainDto) {
   switch (chain) {
-    case "solana": return "border-violet-400/40 bg-violet-400/15 text-violet-100";
-    case "ethereum": return "border-sky-400/40 bg-sky-400/15 text-sky-100";
-    case "polygon": return "border-fuchsia-400/40 bg-fuchsia-400/15 text-fuchsia-100";
-    case "arbitrum": return "border-blue-400/40 bg-blue-400/15 text-blue-100";
+    case "solana": return "border-violet-300 bg-violet-50 text-violet-800";
+    case "ethereum": return "border-sky-300 bg-sky-50 text-sky-800";
+    case "polygon": return "border-fuchsia-300 bg-fuchsia-50 text-fuchsia-800";
+    case "arbitrum": return "border-blue-300 bg-blue-50 text-blue-800";
   }
 }
 
@@ -135,10 +135,10 @@ export function BuilderDashboard() {
     }
     setError(null); setMessage(null); setWalletBusy(true);
     try {
-      await upsertPrimaryWalletApi(walletChain, address);
+      await addUserWalletApi(walletChain, address);
       setWalletAddress("");
       await refreshWallets();
-      setMessage("Wallet saved as your primary wallet for that chain.");
+      setMessage("Wallet added. Choose it as primary whenever you are ready.");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not save wallet.");
     } finally {
@@ -150,9 +150,19 @@ export function BuilderDashboard() {
     if (!window.confirm("Remove this wallet?")) return;
     setError(null); setMessage(null);
     try {
+      const removedWallet = wallets.find((wallet) => wallet.id === walletId);
       await deleteUserWalletApi(walletId);
       await refreshWallets();
-      setMessage("Wallet removed.");
+      const fallback = removedWallet?.is_primary
+        ? wallets.find((wallet) => wallet.id !== walletId && wallet.chain === removedWallet.chain)
+        : undefined;
+      if (fallback) {
+        await setPrimaryUserWalletApi(fallback.id);
+        await refreshWallets();
+        setMessage("Wallet removed. Your remaining wallet is now the payout wallet.");
+      } else {
+        setMessage("Wallet removed.");
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not remove wallet.");
     }
@@ -161,7 +171,7 @@ export function BuilderDashboard() {
   const makePrimary = async (wallet: UserWalletApiRow) => {
     setError(null); setMessage(null);
     try {
-      await upsertPrimaryWalletApi(wallet.chain, wallet.address);
+      await setPrimaryUserWalletApi(wallet.id);
       await refreshWallets();
       setMessage("Primary wallet updated.");
     } catch (err) {
@@ -185,7 +195,7 @@ export function BuilderDashboard() {
       <main className="board-container py-8 md:py-12">
         <div className="mb-8 flex flex-col gap-5 border-b border-[color:var(--board-line)] pb-7 md:flex-row md:items-end md:justify-between">
           <div><p className="board-kicker">Account workspace</p><h1 className="board-title mt-3">Your dashboard</h1><p className="mt-3 max-w-2xl text-[var(--board-muted)]">Manage your profile, payout wallets, and every brief you have posted.</p></div>
-          <div className="flex gap-3"><Button variant="outline" onClick={() => void handleRefresh()} className="border-[color:var(--board-line-strong)] bg-transparent text-[var(--board-ink)]"><RefreshCw className="mr-2 h-4 w-4" />Refresh</Button><Link to="/post"><Button className="border-0 bg-[var(--board-accent)] text-white"><Plus className="mr-2 h-4 w-4" />Post a job</Button></Link></div>
+          <Button variant="outline" onClick={() => void handleRefresh()} className="border-[color:var(--board-line-strong)] bg-white text-[var(--board-ink)] hover:-translate-y-0.5 hover:border-violet-300 hover:bg-violet-50"><RefreshCw className="mr-2 h-4 w-4" />Refresh</Button>
         </div>
 
         {error ? <div role="alert" className="mb-6 flex gap-2 rounded-xl border border-[color:rgba(219,84,97,0.5)] bg-[rgba(219,84,97,0.14)] p-4 text-sm text-[#ffd9dd]"><AlertCircle className="h-5 w-5 shrink-0" />{error}</div> : null}
@@ -201,8 +211,8 @@ export function BuilderDashboard() {
           </aside>
 
           <section className="board-panel overflow-hidden">
-              <div className="flex border-b border-[color:var(--board-line)] px-5 pt-3 md:px-7"><button onClick={() => { setTab("briefs"); void refreshDashboard(); }} className={`border-b-2 px-4 py-4 text-sm font-semibold ${tab === "briefs" ? "border-[var(--board-accent)] text-[var(--board-ink)]" : "border-transparent text-[var(--board-muted)]"}`}><ClipboardList className="mr-2 inline h-4 w-4" />Posted jobs ({posts.length})</button><button onClick={() => { setTab("wallets"); void refreshWallets(); }} className={`border-b-2 px-4 py-4 text-sm font-semibold ${tab === "wallets" ? "border-[var(--board-accent)] text-[var(--board-ink)]" : "border-transparent text-[var(--board-muted)]"}`}><Wallet className="mr-2 inline h-4 w-4" />Wallets ({wallets.length})</button></div>
-            {tab === "briefs" ? <div className="p-5 md:p-7"><div className="mb-5 flex items-center justify-between"><div><p className="board-kicker">Posted by you</p><h2 className="board-subtitle mt-2">Your posted jobs</h2></div><Link to="/post" className="text-sm font-medium text-[var(--board-accent)] hover:text-white">Post another</Link></div>{posts.length === 0 ? <div className="rounded-xl border border-dashed border-[color:var(--board-line-strong)] p-8 text-center"><ClipboardList className="mx-auto h-8 w-8 text-[var(--board-muted)]" /><p className="mt-3 font-medium text-[var(--board-ink)]">No jobs posted yet</p><p className="mt-1 text-sm text-[var(--board-muted)]">Your posted jobs will appear here with their deadline countdown.</p></div> : <div className="space-y-3">{posts.map((post) => <Link key={post.id} to={`/problem/${post.id}`} className="group flex flex-col gap-4 rounded-xl border border-[color:var(--board-line)] bg-[var(--board-panel)] p-4 transition hover:border-[color:var(--board-line-strong)] hover:bg-[var(--board-panel-strong)] sm:flex-row sm:items-center sm:justify-between"><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><span className="board-pill text-[0.62rem]">{post.type === "job" ? "Paid task" : "Brief"}</span><span className="text-xs text-[var(--board-muted)]">{post.category}</span></div><p className="mt-2 truncate font-semibold text-[var(--board-ink)]">{post.title}</p><p className="mt-1 text-xs text-[var(--board-muted)]">Posted {formatTimeAgo(post.createdAt)} · {post.proposals} proposal{post.proposals === 1 ? "" : "s"}</p></div><div className="flex shrink-0 items-center gap-3"><span className="rounded-md bg-[rgba(232,197,71,0.12)] px-3 py-1.5 text-xs font-semibold text-[#f5db76]">{deadlineLabel(post.deadline, now)}</span><ArrowRight className="h-4 w-4 text-[var(--board-accent)] transition group-hover:translate-x-1" /></div></Link>)}</div>}</div> : <div className="p-5 md:p-7"><div className="mb-5"><p className="board-kicker">Payout settings</p><h2 className="board-subtitle mt-2">Your wallets</h2></div><div className="grid gap-3 rounded-xl border border-[color:var(--board-line)] bg-[var(--board-panel)] p-4 md:grid-cols-[150px_minmax(0,1fr)_auto]"><Select value={walletChain} onValueChange={(value) => setWalletChain(value as WalletChainDto)}><SelectTrigger className="board-field"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="solana">Solana</SelectItem><SelectItem value="ethereum">Ethereum</SelectItem><SelectItem value="polygon">Polygon</SelectItem><SelectItem value="arbitrum">Arbitrum</SelectItem></SelectContent></Select><Input className="board-field" placeholder="Wallet address" value={walletAddress} onChange={(event) => setWalletAddress(event.target.value)} /><Button disabled={walletBusy || !walletAddress.trim()} onClick={() => void saveWallet()} className="border-0 bg-[var(--board-accent)] text-white">{walletBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : "Add wallet"}</Button></div><div className="mt-5 flex items-center justify-between"><p className="text-sm text-[var(--board-muted)]">{wallets.length} linked wallet{wallets.length === 1 ? "" : "s"}</p><Button variant="ghost" onClick={() => setShowAddresses((visible) => !visible)} className="text-[var(--board-muted)]">{showAddresses ? <EyeOff className="mr-2 h-4 w-4" /> : <Eye className="mr-2 h-4 w-4" />}{showAddresses ? "Hide addresses" : "Reveal addresses"}</Button></div>{walletsLoading ? <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-[var(--board-accent)]" /></div> : <div className="mt-3 space-y-3">{wallets.map((wallet) => <div key={wallet.id} className={`flex flex-col gap-3 rounded-lg border p-4 sm:flex-row sm:items-center sm:justify-between ${walletTone(wallet.chain)}`}><div><div className="flex items-center gap-2"><span className="rounded-md border border-current/30 bg-black/10 px-2 py-1 text-[0.62rem] font-bold uppercase tracking-[0.12em]">{wallet.chain}</span>{wallet.is_primary ? <span className="text-xs font-semibold text-[#f5db76]">PRIMARY</span> : null}</div><p className="mt-2 break-all font-mono text-sm text-white">{showAddresses ? wallet.address : shortenAddress(wallet.address)}</p></div><div className="flex gap-2">{!wallet.is_primary ? <Button size="sm" variant="outline" onClick={() => void makePrimary(wallet)} className="border-current/40 bg-black/10 text-current hover:bg-black/20 hover:text-white">Make primary</Button> : null}<Button size="sm" variant="outline" onClick={() => void removeWallet(wallet.id)} className="border-[color:rgba(219,84,97,0.6)] bg-black/10 text-[#ffd9dd] hover:bg-[rgba(219,84,97,0.2)]"><Trash2 className="h-4 w-4" /></Button></div></div>)}</div>}</div>}
+              <div className="flex border-b border-[color:var(--board-line)] px-5 pt-3 md:px-7"><button onClick={() => { setTab("briefs"); void refreshDashboard(); }} className={`border-b-2 px-4 py-4 text-sm font-semibold transition ${tab === "briefs" ? "border-[var(--board-accent)] text-[var(--board-ink)]" : "border-transparent text-[var(--board-muted)] hover:text-[var(--board-ink)]"}`}><ClipboardList className="mr-2 inline h-4 w-4" />Posted briefs ({posts.length})</button><button onClick={() => { setTab("wallets"); void refreshWallets(); }} className={`border-b-2 px-4 py-4 text-sm font-semibold transition ${tab === "wallets" ? "border-[var(--board-accent)] text-[var(--board-ink)]" : "border-transparent text-[var(--board-muted)] hover:text-[var(--board-ink)]"}`}><Wallet className="mr-2 inline h-4 w-4" />Wallets ({wallets.length})</button></div>
+            {tab === "briefs" ? <div className="p-5 md:p-7"><div className="mb-5"><p className="board-kicker">Posted by you</p><h2 className="board-subtitle mt-2">Your published briefs</h2></div>{posts.length === 0 ? <div className="rounded-xl border border-dashed border-violet-200 bg-violet-50/60 p-8 text-center"><ClipboardList className="mx-auto h-8 w-8 text-violet-400" /><p className="mt-3 font-medium text-[var(--board-ink)]">No briefs found for this account</p><p className="mt-1 text-sm text-[var(--board-muted)]">Published briefs are loaded from your signed-in account and appear here automatically.</p></div> : <div className="space-y-3">{posts.map((post) => <Link key={post.id} to={`/problem/${post.id}`} className="group flex flex-col gap-4 rounded-xl border border-violet-100 bg-gradient-to-r from-white to-violet-50/70 p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-violet-300 hover:shadow-md sm:flex-row sm:items-center sm:justify-between"><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><span className="board-pill text-[0.62rem]">{post.type === "job" ? "Paid task" : "Brief"}</span><span className="text-xs text-[var(--board-muted)]">{post.category}</span></div><p className="mt-2 truncate font-semibold text-[var(--board-ink)]">{post.title}</p><p className="mt-1 text-xs text-[var(--board-muted)]">Posted {formatTimeAgo(post.createdAt)} · {post.proposals} proposal{post.proposals === 1 ? "" : "s"}</p></div><div className="flex shrink-0 items-center gap-3"><span className="rounded-md bg-amber-100 px-3 py-1.5 text-xs font-semibold text-amber-700">{deadlineLabel(post.deadline, now)}</span><ArrowRight className="h-4 w-4 text-[var(--board-accent)] transition group-hover:translate-x-1" /></div></Link>)}</div>}</div> : <div className="p-5 md:p-7"><div className="mb-5"><p className="board-kicker">Payout settings</p><h2 className="board-subtitle mt-2">Wallets you control</h2><p className="mt-2 text-sm text-[var(--board-muted)]">Add multiple wallets, choose the wallet that receives payouts, or remove one you no longer use.</p></div><div className="grid gap-3 rounded-xl border border-violet-100 bg-gradient-to-r from-violet-50 to-cyan-50 p-4 md:grid-cols-[150px_minmax(0,1fr)_auto]"><Select value={walletChain} onValueChange={(value) => setWalletChain(value as WalletChainDto)}><SelectTrigger className="board-field bg-white"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="solana">Solana</SelectItem><SelectItem value="ethereum">Ethereum</SelectItem><SelectItem value="polygon">Polygon</SelectItem><SelectItem value="arbitrum">Arbitrum</SelectItem></SelectContent></Select><Input className="board-field bg-white" placeholder="Wallet address" value={walletAddress} onChange={(event) => setWalletAddress(event.target.value)} /><Button disabled={walletBusy || !walletAddress.trim()} onClick={() => void saveWallet()} className="border-0 bg-[var(--board-accent)] text-white hover:-translate-y-0.5">{walletBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Plus className="mr-2 h-4 w-4" />Add wallet</>}</Button></div><div className="mt-5 flex items-center justify-between"><p className="text-sm text-[var(--board-muted)]">{wallets.length} linked wallet{wallets.length === 1 ? "" : "s"}</p><Button variant="ghost" onClick={() => setShowAddresses((visible) => !visible)} className="text-[var(--board-muted)] hover:bg-violet-50">{showAddresses ? <EyeOff className="mr-2 h-4 w-4" /> : <Eye className="mr-2 h-4 w-4" />}{showAddresses ? "Hide addresses" : "Reveal addresses"}</Button></div>{walletsLoading ? <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-[var(--board-accent)]" /></div> : <div className="mt-3 space-y-3">{wallets.map((wallet) => <div key={wallet.id} className={`flex flex-col gap-3 rounded-xl border p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md sm:flex-row sm:items-center sm:justify-between ${walletTone(wallet.chain)}`}><div><div className="flex items-center gap-2"><span className="rounded-md border border-current/30 bg-white/50 px-2 py-1 text-[0.62rem] font-bold uppercase tracking-[0.12em]">{wallet.chain}</span>{wallet.is_primary ? <span className="text-xs font-semibold text-amber-700">PRIMARY PAYOUT</span> : null}</div><p className="mt-2 break-all font-mono text-sm text-[var(--board-ink)]">{showAddresses ? wallet.address : shortenAddress(wallet.address)}</p></div><div className="flex gap-2">{!wallet.is_primary ? <Button size="sm" variant="outline" onClick={() => void makePrimary(wallet)} className="border-current/40 bg-white/50 text-current hover:bg-white">Use for payouts</Button> : null}<Button size="sm" variant="outline" onClick={() => void removeWallet(wallet.id)} className="border-rose-300 bg-white/50 text-rose-600 hover:bg-rose-100 hover:text-rose-700"><Trash2 className="mr-1 h-4 w-4" />Remove</Button></div></div>)}</div>}</div>}
           </section>
         </div>
       </main>

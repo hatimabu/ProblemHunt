@@ -201,6 +201,26 @@ export async function upsertPrimaryWallet(chain: WalletChain, address: string): 
   return data as WalletRow;
 }
 
+export async function addWallet(chain: WalletChain, address: string): Promise<WalletRow> {
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+  throwIfError(userError);
+  if (!userData.user) throw new Error("Authentication required");
+  const current = await listWallets();
+  const { data, error } = await supabase
+    .from("wallets")
+    .insert({ user_id: userData.user.id, chain, address: address.trim(), is_primary: !current.some((wallet) => wallet.chain === chain) })
+    .select()
+    .single();
+  throwIfError(error);
+  return data as WalletRow;
+}
+
+export async function setPrimaryWallet(walletId: string): Promise<WalletRow> {
+  const { data, error } = await supabase.rpc("set_primary_wallet", { p_wallet_id: walletId });
+  throwIfError(error);
+  return data as WalletRow;
+}
+
 export async function deleteWallet(walletId: string) {
   const { error } = await supabase.from("wallets").delete().eq("id", walletId);
   throwIfError(error);

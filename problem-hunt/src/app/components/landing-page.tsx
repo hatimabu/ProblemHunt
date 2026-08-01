@@ -502,10 +502,10 @@ export function LandingPage() {
                   </Button>
                 </Link>
 
-                <Link to="/post">
+                <Link to="/dashboard">
                   <Button className="h-12 border-0 bg-[var(--board-accent)] px-7 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-white transition-all hover:bg-[var(--color-accent-hover)] hover:shadow-[0_0_20px_rgba(200,205,208,0.35)] hover:scale-[1.02]">
                     <Rocket className="h-4 w-4" />
-                    Post a brief
+                    View my workspace
                   </Button>
                 </Link>
               </motion.div>
@@ -749,10 +749,10 @@ export function LandingPage() {
                 </p>
 
                 <div className="mt-8 flex flex-wrap gap-3">
-                  <Link to="/post">
+                  <Link to="/dashboard">
                     <Button className="h-12 border-0 bg-[var(--board-accent)] px-6 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-white transition-all hover:bg-[var(--color-accent-hover)] hover:shadow-[0_0_20px_rgba(200,205,208,0.35)] hover:scale-[1.02]">
                       <Rocket className="h-4 w-4" />
-                      Post a brief
+                      View my workspace
                     </Button>
                   </Link>
                   <Link to="/browse">

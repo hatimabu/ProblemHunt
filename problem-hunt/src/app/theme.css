@@ -4,26 +4,26 @@
   --font-weight-normal: 400;
   --radius: 0.75rem;
 
-  /* Space / Metal Core Palette */
-  --color-bg-page: #0a0c10;
-  --color-bg-surface: #13161d;
-  --color-bg-elevated: #1a1e28;
-  --color-bg-hover: #242a36;
-  --color-accent: #c9545e;
-  --color-accent-hover: #e0707a;
-  --color-gold: #c9a84c;
-  --color-text-primary: #e8ecf1;
-  --color-text-muted: #8a9199;
-  --color-border: #2a303c;
-  --color-border-subtle: #1e232d;
+  /* Bright collaborative workspace palette */
+  --color-bg-page: #f7f7ff;
+  --color-bg-surface: #ffffff;
+  --color-bg-elevated: #f0efff;
+  --color-bg-hover: #e8e5ff;
+  --color-accent: #6d4aff;
+  --color-accent-hover: #5535df;
+  --color-gold: #d97706;
+  --color-text-primary: #211d3b;
+  --color-text-muted: #696580;
+  --color-border: #dedaf7;
+  --color-border-subtle: #ebe9fb;
 
   /* Metal-specific tokens */
-  --color-metal-silver: #c8cdd0;
-  --color-metal-steel: #a0a8ad;
-  --color-metal-chrome: #e2e6e9;
-  --color-metal-titanium: #8a9196;
-  --color-metal-dark: #070a0f;
-  --color-metal-panel: rgba(14, 18, 26, 0.72);
+  --color-metal-silver: #7c6af7;
+  --color-metal-steel: #696580;
+  --color-metal-chrome: #ffffff;
+  --color-metal-titanium: #968ee0;
+  --color-metal-dark: #211d3b;
+  --color-metal-panel: rgba(255, 255, 255, 0.84);
 
   --background: var(--color-bg-page);
   --foreground: var(--color-text-primary);

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router";
-import { LogOut, Menu, Rocket, X } from "lucide-react";
+import { LayoutDashboard, LogOut, Menu, X } from "lucide-react";
 import { Button } from "./ui/button";
 import { useAuth } from "../contexts/AuthContext";
 import { BrandLogo } from "./brand-logo";
@@ -38,9 +38,9 @@ export function Navbar() {
   };
 
   return (
-    <header className="sticky top-0 z-50 border-b border-[color:var(--board-line)] backdrop-blur-xl" style={{ background: "rgba(7,10,15,0.85)" }}>
+    <header className="sticky top-0 z-50 border-b border-[color:var(--board-line)] bg-white/80 backdrop-blur-xl">
       {/* Top telemetry strip */}
-      <div className="hidden h-6 items-center justify-between border-b border-[color:var(--board-line)] px-4 text-[0.6rem] uppercase tracking-[0.2em] text-[var(--board-metal-steel)] md:flex" style={{ background: "rgba(10,14,22,0.6)" }}>
+      <div className="hidden h-6 items-center justify-between border-b border-[color:var(--board-line)] bg-violet-50/80 px-4 text-[0.6rem] uppercase tracking-[0.2em] text-[var(--board-metal-steel)] md:flex">
         <div className="flex items-center gap-4">
           <span className="inline-flex items-center gap-1.5">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-500/80" />
@@ -81,12 +81,12 @@ export function Navbar() {
         </nav>
 
         <div className="flex items-center gap-2">
-          <Link to="/post" className="hidden sm:block">
+          {user ? <Link to="/dashboard" className="hidden sm:block">
             <Button className="h-10 border-0 bg-[var(--board-accent)] px-4 text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-white hover:bg-[var(--color-accent-hover)]">
-              <Rocket className="mr-1.5 h-3.5 w-3.5" />
-              Post job
+              <LayoutDashboard className="mr-1.5 h-3.5 w-3.5" />
+              My workspace
             </Button>
-          </Link>
+          </Link> : null}
 
           {user ? (
             <Button
@@ -118,7 +118,7 @@ export function Navbar() {
       </div>
 
       {mobileOpen ? (
-        <div className="border-t border-[color:var(--board-line)] md:hidden" style={{ background: "rgba(7,10,15,0.95)" }}>
+        <div className="border-t border-[color:var(--board-line)] bg-white/95 md:hidden">
           <div className="board-container flex flex-col gap-2 py-4">
             {navLinks.map((link) => (
               <Link
@@ -135,12 +135,12 @@ export function Navbar() {
               </Link>
             ))}
 
-            <Link to="/post" onClick={() => setMobileOpen(false)}>
+            {user ? <Link to="/dashboard" onClick={() => setMobileOpen(false)}>
               <Button className="mt-2 h-11 w-full border-0 bg-[var(--board-accent)] text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-white hover:bg-[var(--color-accent-hover)]">
-                <Rocket className="mr-1.5 h-3.5 w-3.5" />
-                Post job
+                <LayoutDashboard className="mr-1.5 h-3.5 w-3.5" />
+                My workspace
               </Button>
-            </Link>
+            </Link> : null}
 
             {user ? (
               <Button
