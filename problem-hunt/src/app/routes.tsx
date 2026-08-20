@@ -5,6 +5,7 @@ import { ProblemDetail } from "./components/problem-detail.tsx";
 import { BuilderDashboard } from "./components/builder-dashboard.tsx";
 import { AuthPage } from "./components/auth-page.tsx";
 import { Leaderboard } from "./components/leaderboard.tsx";
+import { PostProblem } from "./components/post-problem.tsx";
 import { ProtectedRoute } from "./components/ProtectedRoute.tsx";
 
 export const router = createBrowserRouter([
@@ -25,6 +26,14 @@ export const router = createBrowserRouter([
     element: (
       <ProtectedRoute>
         <BuilderDashboard />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/post-problem",
+    element: (
+      <ProtectedRoute>
+        <PostProblem />
       </ProtectedRoute>
     ),
   },
