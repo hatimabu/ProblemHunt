@@ -13,10 +13,11 @@ const CORE_NAV_LINKS = [
 ];
 
 export function Navbar() {
-  const { user, logout } = useAuth();
+  const { user, session, isLoading, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [browserOnline, setBrowserOnline] = useState(() => typeof navigator === "undefined" || navigator.onLine);
   const navLinks = useMemo(
     () => (user ? [...CORE_NAV_LINKS, { path: "/dashboard", label: "Dashboard" }] : CORE_NAV_LINKS),
     [user]
@@ -25,6 +26,19 @@ export function Navbar() {
   useEffect(() => {
     setMobileOpen(false);
   }, [location.pathname]);
+
+  useEffect(() => {
+    const handleOnline = () => setBrowserOnline(true);
+    const handleOffline = () => setBrowserOnline(false);
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, []);
+
+  const connectionOnline = browserOnline && !isLoading && (!user || Boolean(session));
 
   const isActive = (path: string) => {
     if (path === "/dashboard") {
@@ -44,8 +58,8 @@ export function Navbar() {
       <div className="hidden h-6 items-center justify-between border-b border-[color:var(--board-line)] px-4 text-[0.6rem] uppercase tracking-[0.2em] text-[var(--board-metal-steel)] md:flex" style={{ background: "rgba(10,14,22,0.6)" }}>
         <div className="flex items-center gap-4">
           <span className="inline-flex items-center gap-1.5">
-            <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent)]" />
-            NET: ONLINE
+            <span className={`h-1.5 w-1.5 rounded-full ${connectionOnline ? "bg-[var(--accent)]" : "bg-[var(--danger)]"}`} />
+            NET: {connectionOnline ? "ONLINE" : "OFFLINE"}
           </span>
           <span className="text-[var(--board-line)]">|</span>
           <span>PROBLEM HUNT v2.1</span>
