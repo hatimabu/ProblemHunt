@@ -4,18 +4,31 @@
   --font-weight-normal: 400;
   --radius: 0.75rem;
 
+  /* Shared semantic product palette */
+  --bg: #0B0D10;
+  --surface: #12161C;
+  --surface-hover: #181D24;
+  --border: #29313A;
+  --text: #F2F5F7;
+  --text-muted: #98A2B3;
+  --accent: #B7F34A;
+  --accent-hover: #CCFF68;
+  --secondary: #78A6FF;
+  --warning: #F4C65A;
+  --danger: #FF6B6B;
+
   /* Space / Metal Core Palette */
-  --color-bg-page: #0a0c10;
-  --color-bg-surface: #13161d;
-  --color-bg-elevated: #1a1e28;
-  --color-bg-hover: #242a36;
-  --color-accent: #c9545e;
-  --color-accent-hover: #e0707a;
-  --color-gold: #c9a84c;
-  --color-text-primary: #e8ecf1;
-  --color-text-muted: #8a9199;
-  --color-border: #2a303c;
-  --color-border-subtle: #1e232d;
+  --color-bg-page: var(--bg);
+  --color-bg-surface: var(--surface);
+  --color-bg-elevated: var(--surface-hover);
+  --color-bg-hover: #202731;
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-gold: var(--warning);
+  --color-text-primary: var(--text);
+  --color-text-muted: var(--text-muted);
+  --color-border: var(--border);
+  --color-border-subtle: #20262E;
 
   /* Metal-specific tokens */
   --color-metal-silver: #c8cdd0;
@@ -32,20 +45,20 @@
   --popover: var(--color-bg-elevated);
   --popover-foreground: var(--color-text-primary);
   --primary: var(--color-accent);
-  --primary-foreground: #ffffff;
+  --primary-foreground: #10140D;
   --secondary: transparent;
   --secondary-foreground: var(--color-text-muted);
   --muted: var(--color-bg-surface);
   --muted-foreground: var(--color-text-muted);
   --accent: var(--color-bg-hover);
   --accent-foreground: var(--color-text-primary);
-  --destructive: var(--color-accent);
-  --destructive-foreground: #ffffff;
+  --destructive: var(--danger);
+  --destructive-foreground: #1A0C0C;
   --border: var(--color-border);
   --input: var(--color-border);
   --input-background: var(--color-bg-elevated);
   --switch-background: var(--color-bg-hover);
-  --ring: rgba(201, 84, 94, 0.4);
+  --ring: rgba(183, 243, 74, 0.45);
   --chart-1: var(--color-accent);
   --chart-2: var(--color-gold);
   --chart-3: #6e7a8a;

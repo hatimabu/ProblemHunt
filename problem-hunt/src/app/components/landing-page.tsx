@@ -438,7 +438,7 @@ export function LandingPage() {
   };
 
   return (
-    <div className="board-app relative">
+    <div className="board-app homepage-shell relative">
       <ScrollRail />
       <LivingBackground />
       <Navbar />
@@ -455,17 +455,17 @@ export function LandingPage() {
             >
               <motion.div
                 variants={fadeUp}
-                className="group relative mb-8 inline-flex items-center gap-2.5 rounded-full border border-[color:rgba(232,197,71,0.3)] bg-[linear-gradient(120deg,rgba(232,197,71,0.12),rgba(10,14,22,0.7)_45%)] px-4 py-2 shadow-[0_0_20px_-8px_rgba(232,197,71,0.5)] backdrop-blur-md transition-shadow hover:shadow-[0_0_28px_-6px_rgba(232,197,71,0.65)]"
+                className="homepage-status-banner group relative mb-8 inline-flex items-center gap-2.5 rounded-md px-3 py-1.5"
               >
                 <span className="relative flex h-2 w-2 items-center justify-center">
-                  <span className="absolute h-full w-full animate-ping rounded-full bg-[#e8c547] opacity-60" />
-                  <span className="relative h-2 w-2 rounded-full bg-[#e8c547]" />
+                  <span className="absolute h-full w-full animate-ping rounded-full bg-[var(--warning)] opacity-50" />
+                  <span className="relative h-2 w-2 rounded-full bg-[var(--warning)]" />
                 </span>
                 <AlertTriangle
-                  className="h-3.5 w-3.5 text-[#e8c547]"
+                  className="h-3.5 w-3.5 text-[var(--warning)]"
                   strokeWidth={2.25}
                 />
-                <span className="font-mono text-[0.65rem] font-semibold uppercase tracking-[0.22em] text-[#e8c547]">
+                <span className="font-mono text-[0.65rem] font-semibold uppercase tracking-[0.16em] text-[var(--warning)]">
                   Under Construction
                 </span>
 
@@ -494,16 +494,16 @@ export function LandingPage() {
                 Post a brief, price the ask, review serious responses, and move from backlog to shipped.
               </motion.p>
 
-              <motion.div variants={fadeUp} className="mt-10 flex flex-wrap items-center justify-center gap-3">
+              <motion.div variants={fadeUp} className="homepage-hero-actions mt-10 flex flex-wrap items-center justify-center gap-3">
                 <Link to="/browse">
-                  <Button className="h-12 border-0 bg-[var(--board-metal-accent)] px-7 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-[var(--board-metal-dark)] transition-all hover:bg-[var(--board-metal-light)] hover:shadow-[0_0_20px_rgba(200,205,208,0.35)] hover:scale-[1.02]">
+                  <Button className="homepage-primary-cta h-12 px-7 text-[0.76rem] font-semibold uppercase tracking-[0.16em]">
                     Browse live work
                     <ArrowRight className="h-4 w-4" />
                   </Button>
                 </Link>
 
                 <Link to="/dashboard">
-                  <Button className="h-12 border-0 bg-[var(--board-accent)] px-7 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-white transition-all hover:bg-[var(--color-accent-hover)] hover:shadow-[0_0_20px_rgba(200,205,208,0.35)] hover:scale-[1.02]">
+                  <Button className="homepage-secondary-cta h-12 px-7 text-[0.76rem] font-semibold uppercase tracking-[0.16em]">
                     <Rocket className="h-4 w-4" />
                     View my workspace
                   </Button>
@@ -580,7 +580,7 @@ export function LandingPage() {
                 <h2 className="board-title mt-3">Work that is waiting for the right builder.</h2>
               </div>
               <Link to="/browse">
-                <Button className="btn-glow h-11 border-0 bg-[var(--board-accent)] px-5 text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-white hover:bg-[var(--color-accent-hover)]">
+                <Button className="homepage-secondary-cta h-11 px-5 text-[0.72rem] font-semibold uppercase tracking-[0.16em]">
                   View all briefs
                   <ChevronRight className="h-4 w-4" />
                 </Button>
@@ -648,13 +648,13 @@ export function LandingPage() {
                     key={item.title}
                     variants={scaleIn}
                     whileHover={{ y: -4 }}
-                    className="feature-box-navy rounded-2xl border p-6"
+                    className="feature-box-navy homepage-feature-card rounded-2xl border p-6"
                   >
-                    <div className="feature-box-navy__icon-wrap flex h-10 w-10 items-center justify-center rounded-xl border">
+                    <div className="feature-box-navy__icon-wrap homepage-feature-card__icon flex h-10 w-10 items-center justify-center rounded-xl border">
                       <Icon className="feature-box-navy__icon h-4 w-4" />
                     </div>
-                    <h3 className="feature-box-navy__title board-subtitle mt-5 text-[1.25rem]">{item.title}</h3>
-                    <p className="feature-box-navy__copy board-copy mt-3 text-sm leading-7">{item.copy}</p>
+                    <h3 className="feature-box-navy__title homepage-feature-card__title board-subtitle mt-5 text-[1.25rem]">{item.title}</h3>
+                    <p className="feature-box-navy__copy homepage-feature-card__copy board-copy mt-3 text-sm leading-7">{item.copy}</p>
                   </motion.div>
                 );
               })}
@@ -680,7 +680,7 @@ export function LandingPage() {
                 <h2 className="board-title mt-3">Builders who earn trust by shipping.</h2>
               </div>
               <Link to="/leaderboard">
-                <Button className="btn-glow h-11 border-0 bg-[var(--board-accent)] px-5 text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-white hover:bg-[var(--color-accent-hover)]">
+                <Button className="homepage-secondary-cta h-11 px-5 text-[0.72rem] font-semibold uppercase tracking-[0.16em]">
                   Full leaderboard
                   <ChevronRight className="h-4 w-4" />
                 </Button>
@@ -750,13 +750,13 @@ export function LandingPage() {
 
                 <div className="mt-8 flex flex-wrap gap-3">
                   <Link to="/dashboard">
-                    <Button className="h-12 border-0 bg-[var(--board-accent)] px-6 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-white transition-all hover:bg-[var(--color-accent-hover)] hover:shadow-[0_0_20px_rgba(200,205,208,0.35)] hover:scale-[1.02]">
+                    <Button className="homepage-secondary-cta h-12 px-6 text-[0.76rem] font-semibold uppercase tracking-[0.16em]">
                       <Rocket className="h-4 w-4" />
                       View my workspace
                     </Button>
                   </Link>
                   <Link to="/browse">
-                    <Button className="h-12 border-0 bg-[var(--board-metal-accent)] px-6 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-[var(--board-metal-dark)] transition-all hover:bg-[var(--board-metal-light)] hover:shadow-[0_0_20px_rgba(200,205,208,0.35)] hover:scale-[1.02]">
+                    <Button className="homepage-primary-cta h-12 px-6 text-[0.76rem] font-semibold uppercase tracking-[0.16em]">
                       Browse live work
                       <ArrowRight className="h-4 w-4" />
                     </Button>

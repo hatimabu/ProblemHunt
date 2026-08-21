@@ -203,7 +203,7 @@ export function PostProblem() {
                 <Link to="/browse">
                   <Button variant="outline" className="h-11 w-full border-[color:var(--board-line-strong)] bg-transparent text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-[var(--board-muted)] transition-all hover:bg-[var(--board-panel-strong)] hover:text-[var(--board-ink)] hover:shadow-[0_0_20px_rgba(200,205,208,0.35)] hover:scale-[1.02]">Back to browse</Button>
                 </Link>
-                <Button type="submit" disabled={isSubmitting || isLoading || !user} className="h-11 border-0 bg-[var(--board-accent)] text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-white transition-all hover:bg-[var(--color-accent-hover)] hover:shadow-[0_0_20px_rgba(200,205,208,0.35)] hover:scale-[1.02] disabled:opacity-50">
+                <Button type="submit" disabled={isSubmitting || isLoading || !user} className="h-11 border-0 bg-[var(--board-accent)] text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-[#10140D] transition-all hover:bg-[var(--color-accent-hover)] hover:shadow-[0_0_20px_rgba(200,205,208,0.35)] hover:scale-[1.02] disabled:opacity-50">
                   {isSubmitting ? "Publishing..." : "Publish paid job"}
                 </Button>
               </div>

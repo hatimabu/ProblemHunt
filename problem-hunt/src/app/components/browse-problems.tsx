@@ -158,7 +158,7 @@ export function BrowseProblems() {
               {deferredSearchQuery ? ` matching "${deferredSearchQuery}"` : ""}
             </p>
             <Link to="/dashboard" className="inline-flex">
-              <Button className="h-10 border-0 bg-[var(--board-accent)] px-4 text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-white transition-all hover:bg-[var(--color-accent-hover)] hover:shadow-[0_0_20px_rgba(200,205,208,0.35)] hover:scale-[1.02]">
+              <Button className="h-10 border-0 bg-[var(--board-accent)] px-4 text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-[#10140D] transition-all hover:bg-[var(--color-accent-hover)] hover:shadow-[0_0_20px_rgba(200,205,208,0.35)] hover:scale-[1.02]">
                 View my workspace
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
@@ -174,7 +174,7 @@ export function BrowseProblems() {
                 <h2 className="board-subtitle">Nothing matches this slice of the board.</h2>
                 <p>Try another category, loosen the search, or post the first brief for this niche yourself.</p>
                 <Link to="/dashboard" className="inline-flex">
-                  <Button className="mt-6 h-11 border-0 bg-[var(--board-accent)] px-5 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-white transition-all hover:bg-[var(--color-accent-hover)] hover:shadow-[0_0_20px_rgba(200,205,208,0.35)] hover:scale-[1.02]">
+                  <Button className="mt-6 h-11 border-0 bg-[var(--board-accent)] px-5 text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-[#10140D] transition-all hover:bg-[var(--color-accent-hover)] hover:shadow-[0_0_20px_rgba(200,205,208,0.35)] hover:scale-[1.02]">
                     Open my workspace
                   </Button>
                 </Link>

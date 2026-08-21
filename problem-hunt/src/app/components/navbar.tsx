@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router";
 import { LayoutDashboard, LogOut, Menu, X } from "lucide-react";
 import { Button } from "./ui/button";
+import { ActiveNavItem } from "./ui/active-nav-item";
 import { useAuth } from "../contexts/AuthContext";
 import { BrandLogo } from "./brand-logo";
 
@@ -43,7 +44,7 @@ export function Navbar() {
       <div className="hidden h-6 items-center justify-between border-b border-[color:var(--board-line)] px-4 text-[0.6rem] uppercase tracking-[0.2em] text-[var(--board-metal-steel)] md:flex" style={{ background: "rgba(10,14,22,0.6)" }}>
         <div className="flex items-center gap-4">
           <span className="inline-flex items-center gap-1.5">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500/80" />
+            <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent)]" />
             NET: ONLINE
           </span>
           <span className="text-[var(--board-line)]">|</span>
@@ -63,30 +64,22 @@ export function Navbar() {
 
         <nav className="hidden items-center gap-1 md:flex">
           {navLinks.map((link) => (
-            <Link
+            <ActiveNavItem
               key={link.path}
               to={link.path}
-              className={`nav-link-shine-yellow relative rounded-md px-4 py-2 font-mono-alt text-[0.72rem] font-semibold uppercase tracking-[0.14em] ${
-                isActive(link.path)
-                  ? "text-[var(--board-accent)]"
-                  : "text-[var(--board-soft)]"
-              }`}
+              active={isActive(link.path)}
+              className="nav-link-shine-yellow"
             >
               {link.label}
-              {isActive(link.path) && (
-                <span className="absolute bottom-0 left-1/2 h-[2px] w-6 -translate-x-1/2 rounded-full bg-[var(--board-accent)]" />
-              )}
-            </Link>
+            </ActiveNavItem>
           ))}
         </nav>
 
         <div className="flex items-center gap-2">
-          {user ? <Link to="/dashboard" className="hidden sm:block">
-            <Button className="h-10 border-0 bg-[var(--board-accent)] px-4 text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-white hover:bg-[var(--color-accent-hover)]">
-              <LayoutDashboard className="mr-1.5 h-3.5 w-3.5" />
-              My workspace
-            </Button>
-          </Link> : null}
+          {user ? <ActiveNavItem to="/dashboard" active={isActive("/dashboard")} className="workspace-nav-item hidden sm:inline-flex">
+            <LayoutDashboard className="h-3.5 w-3.5" />
+            <span>My workspace</span>
+          </ActiveNavItem> : null}
 
           {user ? (
             <Button
@@ -121,26 +114,21 @@ export function Navbar() {
         <div className="border-t border-[color:var(--board-line)] md:hidden" style={{ background: "rgba(7,10,15,0.95)" }}>
           <div className="board-container flex flex-col gap-2 py-4">
             {navLinks.map((link) => (
-              <Link
+              <ActiveNavItem
                 key={link.path}
                 to={link.path}
+                active={isActive(link.path)}
                 onClick={() => setMobileOpen(false)}
-                className={`px-4 py-3 font-mono-alt text-[0.75rem] font-semibold uppercase tracking-[0.14em] ${
-                  isActive(link.path)
-                    ? "text-[var(--board-accent)]"
-                    : "text-[var(--board-soft)]"
-                }`}
+                className="mobile-nav-item"
               >
                 {link.label}
-              </Link>
+              </ActiveNavItem>
             ))}
 
-            {user ? <Link to="/dashboard" onClick={() => setMobileOpen(false)}>
-              <Button className="mt-2 h-11 w-full border-0 bg-[var(--board-accent)] text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-white hover:bg-[var(--color-accent-hover)]">
+            {user ? <ActiveNavItem to="/dashboard" active={isActive("/dashboard")} onClick={() => setMobileOpen(false)} className="workspace-nav-item mt-2 w-full">
                 <LayoutDashboard className="mr-1.5 h-3.5 w-3.5" />
                 My workspace
-              </Button>
-            </Link> : null}
+              </ActiveNavItem> : null}
 
             {user ? (
               <Button
