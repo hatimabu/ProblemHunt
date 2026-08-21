@@ -406,6 +406,50 @@ samp,
 @media (max-width: 900px) { .dashboard-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }.dashboard-grid { grid-template-columns: 1fr; }.dashboard-side-column { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 620px) { .dashboard-page { padding-top: 1.5rem; }.dashboard-page-header { align-items: flex-start; flex-direction: column; gap: 1.2rem; }.dashboard-header-actions { width: 100%; }.dashboard-header-actions > * { flex: 1; }.dashboard-stats { gap: .55rem; }.dashboard-stat-card { padding: .8rem; }.dashboard-stat-value { font-size: 1.4rem; }.dashboard-side-column { grid-template-columns: 1fr; }.dashboard-workspace__content { padding: 1rem; }.dashboard-tabs { padding-left: .35rem; }.dashboard-tabs button { flex: 1; justify-content: center; padding-inline: .35rem; }.dashboard-brief { padding: .85rem; }.dashboard-brief__body { display: block; }.dashboard-brief__value { margin-top: .85rem; text-align: left; }.dashboard-brief__footer { align-items: flex-end; }.dashboard-brief__meta { gap: .45rem .7rem; }.dashboard-brief__cta { align-self: flex-end; }.dashboard-wallet-form { grid-template-columns: 1fr; }.dashboard-wallet-row { align-items: flex-start; flex-direction: column; }.dashboard-wallet-actions { justify-content: flex-start; } }
 
+/* Final dashboard polish: predictable focus, compact actions, and safe narrow layouts. */
+.telemetry-strip { min-width: 0; white-space: nowrap; }
+.telemetry-strip__primary, .telemetry-strip__meta { min-width: 0; white-space: nowrap; }
+.dashboard-stat-card--interactive { width: 100%; border: 1px solid rgba(143,163,177,.16); color: inherit; text-align: left; cursor: pointer; transition: border-color .15s ease, background-color .15s ease, box-shadow .15s ease, transform .15s ease; }
+.dashboard-stat-card--interactive:hover { border-color: rgba(184,243,74,.36); background: #17201f; box-shadow: 0 10px 24px rgba(0,0,0,.2); transform: translateY(-1px); }
+.dashboard-stat-card--interactive:focus-visible, .dashboard-tabs button:focus-visible, .dashboard-wallet-pill:focus-visible, .dashboard-upload:focus-within { outline: 2px solid #b8f34a; outline-offset: 3px; }
+.dashboard-post-button { min-height: 2.25rem !important; padding: .48rem .8rem !important; border-radius: .35rem; font-size: .76rem !important; box-shadow: 0 3px 10px rgba(184,243,74,.08); }
+.dashboard-post-button:hover { box-shadow: 0 5px 14px rgba(184,243,74,.14); }
+.dashboard-profile-controls { display: grid; gap: .45rem; margin-top: 1rem; padding-top: .85rem; border-top: 1px solid rgba(143,163,177,.14); }
+.dashboard-wallet-pill { flex-wrap: nowrap; white-space: nowrap; }
+.dashboard-wallet-copy-label { color: #9aaaaf; font-family: var(--font-display); font-size: .68rem; }
+.dashboard-wallet-pill:hover .dashboard-wallet-copy-label { color: #b8f34a; }
+.dashboard-wallet-chain { display: inline-flex; align-items: center; gap: .3rem; padding: .2rem .4rem; border: 1px solid rgba(134,239,172,.22); border-radius: .3rem; color: #9af2b6; }
+.dashboard-wallet-chain::before { width: .35rem; height: .35rem; border-radius: 999px; background: #86efac; content: ""; }
+.dashboard-empty { margin-top: 1rem; padding: 3.5rem 1.25rem; }
+.dashboard-empty .dashboard-post-button { margin-top: .55rem; }
+.problem-hunt-lockup { gap: .55rem; }
+.problem-hunt-lockup .board-brand-mark { width: 2.25rem; height: 2.25rem; border-color: rgba(183,243,74,.28); border-radius: .42rem; }
+.problem-hunt-lockup .board-brand-mark .problem-hunt-mark { width: 1.45rem; height: 1.45rem; }
+.problem-hunt-wordmark__name { color: #edf2ee; font-size: .64rem; letter-spacing: .16em; }
+
+@media (max-width: 767px) {
+  .telemetry-strip { justify-content: flex-start; height: 1.65rem; padding-inline: .75rem; font-size: .56rem; letter-spacing: .14em; }
+  .telemetry-strip__primary { gap: .55rem; }
+  .telemetry-strip__meta { display: none; }
+  .telemetry-strip__version { color: #718087; }
+}
+
+@media (min-width: 621px) and (max-width: 900px) {
+  .dashboard-header-actions { align-items: center; }
+  .dashboard-page-header { gap: 1rem; }
+  .dashboard-page-title { font-size: clamp(2rem, 5vw, 3rem); }
+}
+
+@media (max-width: 420px) {
+  .dashboard-page-description { font-size: .88rem; }
+  .dashboard-header-actions { gap: .5rem; }
+  .dashboard-header-actions > * { min-width: 0; }
+  .dashboard-header-actions .dashboard-post-button { flex: 0 0 auto; }
+  .dashboard-tabs button { gap: .3rem; font-size: .72rem; }
+  .dashboard-tabs button svg { width: 14px; }
+  .dashboard-wallet-copy-label { display: none; }
+}
+
 /* Local homepage visual system */
 .homepage-shell {
   --bg: #0B0D10;

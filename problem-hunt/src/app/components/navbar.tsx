@@ -19,7 +19,7 @@ export function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [browserOnline, setBrowserOnline] = useState(() => typeof navigator === "undefined" || navigator.onLine);
   const navLinks = useMemo(
-    () => (user ? [...CORE_NAV_LINKS, { path: "/dashboard", label: "Dashboard" }] : CORE_NAV_LINKS),
+    () => (user ? [...CORE_NAV_LINKS, { path: "/dashboard", label: "Workspace", icon: LayoutDashboard }] : CORE_NAV_LINKS),
     [user]
   );
 
@@ -55,16 +55,16 @@ export function Navbar() {
   return (
     <header className="sticky top-0 z-50 border-b border-[color:var(--board-line)] backdrop-blur-xl" style={{ background: "rgba(7,10,15,0.85)" }}>
       {/* Top telemetry strip */}
-      <div className="hidden h-6 items-center justify-between border-b border-[color:var(--board-line)] px-4 text-[0.6rem] uppercase tracking-[0.2em] text-[var(--board-metal-steel)] md:flex" style={{ background: "rgba(10,14,22,0.6)" }}>
-        <div className="flex items-center gap-4">
+      <div className="telemetry-strip flex h-6 items-center justify-between border-b border-[color:var(--board-line)] px-4 text-[0.6rem] uppercase tracking-[0.2em] text-[var(--board-metal-steel)]" style={{ background: "rgba(10,14,22,0.6)" }}>
+        <div className="telemetry-strip__primary flex items-center gap-4">
           <span className="inline-flex items-center gap-1.5">
             <span className={`h-1.5 w-1.5 rounded-full ${connectionOnline ? "bg-[var(--accent)]" : "bg-[var(--danger)]"}`} />
             NET: {connectionOnline ? "ONLINE" : "OFFLINE"}
           </span>
           <span className="text-[var(--board-line)]">|</span>
-          <span>PROBLEM HUNT v2.1</span>
+          <span className="telemetry-strip__version">PROBLEM HUNT v2.1</span>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="telemetry-strip__meta flex items-center gap-4">
           <span>{new Date().toISOString().split("T")[0]}</span>
           <span className="text-[var(--board-line)]">|</span>
           <span>UTC {new Date().toISOString().split("T")[1].slice(0, 5)}</span>
@@ -84,17 +84,13 @@ export function Navbar() {
               active={isActive(link.path)}
               className="nav-link-shine-yellow"
             >
+              {"icon" in link && link.icon ? <link.icon className="h-3.5 w-3.5" /> : null}
               {link.label}
             </ActiveNavItem>
           ))}
         </nav>
 
         <div className="flex items-center gap-2">
-          {user ? <ActiveNavItem to="/dashboard" active={isActive("/dashboard")} className="workspace-nav-item hidden sm:inline-flex">
-            <LayoutDashboard className="h-3.5 w-3.5" />
-            <span>My workspace</span>
-          </ActiveNavItem> : null}
-
           {user ? (
             <Button
               variant="outline"
@@ -135,14 +131,10 @@ export function Navbar() {
                 onClick={() => setMobileOpen(false)}
                 className="mobile-nav-item"
               >
+                {"icon" in link && link.icon ? <link.icon className="mr-1.5 h-3.5 w-3.5" /> : null}
                 {link.label}
               </ActiveNavItem>
             ))}
-
-            {user ? <ActiveNavItem to="/dashboard" active={isActive("/dashboard")} onClick={() => setMobileOpen(false)} className="workspace-nav-item mt-2 w-full">
-                <LayoutDashboard className="mr-1.5 h-3.5 w-3.5" />
-                My workspace
-              </ActiveNavItem> : null}
 
             {user ? (
               <Button
