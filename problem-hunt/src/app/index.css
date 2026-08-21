@@ -646,6 +646,11 @@ samp,
   min-height: 100vh;
   color: var(--board-ink);
   isolation: isolate;
+  /* Keep the product accent lime on every app surface, including routes
+     outside the homepage where the theme's generic accent token is gray. */
+  --accent: #B7F34A;
+  --accent-hover: #CCFF68;
+  --board-accent: #B7F34A;
 }
 
 .board-app::before {
@@ -676,6 +681,22 @@ samp,
 .board-app > * {
   position: relative;
   z-index: 1;
+}
+
+/* Route state and the workspace's primary brief action should not fall back
+   to the neutral/disabled-looking button treatment. */
+.board-app .active-nav-item.is-active,
+.board-app .dashboard-primary-button {
+  border-color: #B7F34A !important;
+  background-color: #B7F34A !important;
+  color: #10140D !important;
+}
+
+.board-app .active-nav-item.is-active:hover,
+.board-app .dashboard-primary-button:hover {
+  border-color: #CCFF68 !important;
+  background-color: #CCFF68 !important;
+  color: #10140D !important;
 }
 
 /* Keep dashboard controls in the original dark workspace treatment. */
