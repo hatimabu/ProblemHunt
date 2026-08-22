@@ -76,6 +76,7 @@ jobs:
           echo "STATIC_WEB_APP_NAME=$(jq -r '.staticWebAppName.value' deployment-outputs.json)" >> "$GITHUB_ENV"
 
       - name: Fetch Static Web App deployment token
+        id: fetch-token
         run: |
           set -euo pipefail
           SWA_TOKEN=$(az staticwebapp secrets list \
@@ -83,7 +84,7 @@ jobs:
             --resource-group "$AZURE_RESOURCE_GROUP" \
             --query "properties.apiKey" --output tsv)
           echo "::add-mask::$SWA_TOKEN"
-          echo "SWA_DEPLOYMENT_TOKEN=$SWA_TOKEN" >> "$GITHUB_ENV"
+          echo "token=$SWA_TOKEN" >> "$GITHUB_OUTPUT"
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -108,7 +109,7 @@ jobs:
       - name: Deploy static app
         uses: Azure/static-web-apps-deploy@v1
         with:
-          azure_static_web_apps_api_token: ${{ env.SWA_DEPLOYMENT_TOKEN }}
+          azure_static_web_apps_api_token: ${{ steps.fetch-token.outputs.token }}
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           action: upload
           app_location: ${{ env.FRONTEND_PATH }}/dist
