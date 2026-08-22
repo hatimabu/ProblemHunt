@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
-import { Briefcase, Lock, Mail, Radar, ShieldCheck, User } from "lucide-react";
+import { Briefcase, KeyRound, Lock, Mail, Radar, ShieldCheck, User } from "lucide-react";
 import { Navbar } from "./navbar";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { useAuth } from "../contexts/AuthContext";
+import { supabase } from "../../../lib/supabaseClient";
 
 export function AuthPage() {
   const navigate = useNavigate();
@@ -22,6 +23,10 @@ export function AuthPage() {
   const [loginData, setLoginData] = useState({ email: "", password: "" });
   const [signupError, setSignupError] = useState("");
   const [loginError, setLoginError] = useState("");
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [resetEmail, setResetEmail] = useState("");
+  const [resetMessage, setResetMessage] = useState("");
+  const [resetError, setResetError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSignup = async (event: React.FormEvent) => {
@@ -47,6 +52,24 @@ export function AuthPage() {
       navigate("/dashboard");
     } catch (error: any) {
       setLoginError(error.message || "Login failed. Please check your credentials.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleForgotPassword = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setResetError("");
+    setResetMessage("");
+    setIsSubmitting(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (error) throw error;
+      setResetMessage("Check your email for a secure password reset link.");
+    } catch (error: any) {
+      setResetError(error.message || "Unable to send the reset email. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -92,7 +115,20 @@ export function AuthPage() {
               </TabsList>
 
               <TabsContent value="login">
-                <form onSubmit={handleLogin} className="space-y-5">
+                {showForgotPassword ? (
+                  <form onSubmit={handleForgotPassword} className="space-y-5">
+                    <div>
+                      <p className="mb-2 flex items-center gap-2 text-sm font-semibold text-[var(--board-ink)]"><KeyRound className="h-4 w-4 text-[var(--board-accent)]" />Reset your password</p>
+                      <p className="mb-5 text-sm leading-6 text-[var(--board-muted)]">Enter your account email and we’ll send you a link to choose a new password.</p>
+                      <Label htmlFor="reset-email" className="mb-2 block text-sm text-[var(--board-ink)]">Email</Label>
+                      <Input id="reset-email" type="email" placeholder="you@company.com" value={resetEmail} onChange={(e) => setResetEmail(e.target.value)} className="board-field" required />
+                    </div>
+                    {resetError ? <div role="alert" className="rounded-lg border border-[color:rgba(201,84,94,0.5)] bg-[rgba(201,84,94,0.18)] px-4 py-3 text-sm font-semibold text-white">{resetError}</div> : null}
+                    {resetMessage ? <div role="status" className="rounded-lg border border-emerald-400/40 bg-emerald-400/10 px-4 py-3 text-sm font-semibold text-emerald-200">{resetMessage}</div> : null}
+                    <Button type="submit" disabled={isSubmitting} className="h-12 w-full border-0 bg-[var(--board-accent)] text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-[#10140D]">{isSubmitting ? "Sending link..." : "Send reset link"}</Button>
+                    <button type="button" onClick={() => setShowForgotPassword(false)} className="w-full text-sm text-[var(--board-muted)] underline-offset-4 hover:text-[var(--board-ink)] hover:underline">Back to login</button>
+                  </form>
+                ) : <form onSubmit={handleLogin} className="space-y-5">
                   <div>
                     <Label htmlFor="login-email" className="mb-2 block text-sm text-[var(--board-ink)]">
                       <Mail className="mr-2 inline h-4 w-4 text-[var(--board-accent)]" />
@@ -111,7 +147,8 @@ export function AuthPage() {
                   <Button type="submit" disabled={isSubmitting} className="h-12 w-full border-0 bg-[var(--board-accent)] text-[0.76rem] font-semibold uppercase tracking-[0.16em] text-[#10140D] transition-all hover:bg-[var(--color-accent-hover)] hover:shadow-[0_0_20px_rgba(200,205,208,0.35)] hover:scale-[1.02]">
                     {isSubmitting ? "Logging in..." : "Login"}
                   </Button>
-                </form>
+                  <button type="button" onClick={() => { setShowForgotPassword(true); setResetEmail(loginData.email); setResetError(""); setResetMessage(""); }} className="w-full text-sm text-[var(--board-muted)] underline-offset-4 hover:text-[var(--board-ink)] hover:underline">Forgot your password?</button>
+                </form>}
               </TabsContent>
 
               <TabsContent value="signup">

@@ -7,6 +7,7 @@ import { AuthPage } from "./components/auth-page.tsx";
 import { Leaderboard } from "./components/leaderboard.tsx";
 import { PostProblem } from "./components/post-problem.tsx";
 import { ProtectedRoute } from "./components/ProtectedRoute.tsx";
+import { ResetPasswordPage } from "./components/reset-password-page.tsx";
 
 export const router = createBrowserRouter([
   {
@@ -52,6 +53,10 @@ export const router = createBrowserRouter([
   {
     path: "/auth",
     Component: AuthPage,
+  },
+  {
+    path: "/reset-password",
+    Component: ResetPasswordPage,
   },
   {
     path: "*",
