@@ -403,6 +403,17 @@ export function LandingPage() {
   const [liveCount, setLiveCount] = useState(0);
 
   useEffect(() => {
+    const search = new URLSearchParams(window.location.search);
+    const hash = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+    const isRecoveryRedirect = search.get("type") === "recovery" || hash.get("type") === "recovery";
+    const hasRecoveryPayload = search.has("code") || hash.has("access_token") || hash.has("code");
+
+    if (isRecoveryRedirect && hasRecoveryPayload) {
+      navigate("/reset-password", { replace: true });
+    }
+  }, [navigate]);
+
+  useEffect(() => {
     const fetchPosts = async () => {
       try {
         setPostsLoading(true);
