@@ -551,11 +551,63 @@ samp,
 /* Compact scalable lockup mark */
 .problem-hunt-lockup { display: inline-flex; align-items: center; gap: .7rem; }
 .problem-hunt-mark { width: 1.8rem; height: 1.8rem; color: var(--accent); stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.problem-hunt-mark__corner { animation-duration: 5s; animation-timing-function: cubic-bezier(.22,.8,.28,1); animation-iteration-count: infinite; transform-box: fill-box; transform-origin: center; }
+.problem-hunt-mark__corner--tl { animation-name: problem-hunt-corner-tl; }
+.problem-hunt-mark__corner--tr { animation-name: problem-hunt-corner-tr; }
+.problem-hunt-mark__corner--br { animation-name: problem-hunt-corner-br; }
+.problem-hunt-mark__corner--bl { animation-name: problem-hunt-corner-bl; }
+.problem-hunt-mark__core { animation: problem-hunt-core 5s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+.problem-hunt-mark__check { stroke-dasharray: 10; stroke-dashoffset: 10; animation: problem-hunt-check 5s ease-in-out infinite; }
 .board-brand-mark .problem-hunt-mark { width: 1.85rem; height: 1.85rem; }
 .problem-hunt-wordmark__name { color: var(--text, var(--board-ink)); font-family: var(--font-mono); font-size: .68rem; font-weight: 700; letter-spacing: .2em; line-height: 1; text-transform: uppercase; }
 .problem-hunt-wordmark__tagline { margin-top: .32rem; color: var(--board-muted); font-family: var(--font-display); font-size: .82rem; font-weight: 600; letter-spacing: -.02em; line-height: 1.1; }
 .problem-hunt-lockup .board-brand-mark { display: grid; place-items: center; width: 2.75rem; height: 2.75rem; border: 1px solid rgba(183,243,74,.38); border-radius: .55rem; background: var(--surface, var(--board-panel)); box-shadow: none; }
+.problem-hunt-lockup .board-brand-mark { animation: problem-hunt-badge 5s ease-in-out infinite; }
 .problem-hunt-lockup .board-brand-mark__wrench, .problem-hunt-lockup .board-brand-mark__spark, .problem-hunt-lockup .board-brand-mark__core { display: none; }
+
+@keyframes problem-hunt-corner-tl {
+  0%, 16%, 100% { transform: translate(0, 0); opacity: .72; }
+  36%, 62% { transform: translate(-1.25px, -1.25px); opacity: 1; }
+  78% { transform: translate(0, 0); opacity: .78; }
+}
+@keyframes problem-hunt-corner-tr {
+  0%, 16%, 100% { transform: translate(0, 0); opacity: .72; }
+  36%, 62% { transform: translate(1.25px, -1.25px); opacity: 1; }
+  78% { transform: translate(0, 0); opacity: .78; }
+}
+@keyframes problem-hunt-corner-br {
+  0%, 16%, 100% { transform: translate(0, 0); opacity: .72; }
+  36%, 62% { transform: translate(1.25px, 1.25px); opacity: 1; }
+  78% { transform: translate(0, 0); opacity: .78; }
+}
+@keyframes problem-hunt-corner-bl {
+  0%, 16%, 100% { transform: translate(0, 0); opacity: .72; }
+  36%, 62% { transform: translate(-1.25px, 1.25px); opacity: 1; }
+  78% { transform: translate(0, 0); opacity: .78; }
+}
+@keyframes problem-hunt-core {
+  0%, 16%, 100% { transform: scale(.92); opacity: .72; }
+  36%, 62% { transform: scale(1); opacity: 1; }
+  78% { transform: scale(.95); opacity: .8; }
+}
+@keyframes problem-hunt-check {
+  0%, 22% { stroke-dashoffset: 10; opacity: .35; }
+  38%, 62% { stroke-dashoffset: 0; opacity: 1; }
+  78%, 100% { stroke-dashoffset: 10; opacity: .35; }
+}
+@keyframes problem-hunt-badge {
+  0%, 18%, 100% { box-shadow: none; }
+  36%, 62% { box-shadow: 0 0 0 .18rem rgba(183,243,74,.07), 0 0 1.1rem rgba(183,243,74,.16); }
+  78% { box-shadow: 0 0 0 .08rem rgba(183,243,74,.04); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .problem-hunt-mark__corner,
+  .problem-hunt-mark__core,
+  .problem-hunt-mark__check,
+  .problem-hunt-lockup .board-brand-mark { animation: none; }
+  .problem-hunt-mark__check { stroke-dashoffset: 0; }
+}
 
 @media (max-width: 640px) {
   .workspace-nav-item { width: 100%; }

@@ -98,6 +98,7 @@ function createMissingConfigClient() {
       signOut: () => Promise.resolve({ error: null }),
       onAuthStateChange: () => ({ data: { subscription: emptySubscription } }),
       refreshSession: () => Promise.resolve({ data: { session: null }, error: null }),
+      exchangeCodeForSession: rejectConfigured,
       updateUser: rejectConfigured,
       linkIdentity: rejectConfigured,
       resend: rejectConfigured,

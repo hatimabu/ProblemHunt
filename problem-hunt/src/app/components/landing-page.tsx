@@ -27,6 +27,7 @@ import {
 import { Button } from "./ui/button";
 import { Navbar } from "./navbar";
 import { useAuth } from "../contexts/AuthContext";
+import { isRecoveryCallback } from "../lib/recovery";
 import { formatTimeAgo, type ProblemPost } from "../../lib/marketplace";
 import { getLeaderboard, listProblems } from "../../lib/supabase-marketplace";
 
@@ -403,13 +404,8 @@ export function LandingPage() {
   const [liveCount, setLiveCount] = useState(0);
 
   useEffect(() => {
-    const search = new URLSearchParams(window.location.search);
-    const hash = new URLSearchParams(window.location.hash.replace(/^#/, ""));
-    const isRecoveryRedirect = search.get("type") === "recovery" || hash.get("type") === "recovery";
-    const hasRecoveryPayload = search.has("code") || hash.has("access_token") || hash.has("code");
-
-    if (isRecoveryRedirect && hasRecoveryPayload) {
-      navigate("/reset-password", { replace: true });
+    if (isRecoveryCallback(window.location)) {
+      navigate(`/reset-password${window.location.search}${window.location.hash}`, { replace: true });
     }
   }, [navigate]);
 

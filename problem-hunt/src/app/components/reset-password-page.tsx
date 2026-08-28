@@ -6,6 +6,13 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { supabase } from "../../../lib/supabaseClient";
+import { getRecoveryCallback } from "../lib/recovery";
+
+const INVALID_LINK_MESSAGE = "This password reset link is invalid or has expired. Request a new one to continue.";
+
+function clearRecoveryCallback() {
+  window.history.replaceState({}, document.title, `${window.location.pathname}`);
+}
 
 export function ResetPasswordPage() {
   const navigate = useNavigate();
@@ -18,14 +25,35 @@ export function ResetPasswordPage() {
 
   useEffect(() => {
     let active = true;
-    supabase.auth.getSession().then(({ data, error: sessionError }) => {
-      if (!active) return;
-      if (sessionError || !data.session) {
-        setError("This password reset link is invalid or has expired. Request a new one to continue.");
-      } else {
-        setIsReady(true);
+    const verifyRecoverySession = async () => {
+      const callback = getRecoveryCallback(window.location);
+      if (callback.error) {
+        setError(INVALID_LINK_MESSAGE);
+        return;
       }
-    });
+
+      try {
+        let sessionResult = await supabase.auth.getSession();
+        if (!sessionResult.error && !sessionResult.data.session && callback.code) {
+          const exchange = supabase.auth.exchangeCodeForSession;
+          if (typeof exchange !== "function") throw new Error(INVALID_LINK_MESSAGE);
+          const exchanged = await exchange(callback.code, callback.flowId ? { flowId: callback.flowId } : undefined);
+          sessionResult = { data: exchanged.data, error: exchanged.error };
+        }
+
+        if (!active) return;
+        if (sessionResult.error || !sessionResult.data.session) {
+          setError(INVALID_LINK_MESSAGE);
+        } else {
+          setIsReady(true);
+          if (callback.hasPayload) clearRecoveryCallback();
+        }
+      } catch {
+        if (active) setError(INVALID_LINK_MESSAGE);
+      }
+    };
+
+    void verifyRecoverySession();
     return () => { active = false; };
   }, []);
 
