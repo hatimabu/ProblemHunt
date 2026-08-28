@@ -33,7 +33,8 @@ export function getRecoveryCallback(location: Pick<Location, "search" | "hash">)
 
 export function isRecoveryCallback(location: Pick<Location, "search" | "hash">): boolean {
   const params = getCallbackParams(location);
-  const isRecovery = params.get("type") === "recovery";
   const hasCallbackData = params.has("code") || params.has("access_token") || params.has("refresh_token") || params.has("error") || params.has("error_code");
-  return isRecovery && hasCallbackData;
+  // PKCE recovery redirects may contain only `code`; implicit-flow redirects
+  // normally include `type=recovery` with the tokens in the hash.
+  return hasCallbackData;
 }

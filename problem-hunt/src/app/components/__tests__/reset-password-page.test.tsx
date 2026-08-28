@@ -43,7 +43,7 @@ describe("ResetPasswordPage", () => {
     supabaseMock.auth.getSession.mockResolvedValue({ data: { session: null }, error: null });
     supabaseMock.auth.exchangeCodeForSession.mockResolvedValue({ data: { session }, error: null });
 
-    renderPage("/reset-password?code=pkce-code&type=recovery&sb_flow_id=flow-1");
+    renderPage("/reset-password?code=pkce-code&sb_flow_id=flow-1");
 
     expect(await screen.findByLabelText("New password")).toBeInTheDocument();
     expect(supabaseMock.auth.exchangeCodeForSession).toHaveBeenCalledWith("pkce-code", { flowId: "flow-1" });
