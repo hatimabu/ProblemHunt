@@ -138,4 +138,36 @@ describe("ProblemDetail", () => {
     });
     expect(await screen.findByText(/1 upvotes/i)).toBeInTheDocument();
   });
+
+  it("warns the accepted builder to wait until funding is secured", async () => {
+    marketplaceMocks.getProblem.mockResolvedValue({
+      ...baseProblem,
+      type: "job",
+      jobStatus: "awaiting_funding",
+      acceptedProposalId: "proposal-1",
+      acceptedBuilderId: "builder-1",
+      acceptedBuilderWalletAddress: "BuilderWallet111111111111111111111111111",
+      budgetSol: 1,
+    });
+    marketplaceMocks.listProposals.mockResolvedValue([{
+      id: "proposal-1",
+      problemId: "problem-1",
+      title: "I can help",
+      description: "I will automate the deployment.",
+      builderId: "builder-1",
+      builderName: "Builder",
+      status: "accepted",
+      proposedPriceSol: 1,
+      builderWalletAddress: "BuilderWallet111111111111111111111111111",
+      createdAt: "2026-06-02T00:00:00Z",
+    }]);
+
+    renderProblemDetail();
+
+    expect(await screen.findByText("Awaiting Funding")).toBeInTheDocument();
+    expect(await screen.findByText(/do not begin work until the job is securely funded/i)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /mark complete/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /phantom/i })).not.toBeInTheDocument();
+  });
+
 });
