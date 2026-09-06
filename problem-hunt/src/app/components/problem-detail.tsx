@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Link, useNavigate, useParams } from "react-router";
-import { ArrowUp, Calendar, Clock3, ExternalLink, Loader2, Radar, Send, ShieldCheck, Trash2, User2, Wallet } from "lucide-react";
+import { ArrowUp, Calendar, Clock3, ExternalLink, Loader2, Radar, Send, ShieldCheck, Trash2, User2 } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Textarea } from "../components/ui/textarea";
@@ -19,8 +19,7 @@ import {
   type ProblemPost,
   type ProposalRecord,
 } from "../../lib/marketplace";
-import { connectSolanaWallet, sendSolTransfer } from "../../lib/solana-payments";
-import { getUserSolanaWallet, syncUserSolanaWallet } from "../../lib/wallets";
+import { getUserSolanaWallet } from "../../lib/wallets";
 import {
   acceptProposal,
   createProposal,
@@ -28,7 +27,6 @@ import {
   getProblem,
   listProposals,
   markJobComplete,
-  recordJobPayment,
   recordTip,
   toggleProblemUpvote,
 } from "../../lib/supabase-marketplace";
@@ -67,7 +65,7 @@ export function ProblemDetail() {
   const [proposalForm, setProposalForm] = useState(EMPTY_PROPOSAL_FORM);
   const [tipForm, setTipForm] = useState(EMPTY_TIP_FORM);
   const [submittingProposal, setSubmittingProposal] = useState(false);
-  const [actionPending, setActionPending] = useState<"accept" | "complete" | "pay" | null>(null);
+  const [actionPending, setActionPending] = useState<"accept" | "complete" | null>(null);
   const [deletePending, setDeletePending] = useState(false);
   const [mySolanaWallet, setMySolanaWallet] = useState<string | null>(null);
 
@@ -141,7 +139,7 @@ export function ProblemDetail() {
     }
   };
 
-  const runAction = async (kind: "accept" | "complete" | "pay", fn: () => Promise<void>) => {
+  const runAction = async (kind: "accept" | "complete", fn: () => Promise<void>) => {
     try {
       setActionPending(kind);
       await fn();
@@ -164,18 +162,6 @@ export function ProblemDetail() {
     } finally {
       setUpvotePending(false);
     }
-  };
-
-  const handlePayBuilder = async (preferredWallet: "phantom" | "solflare") => {
-    if (!id || !user || !acceptedProposal || !problem) return;
-    const amountSol = acceptedProposal.proposedPriceSol || problem.budgetSol;
-    if (!amountSol || !acceptedProposal.builderWalletAddress) throw new Error("Missing payout amount or builder wallet.");
-    const wallet = await connectSolanaWallet(preferredWallet);
-    await syncUserSolanaWallet(user.id, wallet.address);
-    setMySolanaWallet(wallet.address);
-    const transfer = await sendSolTransfer({ provider: wallet.provider, toAddress: acceptedProposal.builderWalletAddress, amountSol });
-    await recordJobPayment(id, amountSol, transfer.signature, transfer.fromAddress);
-    setStatusMessage(`Payment recorded: ${transfer.signature}`);
   };
 
   const handleDeleteProblem = async () => {
@@ -256,7 +242,7 @@ export function ProblemDetail() {
               {showProposalForm ? (
                 <form onSubmit={handleProposalSubmit} className="board-panel mt-6 p-6 md:p-8">
                   {isJob && !mySolanaWallet ? (
-                    <StatusBanner variant="warning">Add a Solana wallet in your dashboard before taking on jobs so the requester can pay you directly.</StatusBanner>
+                    <StatusBanner variant="warning">Add a Solana payout wallet in your dashboard before taking on jobs. It will be used by the secure funding flow.</StatusBanner>
                   ) : null}
                   <div className="mt-5 grid gap-5">
                     <div><Label className="mb-2 block text-sm text-[var(--board-ink)]">Title</Label><Input value={proposalForm.title} onChange={(e) => setProposalForm({ ...proposalForm, title: e.target.value })} className={field} required /></div>
@@ -304,7 +290,7 @@ export function ProblemDetail() {
                             {isJob && isOwner && problem.jobStatus === "open" ? (
                               <Button onClick={() => runAction("accept", async () => {
                               await acceptProposal(id!, proposal.id);
-                              setStatusMessage("Proposal accepted.");
+                              setStatusMessage("Proposal accepted. Waiting for the owner to fund the job before work begins.");
                             })} disabled={actionPending === "accept"} className={primaryBtn}>{actionPending === "accept" ? "Accepting..." : "Accept proposal"}</Button>
                           ) : null}
                         </div>
@@ -337,11 +323,14 @@ export function ProblemDetail() {
                       setStatusMessage("Job marked complete.");
                     })} disabled={actionPending === "complete"} className={`w-full ${primaryBtn}`}>{actionPending === "complete" ? "Marking..." : "Mark complete"}</Button>
                   ) : null}
-                  {isJob && isOwner && problem.jobStatus === "completed" ? (
-                    <div className="grid grid-cols-2 gap-2">
-                      <Button onClick={() => runAction("pay", () => handlePayBuilder("phantom"))} disabled={actionPending === "pay"} className={`w-full ${primaryBtn}`}><Wallet className="mr-2 h-4 w-4" />{actionPending === "pay" ? "Paying..." : "Phantom"}</Button>
-                      <Button onClick={() => runAction("pay", () => handlePayBuilder("solflare"))} disabled={actionPending === "pay"} className={`w-full ${secondaryBtn}`}>{actionPending === "pay" ? "Paying..." : "Solflare"}</Button>
-                    </div>
+                  {isJob && problem.jobStatus === "awaiting_funding" ? (
+                    <StatusBanner variant="warning">
+                      {isOwner
+                        ? "Proposal accepted. Secure escrow funding is not enabled yet, so no work should begin."
+                        : isAcceptedBuilder
+                          ? "Your proposal was accepted. Do not begin work until the job is securely funded."
+                          : "This job is waiting for secure funding."}
+                    </StatusBanner>
                   ) : null}
                   {isOwner ? (
                     <Button type="button" variant="outline" onClick={handleDeleteProblem} disabled={deletePending} className="board-danger-btn w-full">
@@ -373,9 +362,9 @@ export function ProblemDetail() {
                   <p className="board-kicker">Payment flow</p>
                   <div className="mt-5 space-y-3 text-sm leading-7 text-[var(--board-muted)]">
                     <p className="flex items-start gap-2"><ShieldCheck className="mt-0.5 h-4 w-4 text-emerald-500/70" />1. Owner accepts one proposal.</p>
-                    <p className="flex items-start gap-2"><ShieldCheck className="mt-0.5 h-4 w-4 text-emerald-500/70" />2. Builder marks the job complete.</p>
-                    <p className="flex items-start gap-2"><ShieldCheck className="mt-0.5 h-4 w-4 text-emerald-500/70" />3. Owner pays directly from Phantom or Solflare.</p>
-                    <p className="flex items-start gap-2"><ShieldCheck className="mt-0.5 h-4 w-4 text-emerald-500/70" />4. The transaction hash is recorded and the job is marked paid.</p>
+                    <p className="flex items-start gap-2"><ShieldCheck className="mt-0.5 h-4 w-4 text-emerald-500/70" />2. Job waits for secure funding.</p>
+                    <p className="flex items-start gap-2"><ShieldCheck className="mt-0.5 h-4 w-4 text-emerald-500/70" />3. Builder starts only after funding is verified.</p>
+                    <p className="flex items-start gap-2"><ShieldCheck className="mt-0.5 h-4 w-4 text-emerald-500/70" />4. Delivery and payment release follow the funded workflow.</p>
                   </div>
                   {mySolanaWallet ? <div className="mt-5 rounded-lg border border-[color:rgba(201,84,94,0.34)] bg-[rgba(201,84,94,0.12)] px-4 py-3 text-sm text-[var(--board-accent)]">Your Solana wallet: {shortWallet(mySolanaWallet)}</div> : null}
                 </section>
