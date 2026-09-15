@@ -6,13 +6,18 @@ import { ProblemDetail } from "../problem-detail";
 
 const marketplaceMocks = vi.hoisted(() => ({
   acceptProposal: vi.fn(),
+  approveJobDelivery: vi.fn(),
+  cancelUnfundedJob: vi.fn(),
   createProposal: vi.fn(),
   deleteProblem: vi.fn(),
+  getJobContract: vi.fn(),
   getProblem: vi.fn(),
   listProposals: vi.fn(),
   markJobComplete: vi.fn(),
+  openJobDispute: vi.fn(),
   recordJobPayment: vi.fn(),
   recordTip: vi.fn(),
+  submitJobDelivery: vi.fn(),
   toggleProblemUpvote: vi.fn(),
 }));
 
@@ -74,6 +79,7 @@ describe("ProblemDetail", () => {
   beforeEach(() => {
     currentUser.id = "builder-1";
     Object.values(marketplaceMocks).forEach((mock) => mock.mockReset());
+    marketplaceMocks.getJobContract.mockResolvedValue(null);
   });
 
   it("submits a proposal and refreshes the proposal list", async () => {
