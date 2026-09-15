@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Link, useNavigate, useParams } from "react-router";
-import { ArrowUp, Calendar, Clock3, ExternalLink, Loader2, Radar, Send, ShieldCheck, Trash2, User2 } from "lucide-react";
+import { ArrowUp, Calendar, CheckCircle2, Clock3, ExternalLink, Loader2, LockKeyhole, Radar, Send, ShieldCheck, Trash2, User2, Wallet } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Textarea } from "../components/ui/textarea";
@@ -73,6 +73,7 @@ export function ProblemDetail() {
   const isOwner = !!user && !!problem && user.id === problem.authorId;
   const acceptedProposal = useMemo(() => proposals.find((p) => p.id === problem?.acceptedProposalId) || null, [problem, proposals]);
   const isAcceptedBuilder = !!user && !!acceptedProposal && acceptedProposal.builderId === user.id;
+  const agreedAmountSol = acceptedProposal?.proposedPriceSol || problem?.budgetSol || null;
   const fetchData = async () => {
     if (!id) return;
     try {
@@ -313,6 +314,73 @@ export function ProblemDetail() {
                 </div>
               </section>
 
+              {isJob && acceptedProposal ? (
+                <section className="board-panel board-panel--command overflow-hidden p-0">
+                  <div className="border-b border-[color:var(--board-line)] bg-[rgba(201,168,76,0.07)] p-6">
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <p className="board-kicker">Accepted agreement</p>
+                        <h3 className="board-subtitle mt-3">{acceptedProposal.builderName}</h3>
+                      </div>
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[color:rgba(201,168,76,0.35)] bg-[rgba(201,168,76,0.1)]">
+                        <LockKeyhole className="h-4 w-4 text-[var(--board-gold)]" />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-5 p-6">
+                    <dl className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <dt className="text-[var(--board-soft)]">Agreed amount</dt>
+                        <dd className="mt-1 font-semibold text-[var(--board-ink)]">{formatSol(agreedAmountSol)} SOL</dd>
+                      </div>
+                      <div>
+                        <dt className="text-[var(--board-soft)]">Network</dt>
+                        <dd className="mt-1 font-semibold text-[var(--board-ink)]">Solana</dd>
+                      </div>
+                      <div>
+                        <dt className="text-[var(--board-soft)]">Asset</dt>
+                        <dd className="mt-1 font-semibold text-[var(--board-ink)]">SOL</dd>
+                      </div>
+                      <div>
+                        <dt className="text-[var(--board-soft)]">Funding status</dt>
+                        <dd className="mt-1 font-semibold text-[var(--board-gold)]">{formatJobStatus(problem.jobStatus)}</dd>
+                      </div>
+                    </dl>
+
+                    <div className="space-y-3 border-t border-[color:var(--board-line)] pt-5 text-sm">
+                      <div className="flex items-center gap-3 text-emerald-400">
+                        <CheckCircle2 className="h-4 w-4" />
+                        <span>Proposal accepted</span>
+                      </div>
+                      <div className="flex items-center gap-3 text-[var(--board-gold)]">
+                        <Loader2 className="h-4 w-4" />
+                        <span>Waiting for secure funding</span>
+                      </div>
+                      <div className="flex items-center gap-3 text-[var(--board-soft)]">
+                        <ShieldCheck className="h-4 w-4" />
+                        <span>Work begins after verification</span>
+                      </div>
+                    </div>
+
+                    {problem.jobStatus === "awaiting_funding" && isOwner ? (
+                      <div className="space-y-3">
+                        <Button type="button" disabled className={`w-full ${primaryBtn}`}>
+                          <Wallet className="mr-2 h-4 w-4" />Fund escrow
+                        </Button>
+                        <p className="text-xs leading-5 text-[var(--board-soft)]">
+                          Funding is disabled until the secure escrow connection is added in Step 3. Do not send funds directly.
+                        </p>
+                      </div>
+                    ) : null}
+
+                    {problem.jobStatus === "awaiting_funding" && isAcceptedBuilder ? (
+                      <StatusBanner variant="warning">Wait for a verified funded status before starting work.</StatusBanner>
+                    ) : null}
+                  </div>
+                </section>
+              ) : null}
+
               <section className="board-panel board-panel--command p-6">
                 <p className="board-kicker">Actions</p>
                 <div className="board-action-cluster mt-5">
@@ -326,7 +394,7 @@ export function ProblemDetail() {
                   {isJob && problem.jobStatus === "awaiting_funding" ? (
                     <StatusBanner variant="warning">
                       {isOwner
-                        ? "Proposal accepted. Secure escrow funding is not enabled yet, so no work should begin."
+                        ? "Review the accepted agreement above. Funding will be enabled with the secure escrow connection."
                         : isAcceptedBuilder
                           ? "Your proposal was accepted. Do not begin work until the job is securely funded."
                           : "This job is waiting for secure funding."}
