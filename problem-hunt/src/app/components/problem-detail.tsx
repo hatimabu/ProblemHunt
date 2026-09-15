@@ -18,16 +18,22 @@ import {
   splitListInput,
   type ProblemPost,
   type ProposalRecord,
+  type JobContract,
 } from "../../lib/marketplace";
 import { getUserSolanaWallet } from "../../lib/wallets";
 import {
   acceptProposal,
+  approveJobDelivery,
+  cancelUnfundedJob,
   createProposal,
   deleteProblem,
+  getJobContract,
   getProblem,
   listProposals,
   markJobComplete,
+  openJobDispute,
   recordTip,
+  submitJobDelivery,
   toggleProblemUpvote,
 } from "../../lib/supabase-marketplace";
 
@@ -56,6 +62,7 @@ export function ProblemDetail() {
   const { user } = useAuth();
   const [problem, setProblem] = useState<ProblemPost | null>(null);
   const [proposals, setProposals] = useState<ProposalRecord[]>([]);
+  const [contract, setContract] = useState<JobContract | null>(null);
   const [loading, setLoading] = useState(true);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -65,7 +72,10 @@ export function ProblemDetail() {
   const [proposalForm, setProposalForm] = useState(EMPTY_PROPOSAL_FORM);
   const [tipForm, setTipForm] = useState(EMPTY_TIP_FORM);
   const [submittingProposal, setSubmittingProposal] = useState(false);
-  const [actionPending, setActionPending] = useState<"accept" | "complete" | null>(null);
+  const [actionPending, setActionPending] = useState<"accept" | "complete" | "submit" | "approve" | "dispute" | "cancel" | null>(null);
+  const [deliveryNote, setDeliveryNote] = useState("");
+  const [deliveryUrl, setDeliveryUrl] = useState("");
+  const [disputeReason, setDisputeReason] = useState("");
   const [deletePending, setDeletePending] = useState(false);
   const [mySolanaWallet, setMySolanaWallet] = useState<string | null>(null);
 
@@ -81,7 +91,12 @@ export function ProblemDetail() {
       const problemData = await getProblem(id);
       if (!problemData) throw new Error("Post not found");
       setProblem(problemData);
-      setProposals(await listProposals(id, problemData.acceptedProposalId, problemData.acceptedBuilderWalletAddress));
+      const [proposalData, contractData] = await Promise.all([
+        listProposals(id, problemData.acceptedProposalId, problemData.acceptedBuilderWalletAddress),
+        problemData.type === "job" ? getJobContract(id) : Promise.resolve(null),
+      ]);
+      setProposals(proposalData);
+      setContract(contractData);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load post");
     } finally {
@@ -140,7 +155,7 @@ export function ProblemDetail() {
     }
   };
 
-  const runAction = async (kind: "accept" | "complete", fn: () => Promise<void>) => {
+  const runAction = async (kind: "accept" | "complete" | "submit" | "approve" | "dispute" | "cancel", fn: () => Promise<void>) => {
     try {
       setActionPending(kind);
       await fn();
@@ -332,19 +347,19 @@ export function ProblemDetail() {
                     <dl className="grid grid-cols-2 gap-4 text-sm">
                       <div>
                         <dt className="text-[var(--board-soft)]">Agreed amount</dt>
-                        <dd className="mt-1 font-semibold text-[var(--board-ink)]">{formatSol(agreedAmountSol)} SOL</dd>
+                        <dd className="mt-1 font-semibold text-[var(--board-ink)]">{formatSol(contract?.agreedAmountSol || agreedAmountSol)} {contract?.asset || "SOL"}</dd>
                       </div>
                       <div>
                         <dt className="text-[var(--board-soft)]">Network</dt>
-                        <dd className="mt-1 font-semibold text-[var(--board-ink)]">Solana</dd>
+                        <dd className="mt-1 font-semibold text-[var(--board-ink)]">{contract?.network || "Solana"}</dd>
                       </div>
                       <div>
                         <dt className="text-[var(--board-soft)]">Asset</dt>
-                        <dd className="mt-1 font-semibold text-[var(--board-ink)]">SOL</dd>
+                        <dd className="mt-1 font-semibold text-[var(--board-ink)]">{contract?.asset || "SOL"}</dd>
                       </div>
                       <div>
                         <dt className="text-[var(--board-soft)]">Funding status</dt>
-                        <dd className="mt-1 font-semibold text-[var(--board-gold)]">{formatJobStatus(problem.jobStatus)}</dd>
+                        <dd className="mt-1 font-semibold text-[var(--board-gold)]">{contract?.status ? formatJobStatus(contract.status) : formatJobStatus(problem.jobStatus)}</dd>
                       </div>
                     </dl>
 
@@ -376,6 +391,46 @@ export function ProblemDetail() {
 
                     {problem.jobStatus === "awaiting_funding" && isAcceptedBuilder ? (
                       <StatusBanner variant="warning">Wait for a verified funded status before starting work.</StatusBanner>
+                    ) : null}
+
+                    {contract?.status === "funded" && isAcceptedBuilder ? (
+                      <div className="space-y-3 border-t border-[color:var(--board-line)] pt-5">
+                        <Label className="text-sm text-[var(--board-ink)]">Delivery notes</Label>
+                        <Textarea value={deliveryNote} onChange={(e) => setDeliveryNote(e.target.value)} className="board-field min-h-[110px]" placeholder="Describe what was delivered and how to review it." />
+                        <Input value={deliveryUrl} onChange={(e) => setDeliveryUrl(e.target.value)} className={field} placeholder="Delivery URL (optional)" />
+                        <Button disabled={!deliveryNote.trim() || actionPending === "submit"} onClick={() => runAction("submit", async () => {
+                          await submitJobDelivery(id!, deliveryUrl, deliveryNote);
+                          setStatusMessage("Delivery submitted for client review.");
+                        })} className={`w-full ${primaryBtn}`}>{actionPending === "submit" ? "Submitting..." : "Submit delivery"}</Button>
+                      </div>
+                    ) : null}
+
+                    {contract?.status === "submitted" && isOwner ? (
+                      <div className="space-y-3 border-t border-[color:var(--board-line)] pt-5">
+                        {contract.deliveryNote ? <p className="text-sm leading-6 text-[var(--board-muted)]">{contract.deliveryNote}</p> : null}
+                        {contract.deliveryUrl ? <a className="text-sm text-[var(--board-accent)]" href={contract.deliveryUrl} target="_blank" rel="noreferrer">Review delivery</a> : null}
+                        <Button onClick={() => runAction("approve", async () => {
+                          await approveJobDelivery(id!);
+                          setStatusMessage("Delivery approved. Release is pending provider confirmation.");
+                        })} disabled={actionPending === "approve"} className={`w-full ${primaryBtn}`}>{actionPending === "approve" ? "Approving..." : "Approve delivery"}</Button>
+                      </div>
+                    ) : null}
+
+                    {contract && ["funded", "submitted", "release_pending"].includes(contract.status) && (isOwner || isAcceptedBuilder) ? (
+                      <div className="space-y-3 border-t border-[color:var(--board-line)] pt-5">
+                        <Textarea value={disputeReason} onChange={(e) => setDisputeReason(e.target.value)} className="board-field min-h-[90px]" placeholder="Describe the issue (minimum 10 characters)" />
+                        <Button variant="outline" disabled={disputeReason.trim().length < 10 || actionPending === "dispute"} onClick={() => runAction("dispute", async () => {
+                          await openJobDispute(id!, disputeReason);
+                          setStatusMessage("The contract is now disputed. No release should occur.");
+                        })} className={`w-full ${secondaryBtn}`}>{actionPending === "dispute" ? "Opening..." : "Open dispute"}</Button>
+                      </div>
+                    ) : null}
+
+                    {contract?.status === "awaiting_funding" && isOwner ? (
+                      <Button variant="outline" disabled={actionPending === "cancel"} onClick={() => runAction("cancel", async () => {
+                        await cancelUnfundedJob(id!);
+                        setStatusMessage("Unfunded contract cancelled.");
+                      })} className="board-danger-btn w-full">{actionPending === "cancel" ? "Cancelling..." : "Cancel agreement"}</Button>
                     ) : null}
                   </div>
                 </section>
