@@ -11,6 +11,28 @@ export type JobStatus =
   | "refunded"
   | "cancelled";
 export type ProposalStatus = "pending" | "accepted" | "rejected";
+export type ContractStatus =
+  | "awaiting_funding" | "funded" | "submitted" | "release_pending"
+  | "released" | "refund_requested" | "refunded" | "disputed" | "cancelled";
+
+export interface JobContract {
+  id: string;
+  jobId: string;
+  proposalId: string;
+  clientId: string;
+  builderId: string;
+  agreedAmountSol: number;
+  asset: string;
+  network: string;
+  status: ContractStatus;
+  provider?: string | null;
+  fundingReference?: string | null;
+  releaseReference?: string | null;
+  refundReference?: string | null;
+  deliveryUrl?: string | null;
+  deliveryNote?: string | null;
+  disputeReason?: string | null;
+}
 
 export interface ProblemPost {
   id: string;
