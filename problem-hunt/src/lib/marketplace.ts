@@ -1,6 +1,38 @@
 export type PostType = "problem" | "job";
-export type JobStatus = "open" | "in_progress" | "completed" | "paid";
+export type JobStatus =
+  | "open"
+  | "awaiting_funding"
+  | "funded"
+  | "in_progress"
+  | "submitted"
+  | "completed"
+  | "paid"
+  | "disputed"
+  | "refunded"
+  | "cancelled";
 export type ProposalStatus = "pending" | "accepted" | "rejected";
+export type ContractStatus =
+  | "awaiting_funding" | "funded" | "submitted" | "release_pending"
+  | "released" | "refund_requested" | "refunded" | "disputed" | "cancelled";
+
+export interface JobContract {
+  id: string;
+  jobId: string;
+  proposalId: string;
+  clientId: string;
+  builderId: string;
+  agreedAmountSol: number;
+  asset: string;
+  network: string;
+  status: ContractStatus;
+  provider?: string | null;
+  fundingReference?: string | null;
+  releaseReference?: string | null;
+  refundReference?: string | null;
+  deliveryUrl?: string | null;
+  deliveryNote?: string | null;
+  disputeReason?: string | null;
+}
 
 export interface ProblemPost {
   id: string;
@@ -100,12 +132,24 @@ export function formatTimeAgo(dateString?: string | null): string {
 export function formatJobStatus(status?: string | null): string {
   if (!status) return "Open";
   switch (status) {
+    case "awaiting_funding":
+      return "Awaiting Funding";
+    case "funded":
+      return "Funded";
     case "in_progress":
       return "In Progress";
+    case "submitted":
+      return "Submitted";
     case "completed":
       return "Completed";
     case "paid":
       return "Paid";
+    case "disputed":
+      return "Disputed";
+    case "refunded":
+      return "Refunded";
+    case "cancelled":
+      return "Cancelled";
     default:
       return "Open";
   }

@@ -6,13 +6,18 @@ import { ProblemDetail } from "../problem-detail";
 
 const marketplaceMocks = vi.hoisted(() => ({
   acceptProposal: vi.fn(),
+  approveJobDelivery: vi.fn(),
+  cancelUnfundedJob: vi.fn(),
   createProposal: vi.fn(),
   deleteProblem: vi.fn(),
+  getJobContract: vi.fn(),
   getProblem: vi.fn(),
   listProposals: vi.fn(),
   markJobComplete: vi.fn(),
+  openJobDispute: vi.fn(),
   recordJobPayment: vi.fn(),
   recordTip: vi.fn(),
+  submitJobDelivery: vi.fn(),
   toggleProblemUpvote: vi.fn(),
 }));
 
@@ -72,7 +77,9 @@ function renderProblemDetail() {
 
 describe("ProblemDetail", () => {
   beforeEach(() => {
+    currentUser.id = "builder-1";
     Object.values(marketplaceMocks).forEach((mock) => mock.mockReset());
+    marketplaceMocks.getJobContract.mockResolvedValue(null);
   });
 
   it("submits a proposal and refreshes the proposal list", async () => {
@@ -138,4 +145,70 @@ describe("ProblemDetail", () => {
     });
     expect(await screen.findByText(/1 upvotes/i)).toBeInTheDocument();
   });
+
+  it("warns the accepted builder to wait until funding is secured", async () => {
+    marketplaceMocks.getProblem.mockResolvedValue({
+      ...baseProblem,
+      type: "job",
+      jobStatus: "awaiting_funding",
+      acceptedProposalId: "proposal-1",
+      acceptedBuilderId: "builder-1",
+      acceptedBuilderWalletAddress: "BuilderWallet111111111111111111111111111",
+      budgetSol: 1,
+    });
+    marketplaceMocks.listProposals.mockResolvedValue([{
+      id: "proposal-1",
+      problemId: "problem-1",
+      title: "I can help",
+      description: "I will automate the deployment.",
+      builderId: "builder-1",
+      builderName: "Builder",
+      status: "accepted",
+      proposedPriceSol: 1,
+      builderWalletAddress: "BuilderWallet111111111111111111111111111",
+      createdAt: "2026-06-02T00:00:00Z",
+    }]);
+
+    renderProblemDetail();
+
+    expect((await screen.findAllByText("Awaiting Funding")).length).toBeGreaterThan(0);
+    expect(await screen.findByText(/do not begin work until the job is securely funded/i)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /mark complete/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /phantom/i })).not.toBeInTheDocument();
+  });
+
+  it("shows the owner the accepted agreement and a disabled escrow action", async () => {
+    currentUser.id = "owner-1";
+    marketplaceMocks.getProblem.mockResolvedValue({
+      ...baseProblem,
+      type: "job",
+      jobStatus: "awaiting_funding",
+      acceptedProposalId: "proposal-1",
+      acceptedBuilderId: "builder-1",
+      acceptedBuilderWalletAddress: "BuilderWallet111111111111111111111111111",
+      budgetSol: 1.5,
+    });
+    marketplaceMocks.listProposals.mockResolvedValue([{
+      id: "proposal-1",
+      problemId: "problem-1",
+      title: "I can help",
+      description: "I will automate the deployment.",
+      builderId: "builder-1",
+      builderName: "Builder",
+      status: "accepted",
+      proposedPriceSol: 1.25,
+      builderWalletAddress: "BuilderWallet111111111111111111111111111",
+      createdAt: "2026-06-02T00:00:00Z",
+    }]);
+
+    renderProblemDetail();
+
+    expect(await screen.findByText("Accepted agreement")).toBeInTheDocument();
+    expect(screen.getAllByText("1.25 SOL").length).toBeGreaterThan(0);
+    expect(screen.getByText("Solana")).toBeInTheDocument();
+    expect(screen.getByText("Waiting for secure funding")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /fund escrow/i })).toBeDisabled();
+    expect(screen.getByText(/do not send funds directly/i)).toBeInTheDocument();
+  });
+
 });
