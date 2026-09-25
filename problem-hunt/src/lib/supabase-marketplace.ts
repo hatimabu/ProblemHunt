@@ -1,5 +1,5 @@
 import { supabase } from "../../lib/supabaseClient";
-import type { NotificationRow, ProblemPost, ProposalRecord } from "./marketplace";
+import type { JobContract, NotificationRow, ProblemPost, ProposalRecord } from "./marketplace";
 
 export type WalletChain = "ethereum" | "polygon" | "arbitrum" | "solana";
 
@@ -78,6 +78,39 @@ function mapProposal(row: DbProposal): ProposalRecord {
     updatedAt: row.updated_at,
   };
 }
+
+function mapJobContract(row: Record<string, any>): JobContract {
+  return {
+    id: row.id, jobId: row.job_id, proposalId: row.proposal_id,
+    clientId: row.client_id, builderId: row.builder_id,
+    agreedAmountSol: Number(row.agreed_amount_sol), asset: row.asset,
+    network: row.network, status: row.status, provider: row.provider,
+    fundingReference: row.funding_reference, releaseReference: row.release_reference,
+    refundReference: row.refund_reference, deliveryUrl: row.delivery_url,
+    deliveryNote: row.delivery_note, disputeReason: row.dispute_reason,
+  };
+}
+
+export async function getJobContract(problemId: string): Promise<JobContract | null> {
+  const { data, error } = await supabase.from("job_contracts").select("*").eq("job_id", problemId).maybeSingle();
+  throwIfError(error);
+  return data ? mapJobContract(data) : null;
+}
+
+async function runContractAction(name: string, args: Record<string, unknown>) {
+  const { data, error } = await supabase.rpc(name, args);
+  throwIfError(error);
+  return mapJobContract(data);
+}
+
+export const submitJobDelivery = (problemId: string, deliveryUrl: string, deliveryNote: string) =>
+  runContractAction("submit_job_delivery", { p_job_id: problemId, p_delivery_url: deliveryUrl || null, p_delivery_note: deliveryNote });
+export const approveJobDelivery = (problemId: string) =>
+  runContractAction("approve_job_delivery", { p_job_id: problemId });
+export const openJobDispute = (problemId: string, reason: string) =>
+  runContractAction("open_job_dispute", { p_job_id: problemId, p_reason: reason });
+export const cancelUnfundedJob = (problemId: string) =>
+  runContractAction("cancel_unfunded_job", { p_job_id: problemId });
 
 export async function listProblems(filters: { category?: string; type?: string; sortBy?: string } = {}) {
   let query = supabase.from("problems").select("*");

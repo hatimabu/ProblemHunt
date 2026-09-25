@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Link, useNavigate, useParams } from "react-router";
-import { ArrowUp, Calendar, Clock3, ExternalLink, Loader2, Radar, Send, ShieldCheck, Trash2, User2, Wallet } from "lucide-react";
+import { ArrowUp, Calendar, CheckCircle2, Clock3, ExternalLink, Loader2, LockKeyhole, Radar, Send, ShieldCheck, Trash2, User2, Wallet } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Textarea } from "../components/ui/textarea";
@@ -18,18 +18,22 @@ import {
   splitListInput,
   type ProblemPost,
   type ProposalRecord,
+  type JobContract,
 } from "../../lib/marketplace";
-import { connectSolanaWallet, sendSolTransfer } from "../../lib/solana-payments";
-import { getUserSolanaWallet, syncUserSolanaWallet } from "../../lib/wallets";
+import { getUserSolanaWallet } from "../../lib/wallets";
 import {
   acceptProposal,
+  approveJobDelivery,
+  cancelUnfundedJob,
   createProposal,
   deleteProblem,
+  getJobContract,
   getProblem,
   listProposals,
   markJobComplete,
-  recordJobPayment,
+  openJobDispute,
   recordTip,
+  submitJobDelivery,
   toggleProblemUpvote,
 } from "../../lib/supabase-marketplace";
 
@@ -58,6 +62,7 @@ export function ProblemDetail() {
   const { user } = useAuth();
   const [problem, setProblem] = useState<ProblemPost | null>(null);
   const [proposals, setProposals] = useState<ProposalRecord[]>([]);
+  const [contract, setContract] = useState<JobContract | null>(null);
   const [loading, setLoading] = useState(true);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -67,7 +72,10 @@ export function ProblemDetail() {
   const [proposalForm, setProposalForm] = useState(EMPTY_PROPOSAL_FORM);
   const [tipForm, setTipForm] = useState(EMPTY_TIP_FORM);
   const [submittingProposal, setSubmittingProposal] = useState(false);
-  const [actionPending, setActionPending] = useState<"accept" | "complete" | "pay" | null>(null);
+  const [actionPending, setActionPending] = useState<"accept" | "complete" | "submit" | "approve" | "dispute" | "cancel" | null>(null);
+  const [deliveryNote, setDeliveryNote] = useState("");
+  const [deliveryUrl, setDeliveryUrl] = useState("");
+  const [disputeReason, setDisputeReason] = useState("");
   const [deletePending, setDeletePending] = useState(false);
   const [mySolanaWallet, setMySolanaWallet] = useState<string | null>(null);
 
@@ -75,6 +83,7 @@ export function ProblemDetail() {
   const isOwner = !!user && !!problem && user.id === problem.authorId;
   const acceptedProposal = useMemo(() => proposals.find((p) => p.id === problem?.acceptedProposalId) || null, [problem, proposals]);
   const isAcceptedBuilder = !!user && !!acceptedProposal && acceptedProposal.builderId === user.id;
+  const agreedAmountSol = acceptedProposal?.proposedPriceSol || problem?.budgetSol || null;
   const fetchData = async () => {
     if (!id) return;
     try {
@@ -82,7 +91,12 @@ export function ProblemDetail() {
       const problemData = await getProblem(id);
       if (!problemData) throw new Error("Post not found");
       setProblem(problemData);
-      setProposals(await listProposals(id, problemData.acceptedProposalId, problemData.acceptedBuilderWalletAddress));
+      const [proposalData, contractData] = await Promise.all([
+        listProposals(id, problemData.acceptedProposalId, problemData.acceptedBuilderWalletAddress),
+        problemData.type === "job" ? getJobContract(id) : Promise.resolve(null),
+      ]);
+      setProposals(proposalData);
+      setContract(contractData);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load post");
     } finally {
@@ -141,7 +155,7 @@ export function ProblemDetail() {
     }
   };
 
-  const runAction = async (kind: "accept" | "complete" | "pay", fn: () => Promise<void>) => {
+  const runAction = async (kind: "accept" | "complete" | "submit" | "approve" | "dispute" | "cancel", fn: () => Promise<void>) => {
     try {
       setActionPending(kind);
       await fn();
@@ -164,18 +178,6 @@ export function ProblemDetail() {
     } finally {
       setUpvotePending(false);
     }
-  };
-
-  const handlePayBuilder = async (preferredWallet: "phantom" | "solflare") => {
-    if (!id || !user || !acceptedProposal || !problem) return;
-    const amountSol = acceptedProposal.proposedPriceSol || problem.budgetSol;
-    if (!amountSol || !acceptedProposal.builderWalletAddress) throw new Error("Missing payout amount or builder wallet.");
-    const wallet = await connectSolanaWallet(preferredWallet);
-    await syncUserSolanaWallet(user.id, wallet.address);
-    setMySolanaWallet(wallet.address);
-    const transfer = await sendSolTransfer({ provider: wallet.provider, toAddress: acceptedProposal.builderWalletAddress, amountSol });
-    await recordJobPayment(id, amountSol, transfer.signature, transfer.fromAddress);
-    setStatusMessage(`Payment recorded: ${transfer.signature}`);
   };
 
   const handleDeleteProblem = async () => {
@@ -256,7 +258,7 @@ export function ProblemDetail() {
               {showProposalForm ? (
                 <form onSubmit={handleProposalSubmit} className="board-panel mt-6 p-6 md:p-8">
                   {isJob && !mySolanaWallet ? (
-                    <StatusBanner variant="warning">Add a Solana wallet in your dashboard before taking on jobs so the requester can pay you directly.</StatusBanner>
+                    <StatusBanner variant="warning">Add a Solana payout wallet in your dashboard before taking on jobs. It will be used by the secure funding flow.</StatusBanner>
                   ) : null}
                   <div className="mt-5 grid gap-5">
                     <div><Label className="mb-2 block text-sm text-[var(--board-ink)]">Title</Label><Input value={proposalForm.title} onChange={(e) => setProposalForm({ ...proposalForm, title: e.target.value })} className={field} required /></div>
@@ -304,7 +306,7 @@ export function ProblemDetail() {
                             {isJob && isOwner && problem.jobStatus === "open" ? (
                               <Button onClick={() => runAction("accept", async () => {
                               await acceptProposal(id!, proposal.id);
-                              setStatusMessage("Proposal accepted.");
+                              setStatusMessage("Proposal accepted. Waiting for the owner to fund the job before work begins.");
                             })} disabled={actionPending === "accept"} className={primaryBtn}>{actionPending === "accept" ? "Accepting..." : "Accept proposal"}</Button>
                           ) : null}
                         </div>
@@ -327,6 +329,113 @@ export function ProblemDetail() {
                 </div>
               </section>
 
+              {isJob && acceptedProposal ? (
+                <section className="board-panel board-panel--command overflow-hidden p-0">
+                  <div className="border-b border-[color:var(--board-line)] bg-[rgba(201,168,76,0.07)] p-6">
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <p className="board-kicker">Accepted agreement</p>
+                        <h3 className="board-subtitle mt-3">{acceptedProposal.builderName}</h3>
+                      </div>
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[color:rgba(201,168,76,0.35)] bg-[rgba(201,168,76,0.1)]">
+                        <LockKeyhole className="h-4 w-4 text-[var(--board-gold)]" />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-5 p-6">
+                    <dl className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <dt className="text-[var(--board-soft)]">Agreed amount</dt>
+                        <dd className="mt-1 font-semibold text-[var(--board-ink)]">{formatSol(contract?.agreedAmountSol || agreedAmountSol)} {contract?.asset || "SOL"}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-[var(--board-soft)]">Network</dt>
+                        <dd className="mt-1 font-semibold text-[var(--board-ink)]">{contract?.network || "Solana"}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-[var(--board-soft)]">Asset</dt>
+                        <dd className="mt-1 font-semibold text-[var(--board-ink)]">{contract?.asset || "SOL"}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-[var(--board-soft)]">Funding status</dt>
+                        <dd className="mt-1 font-semibold text-[var(--board-gold)]">{contract?.status ? formatJobStatus(contract.status) : formatJobStatus(problem.jobStatus)}</dd>
+                      </div>
+                    </dl>
+
+                    <div className="space-y-3 border-t border-[color:var(--board-line)] pt-5 text-sm">
+                      <div className="flex items-center gap-3 text-emerald-400">
+                        <CheckCircle2 className="h-4 w-4" />
+                        <span>Proposal accepted</span>
+                      </div>
+                      <div className="flex items-center gap-3 text-[var(--board-gold)]">
+                        <Loader2 className="h-4 w-4" />
+                        <span>Waiting for secure funding</span>
+                      </div>
+                      <div className="flex items-center gap-3 text-[var(--board-soft)]">
+                        <ShieldCheck className="h-4 w-4" />
+                        <span>Work begins after verification</span>
+                      </div>
+                    </div>
+
+                    {problem.jobStatus === "awaiting_funding" && isOwner ? (
+                      <div className="space-y-3">
+                        <Button type="button" disabled className={`w-full ${primaryBtn}`}>
+                          <Wallet className="mr-2 h-4 w-4" />Fund escrow
+                        </Button>
+                        <p className="text-xs leading-5 text-[var(--board-soft)]">
+                          Funding is disabled until the secure escrow connection is added in Step 3. Do not send funds directly.
+                        </p>
+                      </div>
+                    ) : null}
+
+                    {problem.jobStatus === "awaiting_funding" && isAcceptedBuilder ? (
+                      <StatusBanner variant="warning">Wait for a verified funded status before starting work.</StatusBanner>
+                    ) : null}
+
+                    {contract?.status === "funded" && isAcceptedBuilder ? (
+                      <div className="space-y-3 border-t border-[color:var(--board-line)] pt-5">
+                        <Label className="text-sm text-[var(--board-ink)]">Delivery notes</Label>
+                        <Textarea value={deliveryNote} onChange={(e) => setDeliveryNote(e.target.value)} className="board-field min-h-[110px]" placeholder="Describe what was delivered and how to review it." />
+                        <Input value={deliveryUrl} onChange={(e) => setDeliveryUrl(e.target.value)} className={field} placeholder="Delivery URL (optional)" />
+                        <Button disabled={!deliveryNote.trim() || actionPending === "submit"} onClick={() => runAction("submit", async () => {
+                          await submitJobDelivery(id!, deliveryUrl, deliveryNote);
+                          setStatusMessage("Delivery submitted for client review.");
+                        })} className={`w-full ${primaryBtn}`}>{actionPending === "submit" ? "Submitting..." : "Submit delivery"}</Button>
+                      </div>
+                    ) : null}
+
+                    {contract?.status === "submitted" && isOwner ? (
+                      <div className="space-y-3 border-t border-[color:var(--board-line)] pt-5">
+                        {contract.deliveryNote ? <p className="text-sm leading-6 text-[var(--board-muted)]">{contract.deliveryNote}</p> : null}
+                        {contract.deliveryUrl ? <a className="text-sm text-[var(--board-accent)]" href={contract.deliveryUrl} target="_blank" rel="noreferrer">Review delivery</a> : null}
+                        <Button onClick={() => runAction("approve", async () => {
+                          await approveJobDelivery(id!);
+                          setStatusMessage("Delivery approved. Release is pending provider confirmation.");
+                        })} disabled={actionPending === "approve"} className={`w-full ${primaryBtn}`}>{actionPending === "approve" ? "Approving..." : "Approve delivery"}</Button>
+                      </div>
+                    ) : null}
+
+                    {contract && ["funded", "submitted", "release_pending"].includes(contract.status) && (isOwner || isAcceptedBuilder) ? (
+                      <div className="space-y-3 border-t border-[color:var(--board-line)] pt-5">
+                        <Textarea value={disputeReason} onChange={(e) => setDisputeReason(e.target.value)} className="board-field min-h-[90px]" placeholder="Describe the issue (minimum 10 characters)" />
+                        <Button variant="outline" disabled={disputeReason.trim().length < 10 || actionPending === "dispute"} onClick={() => runAction("dispute", async () => {
+                          await openJobDispute(id!, disputeReason);
+                          setStatusMessage("The contract is now disputed. No release should occur.");
+                        })} className={`w-full ${secondaryBtn}`}>{actionPending === "dispute" ? "Opening..." : "Open dispute"}</Button>
+                      </div>
+                    ) : null}
+
+                    {contract?.status === "awaiting_funding" && isOwner ? (
+                      <Button variant="outline" disabled={actionPending === "cancel"} onClick={() => runAction("cancel", async () => {
+                        await cancelUnfundedJob(id!);
+                        setStatusMessage("Unfunded contract cancelled.");
+                      })} className="board-danger-btn w-full">{actionPending === "cancel" ? "Cancelling..." : "Cancel agreement"}</Button>
+                    ) : null}
+                  </div>
+                </section>
+              ) : null}
+
               <section className="board-panel board-panel--command p-6">
                 <p className="board-kicker">Actions</p>
                 <div className="board-action-cluster mt-5">
@@ -337,11 +446,14 @@ export function ProblemDetail() {
                       setStatusMessage("Job marked complete.");
                     })} disabled={actionPending === "complete"} className={`w-full ${primaryBtn}`}>{actionPending === "complete" ? "Marking..." : "Mark complete"}</Button>
                   ) : null}
-                  {isJob && isOwner && problem.jobStatus === "completed" ? (
-                    <div className="grid grid-cols-2 gap-2">
-                      <Button onClick={() => runAction("pay", () => handlePayBuilder("phantom"))} disabled={actionPending === "pay"} className={`w-full ${primaryBtn}`}><Wallet className="mr-2 h-4 w-4" />{actionPending === "pay" ? "Paying..." : "Phantom"}</Button>
-                      <Button onClick={() => runAction("pay", () => handlePayBuilder("solflare"))} disabled={actionPending === "pay"} className={`w-full ${secondaryBtn}`}>{actionPending === "pay" ? "Paying..." : "Solflare"}</Button>
-                    </div>
+                  {isJob && problem.jobStatus === "awaiting_funding" ? (
+                    <StatusBanner variant="warning">
+                      {isOwner
+                        ? "Review the accepted agreement above. Funding will be enabled with the secure escrow connection."
+                        : isAcceptedBuilder
+                          ? "Your proposal was accepted. Do not begin work until the job is securely funded."
+                          : "This job is waiting for secure funding."}
+                    </StatusBanner>
                   ) : null}
                   {isOwner ? (
                     <Button type="button" variant="outline" onClick={handleDeleteProblem} disabled={deletePending} className="board-danger-btn w-full">
@@ -373,9 +485,9 @@ export function ProblemDetail() {
                   <p className="board-kicker">Payment flow</p>
                   <div className="mt-5 space-y-3 text-sm leading-7 text-[var(--board-muted)]">
                     <p className="flex items-start gap-2"><ShieldCheck className="mt-0.5 h-4 w-4 text-emerald-500/70" />1. Owner accepts one proposal.</p>
-                    <p className="flex items-start gap-2"><ShieldCheck className="mt-0.5 h-4 w-4 text-emerald-500/70" />2. Builder marks the job complete.</p>
-                    <p className="flex items-start gap-2"><ShieldCheck className="mt-0.5 h-4 w-4 text-emerald-500/70" />3. Owner pays directly from Phantom or Solflare.</p>
-                    <p className="flex items-start gap-2"><ShieldCheck className="mt-0.5 h-4 w-4 text-emerald-500/70" />4. The transaction hash is recorded and the job is marked paid.</p>
+                    <p className="flex items-start gap-2"><ShieldCheck className="mt-0.5 h-4 w-4 text-emerald-500/70" />2. Job waits for secure funding.</p>
+                    <p className="flex items-start gap-2"><ShieldCheck className="mt-0.5 h-4 w-4 text-emerald-500/70" />3. Builder starts only after funding is verified.</p>
+                    <p className="flex items-start gap-2"><ShieldCheck className="mt-0.5 h-4 w-4 text-emerald-500/70" />4. Delivery and payment release follow the funded workflow.</p>
                   </div>
                   {mySolanaWallet ? <div className="mt-5 rounded-lg border border-[color:rgba(201,84,94,0.34)] bg-[rgba(201,84,94,0.12)] px-4 py-3 text-sm text-[var(--board-accent)]">Your Solana wallet: {shortWallet(mySolanaWallet)}</div> : null}
                 </section>
