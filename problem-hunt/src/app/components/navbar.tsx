@@ -9,7 +9,7 @@ import { BrandLogo } from "./brand-logo";
 const CORE_NAV_LINKS = [
   { path: "/", label: "Home" },
   { path: "/browse", label: "Browse" },
-  { path: "/leaderboard", label: "Leaderboard" },
+  { path: "/post-problem", label: "Post a problem" },
 ];
 
 export function Navbar() {
@@ -19,7 +19,7 @@ export function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [browserOnline, setBrowserOnline] = useState(() => typeof navigator === "undefined" || navigator.onLine);
   const navLinks = useMemo(
-    () => (user ? [...CORE_NAV_LINKS, { path: "/dashboard", label: "Workspace", icon: LayoutDashboard }] : CORE_NAV_LINKS),
+    () => (user ? [...CORE_NAV_LINKS, { path: "/dashboard", label: "Your problems", icon: LayoutDashboard }] : CORE_NAV_LINKS),
     [user]
   );
 
@@ -95,6 +95,7 @@ export function Navbar() {
             <Button
               variant="outline"
               onClick={handleSignOut}
+              aria-label="Sign out"
               className="h-10 border-[color:var(--board-line-strong)] bg-transparent px-3 text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-[var(--board-muted)] hover:bg-[var(--board-panel-strong)] hover:text-[var(--board-ink)]"
             >
               <LogOut className="h-4 w-4" />

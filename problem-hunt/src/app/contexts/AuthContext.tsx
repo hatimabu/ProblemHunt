@@ -223,7 +223,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
      */
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event: AuthChangeEvent, newSession: Session | null) => {
+    } = supabase.auth.onAuthStateChange((event: AuthChangeEvent, newSession: Session | null) => {
+      // Profile queries may acquire the Auth lock. Run them after the event
+      // callback returns so cold navigation and token refresh cannot deadlock.
+      setTimeout(async () => {
       if (!isMountedRef.current) return;
 
       // Always keep session in sync
@@ -261,6 +264,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (isMountedRef.current) setIsLoading(false);
         return;
       }
+      }, 0);
     });
 
     return () => {

@@ -1,4 +1,4 @@
-import { Navigate } from 'react-router';
+import { Navigate, useLocation } from 'react-router';
 import { useAuth } from '../contexts/AuthContext';
 
 interface ProtectedRouteProps {
@@ -8,6 +8,7 @@ interface ProtectedRouteProps {
 
 export function ProtectedRoute({ children, requireBuilder = false }: ProtectedRouteProps) {
   const { user, isLoading } = useAuth();
+  const location = useLocation();
 
   if (isLoading) {
     return (
@@ -19,7 +20,7 @@ export function ProtectedRoute({ children, requireBuilder = false }: ProtectedRo
 
   if (!user) {
     // Redirect to auth page if not logged in
-    return <Navigate to="/auth" replace />;
+    return <Navigate to={`/auth?returnTo=${encodeURIComponent(location.pathname)}`} replace />;
   }
 
   if (requireBuilder && user.role !== 'builder') {

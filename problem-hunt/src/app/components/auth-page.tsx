@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router";
+import { useNavigate, useSearchParams } from "react-router";
 import { Briefcase, KeyRound, Lock, Mail, Radar, ShieldCheck, User } from "lucide-react";
 import { Navbar } from "./navbar";
 import { Button } from "./ui/button";
@@ -11,6 +11,9 @@ import { supabase } from "../../../lib/supabaseClient";
 
 export function AuthPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const requestedReturn = searchParams.get('returnTo') || '';
+  const returnTo = /^\/(problem\/[^/?#]+(?:\/edit)?|post-problem|dashboard|browse)$/.test(requestedReturn) ? requestedReturn : '/dashboard';
   const { login, signup } = useAuth();
 
   const [signupData, setSignupData] = useState({
@@ -28,6 +31,7 @@ export function AuthPage() {
   const [resetMessage, setResetMessage] = useState("");
   const [resetError, setResetError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [signupMessage, setSignupMessage] = useState('');
 
   const handleSignup = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -35,7 +39,9 @@ export function AuthPage() {
     setIsSubmitting(true);
     try {
       await signup(signupData.username, signupData.fullName, signupData.email, signupData.password, signupData.userType);
-      navigate(signupData.userType === "builder" ? "/dashboard" : "/browse");
+      const { data } = await supabase.auth.getSession();
+      if (data.session) navigate(returnTo);
+      else setSignupMessage('Check your email to confirm your account, then sign in.');
     } catch (error: any) {
       setSignupError(error.message || "Signup failed. Please try again.");
     } finally {
@@ -49,7 +55,7 @@ export function AuthPage() {
     setIsSubmitting(true);
     try {
       await login(loginData.email, loginData.password);
-      navigate("/dashboard");
+      navigate(returnTo);
     } catch (error: any) {
       setLoginError(error.message || "Login failed. Please check your credentials.");
     } finally {
@@ -87,17 +93,17 @@ export function AuthPage() {
                 <Radar className="h-4 w-4 text-[var(--board-metal-steel)]" />
                 <p className="board-kicker">Access</p>
               </div>
-              <h1 className="board-title mt-3">Join the board, post work, or claim it.</h1>
+              <h1 className="board-title mt-3">Real problems. Tested solutions.</h1>
               <p className="board-copy mt-5">
-                Problem Hunt is built for operators who need something shipped and builders who want a clean path from response to payout.
+                Join a free community for Cloud/DevOps and Professional AV. Ask for help, propose a solution and share what worked.
               </p>
             </div>
 
             <div className="mt-10 space-y-6">
               {[
-                "Post a brief with enough detail for someone to price the work properly.",
-                "Track accepted proposals and wallet-based payment in one flow.",
-                "Build a profile that looks serious when a requester opens your bid.",
+                "Describe the symptom, environment and tests you have already tried.",
+                "Propose clear steps with reasoning and a verification method.",
+                "Test a solution and record the fix that worked for your case.",
               ].map((item) => (
                 <div key={item} className="flex items-start gap-3 border-t border-[color:var(--board-line)] pt-4">
                   <ShieldCheck className="mt-0.5 h-4 w-4 text-emerald-500/70" />
@@ -152,6 +158,7 @@ export function AuthPage() {
               </TabsContent>
 
               <TabsContent value="signup">
+                {signupMessage && <p role="status">{signupMessage}</p>}
                 <form onSubmit={handleSignup} className="space-y-5">
                   <div>
                     <Label htmlFor="signup-username" className="mb-2 block text-sm text-[var(--board-ink)]">
@@ -188,12 +195,12 @@ export function AuthPage() {
                     </p>
                     <div className="grid gap-3 sm:grid-cols-2">
                       <button type="button" onClick={() => setSignupData({ ...signupData, userType: "builder" })} className={`border px-4 py-4 text-left transition-all ${signupData.userType === "builder" ? "border-[color:rgba(201,84,94,0.34)] bg-[rgba(201,84,94,0.14)]" : "border-[color:var(--board-line)] bg-[var(--board-panel)] hover:bg-[var(--board-panel-strong)]"}`}>
-                        <p className="font-display text-lg font-semibold tracking-[-0.04em] text-[var(--board-ink)]">Build</p>
-                        <p className="mt-1 text-sm text-[var(--board-muted)]">Respond to briefs and take on work.</p>
+                        <p className="font-display text-lg font-semibold tracking-[-0.04em] text-[var(--board-ink)]">Contribute</p>
+                        <p className="mt-1 text-sm text-[var(--board-muted)]">Share solutions and help others.</p>
                       </button>
                       <button type="button" onClick={() => setSignupData({ ...signupData, userType: "problem_poster" })} className={`border px-4 py-4 text-left transition-all ${signupData.userType === "problem_poster" ? "border-[color:rgba(201,84,94,0.34)] bg-[rgba(201,84,94,0.14)]" : "border-[color:var(--board-line)] bg-[var(--board-panel)] hover:bg-[var(--board-panel-strong)]"}`}>
-                        <p className="font-display text-lg font-semibold tracking-[-0.04em] text-[var(--board-ink)]">Post</p>
-                        <p className="mt-1 text-sm text-[var(--board-muted)]">Publish work and review builders.</p>
+                        <p className="font-display text-lg font-semibold tracking-[-0.04em] text-[var(--board-ink)]">Ask</p>
+                        <p className="mt-1 text-sm text-[var(--board-muted)]">Describe a problem and test solutions.</p>
                       </button>
                     </div>
                   </div>

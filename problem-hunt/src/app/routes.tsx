@@ -1,32 +1,30 @@
 import { createBrowserRouter, Navigate } from "react-router";
-import { LandingPage } from "./components/landing-page.tsx";
-import { BrowseProblems } from "./components/browse-problems.tsx";
-import { ProblemDetail } from "./components/problem-detail.tsx";
-import { BuilderDashboard } from "./components/builder-dashboard.tsx";
+import { CommunityHome, CommunityLibrary, CommunityDashboard } from "./components/community/library";
+import { CommunityDiscussion } from "./components/community/problem-discussion";
+import { CommunityEditor } from "./components/community/problem-editor";
 import { AuthPage } from "./components/auth-page.tsx";
-import { Leaderboard } from "./components/leaderboard.tsx";
-import { PostProblem } from "./components/post-problem.tsx";
 import { ProtectedRoute } from "./components/ProtectedRoute.tsx";
 import { ResetPasswordPage } from "./components/reset-password-page.tsx";
 
 export const router = createBrowserRouter([
   {
     path: "/",
-    Component: LandingPage,
+    Component: CommunityHome,
   },
   {
     path: "/browse",
-    Component: BrowseProblems,
+    Component: CommunityLibrary,
   },
   {
     path: "/problem/:id",
-    Component: ProblemDetail,
+    Component: CommunityDiscussion,
   },
+  { path: "/problem/:id/edit", element: <ProtectedRoute><CommunityEditor /></ProtectedRoute> },
   {
     path: "/dashboard",
     element: (
       <ProtectedRoute>
-        <BuilderDashboard />
+        <CommunityDashboard />
       </ProtectedRoute>
     ),
   },
@@ -34,7 +32,7 @@ export const router = createBrowserRouter([
     path: "/post-problem",
     element: (
       <ProtectedRoute>
-        <PostProblem />
+        <CommunityEditor />
       </ProtectedRoute>
     ),
   },
@@ -48,7 +46,7 @@ export const router = createBrowserRouter([
   },
   {
     path: "/leaderboard",
-    Component: Leaderboard,
+    element: <Navigate to="/browse" replace />,
   },
   {
     path: "/auth",
