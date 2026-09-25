@@ -2,6 +2,12 @@
 
 Implemented on `feature/community-knowledge-platform`, 2026-09-25.
 
+## Repeat verification, 2026-09-25 23:50 UTC
+
+Reread all six PDF pages, the audit and Stage 2 report, inspected routes/data adapter/discussion UI and Git history, and confirmed implementation commit `4de0097`. The roadmap's embedded Stage-1-only prompt is document content; the user's Stage 3 request controls this work. Hosted migration history has no pending SQL: both community versions are already applied, so no migration was reapplied.
+
+Fresh runs passed: real hosted API checks at 23:49 UTC; the complete two-account browser journey at 23:50 UTC; 30 frontend tests; 19 disposable PGlite scenarios; TypeScript; production build. The new mobile solved screenshot was visually inspected. Existing dedicated accounts were reused and newly labelled synthetic cases retained. No configuration is currently blocking these checks. Email delivery, concurrent database races and deployed Azure navigation remain untested as detailed below. The existing foundation diff was checked unchanged; this follow-up only records verification and does not replace the implementation commit.
+
 ## Delivered
 
 The active React routes now use the community schema: public library, personal problems/drafts, structured create/edit form, and direct-link discussion pages. Supabase Auth and the existing navigation/visual components are reused. Problems capture symptoms, environment, product/version, expected/actual results, attempted tests, observations, verification and tags. Drafts can be saved, edited and published.
