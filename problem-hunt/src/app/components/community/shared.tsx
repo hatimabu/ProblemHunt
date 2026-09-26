@@ -6,8 +6,16 @@ import { Navbar } from '../navbar';
 import type { CommunityProblem } from '../../../lib/community';
 import './community.css';
 
-export function CommunityLayout({ children }: { children: ReactNode }) {
+export function CommunityLayout({ children, title = 'Real problems. Tested solutions.', description = 'Cloud/DevOps and Professional AV community problems and tested solutions.', indexable = false }: { children: ReactNode; title?: string; description?: string; indexable?: boolean }) {
   useEffect(() => { recordPilotVisit(); }, []);
+  useEffect(() => {
+    document.title = `${title} | ProblemHunt`;
+    for (const [name,content] of [['description',description],['robots',indexable ? 'index,follow' : 'noindex,follow']]) {
+      let meta = document.querySelector<HTMLMetaElement>(`meta[name="${name}"]`);
+      if (!meta) { meta = document.createElement('meta'); meta.name = name; document.head.appendChild(meta); }
+      meta.content = content;
+    }
+  }, [title, description, indexable]);
   return <div className="board-app"><a className="community-skip" href="#main-content">Skip to content</a><Navbar /><main id="main-content" className="board-container community-page">{children}<footer className="community-stack"><Link to="/privacy">Privacy and pilot feedback</Link></footer></main></div>;
 }
 export function ErrorNotice({ error, retry }: { error: string; retry?: () => void }) {

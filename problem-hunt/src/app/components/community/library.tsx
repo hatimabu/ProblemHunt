@@ -21,7 +21,7 @@ export function CommunityLibrary({ mine = false, home = false }: { mine?: boolea
     return () => { active = false; };
   }, [key, isLoading, retry]);
   const rows = snapshot?.key === key ? snapshot.rows : null;
-  return <CommunityLayout>
+  return <CommunityLayout indexable={!mine}>
     <p className="board-kicker">Cloud / DevOps · Professional AV</p>
     <h1>{home ? 'Real problems. Tested solutions.' : mine ? 'Your problems and drafts' : 'Community problems'}</h1>
     <p>{mine ? 'Private drafts are visible only to you. Publish when you are ready for others to help.' : 'Share the symptoms. Compare explanations. Test a solution and record the fix that worked.'}</p>

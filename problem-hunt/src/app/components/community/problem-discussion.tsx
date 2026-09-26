@@ -55,7 +55,7 @@ function Discussion({ id, userId }: { id: string; userId?: string }) {
   const eligible = problem.visibility === 'public' && ['open','testing'].includes(problem.state);
   const accepted = solutions.find(s => s.id === problem.accepted_solution_id);
   const ordered = [...solutions].sort((a,b) => Number(b.id === problem.accepted_solution_id) - Number(a.id === problem.accepted_solution_id));
-  return <CommunityLayout>
+  return <CommunityLayout title={problem.visibility === 'public' && !problem.is_hidden ? problem.title : 'Private problem'} description={problem.visibility === 'public' && !problem.is_hidden ? problem.symptom.slice(0,160) : undefined} indexable={problem.visibility === 'public' && !problem.is_example && !problem.is_hidden}>
     <Link to="/browse">← Community problems</Link><div className="community-actions"><StateLabel problem={problem} />
       {owner && problem.state !== 'solved' && <Link to={`/problem/${id}/edit`}>Edit problem</Link>}
       <button onClick={() => setRetry(n => n + 1)} disabled={busy}>Refresh discussion</button></div>

@@ -1,6 +1,8 @@
 # ProblemHunt
 
-ProblemHunt is a marketplace for technical work. Requesters post problems or paid jobs, builders submit proposals, and the community can upvote, tip, and track work through payment.
+**Real problems. Tested solutions.** ProblemHunt is being transformed into a free technical community for Cloud/DevOps and Professional AV. Authors post problems, test proposed solutions and accept the fix that worked.
+
+The active UI now implements public discovery, structured problems, tested solutions, votes, category reputation and private moderation. Legacy marketplace files and tables remain for retention, outside the active routes; unsafe legacy helpers are separately restricted. See [the audit and staged migration map](docs/community-platform-audit.md) for what exists, known risks and the implementation sequence. Tips, payment processing, Docker and AI are outside this transformation's current scope.
 
 ## Architecture
 
@@ -15,27 +17,20 @@ There is no application server, Python runtime, Azure Function, Cosmos DB depend
 
 ## Local setup
 
-Requirements: Node.js 20+, npm, and the Supabase CLI.
+Requirements: Node.js 22 and npm. Database migration work additionally requires a separately configured disposable test database; it is not part of starting the frontend.
 
 ```powershell
 Copy-Item problem-hunt/.env.example problem-hunt/.env.local
 ```
 
-Set the public values from your Supabase project in `problem-hunt/.env.local`:
+Set public values for an isolated development Supabase project in `problem-hunt/.env.local`. Do not point a writable local development session at production:
 
 ```env
 VITE_SUPABASE_URL=https://your-project-ref.supabase.co
 VITE_SUPABASE_ANON_KEY=your-publishable-anon-key
-VITE_ALCHEMY_SOLANA_RPC_URL=https://solana-mainnet.g.alchemy.com/v2/YOUR_KEY
 ```
 
-Apply the versioned database schema before starting the UI:
-
-```powershell
-supabase login
-supabase link --project-ref <your-project-ref>
-supabase db push
-```
+Do not run `supabase db push`, link to production, or reset a hosted database as a local setup step. Checked-in migration files do not establish which versions are applied remotely. Before database testing, reconcile the schema/history and use a disposable test database as described in the audit. Without configuration the frontend can render, but data operations report unavailable configuration.
 
 Then run the app:
 
@@ -58,12 +53,12 @@ npm run build
 
 ## Deploy
 
-The GitHub workflow in `.github/workflows/deploy-azure.yml` first applies `supabase/migrations/`, then deploys the built static site to Azure Static Web Apps. It requires these GitHub Actions secrets:
+The GitHub workflow in `.github/workflows/deploy-azure.yml` is manual, requires the release confirmation input, and deploys only from `main` after frontend checks pass. It does **not** apply database migrations. Schema review, backup/restore checks and migration approval are separate release prerequisites. No release is authorized during local transformation work. The static deployment uses these GitHub Actions secrets:
 
-- `SUPABASE_DB_URL` — direct database connection string, used only by the migration job
 - `VITE_SUPABASE_URL`
 - `VITE_SUPABASE_ANON_KEY`
-- `VITE_ALCHEMY_SOLANA_RPC_URL` (optional for payment features)
+- `AZURE_STATIC_WEB_APP_NAME` (repository variable naming the reviewed existing resource)
+- `VITE_SENTRY_DSN` (optional repository variable for sanitized error monitoring)
 - `AZURE_CREDENTIALS` — only if using the included Azure Static Web Apps host
 
 Any static host is compatible as long as it serves the `problem-hunt/dist/` output with SPA fallback to `index.html`, and injects the `VITE_*` values during the build.
@@ -71,13 +66,17 @@ Any static host is compatible as long as it serves the `problem-hunt/dist/` outp
 ## Main routes
 
 - `/` — landing page
-- `/browse` — marketplace
-- `/problem/:id` — problem or job detail
-- `/post` — create a listing
-- `/dashboard` — profile, listings, proposals, wallets, and notifications
-- `/leaderboard` — rankings
+- `/browse` — public search and filters
+- `/problem/:id` — discussion and tested evidence; `#solution-:id` links to an answer
+- `/post-problem` — structured drafts and publication
+- `/dashboard` — own problems and drafts
+- `/leaderboard` — category reputation and own event history
 - `/auth` — Supabase authentication
 
 ## Security model
 
-The browser uses only the Supabase publishable/anon key. Authorization is enforced by Supabase Auth, Row Level Security, and the SQL RPC functions in `supabase/migrations/20260722100000_supabase_only_workflows.sql`. Never place `SUPABASE_SERVICE_ROLE_KEY` in a frontend environment file or a GitHub build variable.
+The browser uses the Supabase publishable/anon key. Authorization depends on Supabase Auth, RLS and versioned SQL RPCs. The audit documents current policy gaps; frontend tests do not prove database authorization. Never place `SUPABASE_SERVICE_ROLE_KEY`, database credentials or private RPC provider credentials in frontend variables or Git. Every `VITE_*` value is public in the built bundle.
+
+## Community release review
+
+See [release report](docs/community-release-report.md), [pilot checklist](docs/pilot-tester-checklist.md), and stage runbooks 2–7. The existing hosted project was explicitly authorized for this transformation; normal setup should still use an isolated project. Run database tests with `npm test --prefix supabase/tests`. Never reset the hosted project. Deployment remains manual and does not provision resources or apply migrations.

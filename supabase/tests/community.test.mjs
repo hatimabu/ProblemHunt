@@ -434,4 +434,11 @@ await check('avatar storage rejects anonymous, foreign folder and active SVG upl
  await denied(`INSERT INTO storage.objects(bucket_id,name) VALUES('avatars','${ids.contributor}/test.png')`);
  await denied(`INSERT INTO storage.objects(bucket_id,name) VALUES('avatars','${ids.author}/test.svg')`);
 });
+await check('unsafe legacy helpers deny browser abuse while preserving own-account access',async()=>{
+ await actor('author');
+
+ await denied(`SELECT increment_problem_upvotes('${publicProblem}')`);
+ await denied(`SELECT get_primary_wallet('${ids.contributor}','solana')`);
+ assert.equal((await q('SELECT id FROM community_problems WHERE id=$1',[publicProblem])).rows.length,1);
+});
 await db.close();

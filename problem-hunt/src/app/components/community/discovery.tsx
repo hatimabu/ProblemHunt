@@ -31,7 +31,7 @@ export function CommunityDiscovery() {
   const selectedDomain = taxonomy.domains.find(d => d.slug === domain);
   const current = result?.key === key ? result : null;
   const invalidDomain = domain && !['cloud-devops','professional-av'].includes(domain);
-  return <CommunityLayout>
+  return <CommunityLayout title={selectedDomain?.name || 'Search the knowledge library'} indexable={!!domain && !invalidDomain && !query && !tag && !category && !state}>
     <nav aria-label="Knowledge domains" className="community-actions"><Link to="/browse">All domains</Link><Link to="/domains/cloud-devops">Cloud / DevOps</Link><Link to="/domains/professional-av">Professional AV</Link></nav>
     <h1>{invalidDomain ? 'Domain unavailable' : selectedDomain?.name || 'Search the knowledge library'}</h1>
     <p>Find symptoms, products and tags. Solved cases show what the author tested and confirmed; proposed answers still need testing.</p>

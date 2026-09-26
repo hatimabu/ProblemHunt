@@ -83,6 +83,7 @@ describe("AuthPage", () => {
 
   it.each([
     ['/auth?returnTo=%2Fproblem%2Fcase-1', '/problem/case-1'],
+    ['/auth?returnTo=%2Fmoderation', '/moderation'],
     ['/auth?returnTo=https%3A%2F%2Fevil.example', '/dashboard'],
   ])('honors safe return links only: %s', async (path, expected) => {
     loginMock.mockResolvedValue(undefined);

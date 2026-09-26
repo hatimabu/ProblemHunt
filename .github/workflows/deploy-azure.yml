@@ -1,14 +1,13 @@
 name: Deploy ProblemHunt static app
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'azureARM.json'
-      - 'supabase/migrations/**'
-      - '.github/workflows/deploy-azure.yml'
-      - 'problem-hunt/**'
   workflow_dispatch:
+    inputs:
+      confirm_release:
+        description: 'Deploy reviewed main build; database compatibility was verified separately'
+        required: true
+        type: boolean
+        default: false
 
 concurrency:
   group: problemhunt-static-deploy
@@ -19,41 +18,19 @@ permissions:
   id-token: write
 
 env:
-  NODE_VERSION: '20'
+  NODE_VERSION: '22'
   FRONTEND_PATH: problem-hunt
   AZURE_RESOURCE_GROUP: problemhunt
-  AZURE_LOCATION: eastus2
-  AZURE_APP_NAME: problemhunt
-  AZURE_TEMPLATE_FILE: ./azureARM.json
 
 jobs:
   test:
     uses: ./.github/workflows/frontend-tests.yml
 
-  migrate:
-    name: Apply Supabase migrations
-    needs: test
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: supabase/setup-cli@v1
-        with:
-          version: 2.109.1
-      - name: Push migrations
-        env:
-          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
-        run: |
-          set -euo pipefail
-          if [ -z "$SUPABASE_DB_URL" ]; then
-            echo "::error::Missing SUPABASE_DB_URL. Add it as a GitHub Actions repository secret using the Supabase direct Postgres connection string (with sslmode=require)."
-            exit 1
-          fi
-          supabase db push --db-url "$SUPABASE_DB_URL"
-
   deploy:
+    if: github.ref == 'refs/heads/main' && inputs.confirm_release == true
     runs-on: ubuntu-latest
     name: Deploy static app
-    needs: migrate
+    needs: test
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -63,18 +40,13 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Create or update static-hosting resource
-        id: arm
+      - name: Select reviewed existing Static Web App
+        env:
+          REVIEWED_APP_NAME: ${{ vars.AZURE_STATIC_WEB_APP_NAME }}
         run: |
           set -euo pipefail
-          az group create --name "$AZURE_RESOURCE_GROUP" --location "$AZURE_LOCATION"
-          az deployment group create \
-            --resource-group "$AZURE_RESOURCE_GROUP" \
-            --template-file "$AZURE_TEMPLATE_FILE" \
-            --parameters appName="$AZURE_APP_NAME" location="$AZURE_LOCATION" environment=prod \
-            --query properties.outputs --output json > deployment-outputs.json
-          echo "STATIC_WEB_APP_NAME=$(jq -r '.staticWebAppName.value' deployment-outputs.json)" >> "$GITHUB_ENV"
-
+          test -n "$REVIEWED_APP_NAME" || { echo "Set AZURE_STATIC_WEB_APP_NAME to the reviewed existing resource"; exit 1; }
+          echo "STATIC_WEB_APP_NAME=$REVIEWED_APP_NAME" >> "$GITHUB_ENV"
       - name: Fetch Static Web App deployment token
         id: fetch-token
         run: |
@@ -102,7 +74,7 @@ jobs:
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
-          VITE_ALCHEMY_SOLANA_RPC_URL: ${{ secrets.VITE_ALCHEMY_SOLANA_RPC_URL }}
+          VITE_SENTRY_DSN: ${{ vars.VITE_SENTRY_DSN }}
           NODE_ENV: production
         run: npm run build
 
