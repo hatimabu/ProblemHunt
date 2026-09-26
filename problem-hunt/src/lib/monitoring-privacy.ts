@@ -1,0 +1,4 @@
+// Allowlist only build-owned error metadata. Never forward request/user/content fields.
+export function privateErrorEvent(event: {event_id?:string;timestamp?:number;level?:'fatal'|'error'|'warning'|'log'|'info'|'debug';exception?:{values?:{type?:string;stacktrace?:{frames?:{filename?:string;lineno?:number;colno?:number}[]}}[]}}) {
+ return {type:undefined,event_id:event.event_id,timestamp:event.timestamp,level:event.level,platform:'javascript',exception:{values:event.exception?.values?.slice(0,3).map(e=>({type:/^[A-Za-z]*Error$/.test(e.type||'')?e.type:'Error',value:'Application error (details removed for privacy)',stacktrace:{frames:e.stacktrace?.frames?.filter(f=>/\/assets\/[\w.-]+\.js(?:\?|$)/.test(f.filename||'')).map(f=>({filename:(f.filename||'').split('?')[0].split('#')[0],lineno:f.lineno,colno:f.colno}))}}))}};
+}

@@ -3,7 +3,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { CommunityProblem, CommunityProblemInput, CommunitySolution, CommunitySolutionInput,
   CommunityComment, CommunityCommentInput, CommunityCategory, CommunityDomain, CommunityAcceptanceInput } from './community';
 
-export const PROBLEM_COLUMNS = 'id,author_id,category_id,title,symptom,environment,product,product_version,expected_behavior,actual_behavior,attempted_tests,observations,verification_method,tags,visibility,state,accepted_solution_id,resolution_observation,resolution_verification,solved_at,created_at,updated_at';
+export const PROBLEM_COLUMNS = 'id,is_example,is_hidden,author_id,category_id,title,symptom,environment,product,product_version,expected_behavior,actual_behavior,attempted_tests,observations,verification_method,tags,visibility,state,accepted_solution_id,resolution_observation,resolution_verification,solved_at,created_at,updated_at';
 const SOLUTION_COLUMNS = 'id,problem_id,author_id,diagnosis,steps,reasoning,verification_method,observations,sources,created_at,updated_at';
 const COMMENT_COLUMNS = 'id,solution_id,author_id,kind,body,attempted_test,observation,verification_method,created_at,updated_at';
 const problemKeys = ['category_id','title','symptom','environment','product','product_version','expected_behavior','actual_behavior','attempted_tests','observations','verification_method','tags','visibility'] as const;

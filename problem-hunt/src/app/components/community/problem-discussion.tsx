@@ -1,3 +1,4 @@
+import { recordPilotMetric } from '../../../lib/pilot-privacy';
 import { ReportControl } from './moderation';
 import { VoteControl, ReverseAcceptance, AcceptanceHistory } from './reputation';
 import { useEffect, useState, type FormEvent } from 'react';
@@ -58,10 +59,10 @@ function Discussion({ id, userId }: { id: string; userId?: string }) {
     <Link to="/browse">← Community problems</Link><div className="community-actions"><StateLabel problem={problem} />
       {owner && problem.state !== 'solved' && <Link to={`/problem/${id}/edit`}>Edit problem</Link>}
       <button onClick={() => setRetry(n => n + 1)} disabled={busy}>Refresh discussion</button></div>
-    <h1>{problem.title}</h1>{userId && problem.visibility === 'public' && <ReportControl target={{problem_id:id}} label="problem" />}
+    <h1>{problem.title}</h1>{problem.is_example && <p className="community-notice">Fictional example. Test results and acceptance are simulated, not a real verified fix.</p>}{problem.is_hidden && <p className="community-notice">This discussion is hidden from public view pending moderator review.</p>}{userId && problem.visibility === 'public' && <ReportControl target={{problem_id:id}} label="problem" />}
     {problem.visibility === 'draft' && <p className="community-notice">Only you can see this private draft. <Link to={`/problem/${id}/edit`}>Edit and publish</Link> when it is ready.</p>}
     {problem.state === 'solved' && <section className="community-card community-confirmed" aria-label="Confirmed fix">
-      <h2>Confirmed fix</h2><p>The problem author tested and accepted this solution for this case.</p>
+      <h2>{problem.is_example ? 'Illustrative solution outcome' : 'Confirmed fix'}</h2><p>{problem.is_example ? 'This fictional case demonstrates the acceptance workflow. It is not evidence from real equipment or a production system.' : 'The problem author tested and accepted this solution for this case.'}</p>
       {accepted && <p><a href={`#solution-${accepted.id}`}>{accepted.diagnosis}</a></p>}
       <h3>What worked</h3><p className="community-copy">{problem.resolution_observation}</p>
       <h3>How it was verified</h3><p className="community-copy">{problem.resolution_verification}</p>
@@ -95,20 +96,6 @@ function Discussion({ id, userId }: { id: string; userId?: string }) {
   </CommunityLayout>;
 }
 
-function VoteSummary({ problemId, solutions }: { problemId: string; solutions: CommunitySolution[] }) {
-  const [counts, setCounts] = useState<Record<string,number> | null>(null);
-  const [error, setError] = useState('');
-  useEffect(() => {
-    let active = true;
-    (async () => { try { const data = await communityApi.voteCounts(problemId); if (active) setCounts(data); }
-      catch { if (active) setError('Community upvote counts are unavailable.'); } })();
-    return () => { active = false; };
-  }, [problemId]);
-  return <aside aria-label="Community feedback"><p>Accepted means the author confirmed a fix. Community upvotes indicate usefulness, not verification.</p>
-    {error ? <p>{error}</p> : counts === null ? <p role="status">Loading community feedback…</p> : <ul>{solutions.map(s => <li key={s.id}><a href={`#solution-${s.id}`}>{s.diagnosis}</a>: {(counts[s.id] || 0) > 0 ? `${counts[s.id]} community upvote${counts[s.id] === 1 ? '' : 's'}` : 'No community upvotes yet'}</li>)}</ul>}
-  </aside>;
-}
-
 function SolutionForm({ problemId, onSaved }: { problemId: string; onSaved: (s: CommunitySolution) => void }) {
   const [form, setForm] = useState({ diagnosis: '', steps: '', reasoning: '', verification_method: '', sources: '' });
   const [busy, setBusy] = useState(false); const [error, setError] = useState(''); const [saved, setSaved] = useState(false);
@@ -117,7 +104,7 @@ function SolutionForm({ problemId, onSaved }: { problemId: string; onSaved: (s: 
     if ([form.diagnosis,form.reasoning,form.verification_method].some(s => !s.trim()) || !lines(form.steps).length) { setError('Complete the diagnosis, steps, reasoning and verification method.'); return; }
     setBusy(true);
     try { onSaved(await communityApi.solution({ ...form, problem_id: problemId, steps: lines(form.steps), sources: lines(form.sources) }));
-      setForm({ diagnosis: '', steps: '', reasoning: '', verification_method: '', sources: '' }); setSaved(true);
+      recordPilotMetric('solutions'); setForm({ diagnosis: '', steps: '', reasoning: '', verification_method: '', sources: '' }); setSaved(true);
     } catch (e) { setError(communityError(e)); } finally { setBusy(false); }
   }
   return <form onSubmit={submit} className="board-panel community-card community-stack" aria-label="Propose a solution"><h2>Propose a solution</h2><fieldset disabled={busy}>

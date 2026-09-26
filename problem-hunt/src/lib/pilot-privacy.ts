@@ -1,0 +1,7 @@
+export type PilotMetric = 'searches' | 'publishedProblems' | 'solutions' | 'returnVisits';
+const KEY='problemhunt.pilot-counts.v1';
+type Counts={enabled:boolean;lastDay?:string;days:Record<string,Partial<Record<PilotMetric,number>>>};
+export function pilotCounts():Counts {try{const raw=localStorage.getItem(KEY);const data=raw?JSON.parse(raw):null;return data?.enabled===true&&data.days&&typeof data.days==='object'?data:{enabled:false,days:{}};}catch{return {enabled:false,days:{}};}}
+export function setPilotConsent(enabled:boolean){try{if(enabled)localStorage.setItem(KEY,JSON.stringify({enabled:true,days:{}}));else localStorage.removeItem(KEY);}catch{/* Storage may be disabled. No network fallback. */}}
+export function recordPilotMetric(metric:PilotMetric){try{const data=pilotCounts();if(!data.enabled)return;const day=new Date().toISOString().slice(0,10);data.days[day]??={};data.days[day][metric]=(data.days[day][metric]||0)+1;const cutoff=new Date(Date.now()-30*86400000).toISOString().slice(0,10);for(const d of Object.keys(data.days))if(d<cutoff)delete data.days[d];localStorage.setItem(KEY,JSON.stringify(data));}catch{/* Metrics must never break a user action. */}}
+export function recordPilotVisit(){try{const data=pilotCounts();if(!data.enabled)return;const day=new Date().toISOString().slice(0,10);if(data.lastDay&&data.lastDay!==day)recordPilotMetric('returnVisits');const latest=pilotCounts();latest.lastDay=day;localStorage.setItem(KEY,JSON.stringify(latest));}catch{/* Optional only. */}}

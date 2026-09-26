@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import { Briefcase, KeyRound, Lock, Mail, Radar, ShieldCheck, User } from "lucide-react";
 import { Navbar } from "./navbar";
@@ -14,7 +14,11 @@ export function AuthPage() {
   const [searchParams] = useSearchParams();
   const requestedReturn = searchParams.get('returnTo') || '';
   const returnTo = /^\/(problem\/[^/?#]+(?:\/edit)?|post-problem|dashboard|browse)$/.test(requestedReturn) ? requestedReturn : '/dashboard';
-  const { login, signup } = useAuth();
+  const { login, signup, user, isLoading } = useAuth();
+  // Auth events and profile lookup can settle after signInWithPassword resolves.
+  // Resume the intended route when that state arrives instead of leaving a
+  // successfully signed-in user stranded on the login form.
+  useEffect(() => { if (user && !isLoading) navigate(returnTo, { replace: true }); }, [user, isLoading, returnTo, navigate]);
 
   const [signupData, setSignupData] = useState({
     username: "",

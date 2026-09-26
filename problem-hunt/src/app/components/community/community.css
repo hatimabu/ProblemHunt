@@ -28,3 +28,6 @@
 .community-preview { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 .community-page fieldset { border: 0; min-width: 0; }
 @media (max-width: 600px) { .community-grid { grid-template-columns: 1fr; gap: 0; } .community-actions > * { flex: 1 1 auto; text-align: center; } }
+
+.community-skip { position: absolute; left: -10000px; }
+.community-skip:focus { left: 1rem; top: 1rem; z-index: 100; padding: 1rem; background: #fff; color: #000; }

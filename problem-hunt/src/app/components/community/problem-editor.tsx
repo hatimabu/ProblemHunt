@@ -1,3 +1,4 @@
+import { recordPilotMetric } from '../../../lib/pilot-privacy';
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { useAuth } from '../../contexts/AuthContext';
@@ -61,6 +62,7 @@ function Editor({ id, userId }: { id?: string; userId: string }) {
         environment: form.environment.trim() ? { ...initial?.environment, description: form.environment.trim() } : {},
         attempted_tests: attempts.map(a => ({ test: a.test.trim(), observation: a.observation.trim(), ...(a.verification_method?.trim() ? { verification_method: a.verification_method.trim() } : {}) })),
         tags, visibility }, id);
+      if (visibility === 'public' && initial?.visibility !== 'public') recordPilotMetric('publishedProblems');
       navigate(`/problem/${p.id}`);
     } catch (e) { setError(communityError(e)); } finally { setBusy(false); }
   }

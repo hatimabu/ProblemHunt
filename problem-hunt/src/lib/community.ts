@@ -39,7 +39,7 @@ export interface CommunityProblemInput {
   visibility?: CommunityVisibility;
 }
 
-export interface CommunityProblem extends Required<CommunityProblemInput> {
+export interface CommunityProblem extends Required<CommunityProblemInput> { is_example?: boolean; is_hidden?: boolean;
   id: string;
   author_id: string;
   state: CommunityState;

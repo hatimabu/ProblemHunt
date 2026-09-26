@@ -7,6 +7,7 @@ import { AuthPage } from "../auth-page";
 const navigateMock = vi.fn();
 const loginMock = vi.fn();
 const signupMock = vi.fn();
+const authState = vi.hoisted(() => ({ user: null as null | {id:string}, isLoading: false }));
 const sessionMock = vi.hoisted(() => vi.fn());
 vi.mock('../../../../lib/supabaseClient', () => ({ supabase: { auth: { getSession: sessionMock } } }));
 
@@ -20,8 +21,7 @@ vi.mock("react-router", async () => {
 
 vi.mock("../../contexts/AuthContext", () => ({
   useAuth: () => ({
-    user: null,
-    isLoading: false,
+    ...authState,
     login: loginMock,
     signup: signupMock,
     logout: vi.fn(),
@@ -38,7 +38,7 @@ function renderAuthPage(path = '/auth') {
 
 describe("AuthPage", () => {
   beforeEach(() => {
-    navigateMock.mockReset();
+    navigateMock.mockReset(); authState.user = null; authState.isLoading = false;
     loginMock.mockReset();
     signupMock.mockReset();
     sessionMock.mockResolvedValue({ data: { session: null } });
@@ -92,4 +92,12 @@ describe("AuthPage", () => {
     await userEvent.click(screen.getByRole('button', { name: /^login$/i }));
     expect(navigateMock).toHaveBeenCalledWith(expected);
   });
+});
+
+it('resumes a protected route when the signed-in profile arrives after login navigation',()=>{
+ authState.user=null;authState.isLoading=false;
+ const view=render(<MemoryRouter initialEntries={['/auth?returnTo=%2Fpost-problem']}><AuthPage/></MemoryRouter>);
+ navigateMock.mockClear();authState.user={id:'signed-in'};
+ view.rerender(<MemoryRouter initialEntries={['/auth?returnTo=%2Fpost-problem']}><AuthPage/></MemoryRouter>);
+ expect(navigateMock).toHaveBeenCalledWith('/post-problem',{replace:true});authState.user=null;
 });

@@ -1,3 +1,4 @@
+import { recordPilotMetric } from '../../../lib/pilot-privacy';
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router';
 import { communityApi, communityError } from '../../../lib/supabase-community';
@@ -26,7 +27,7 @@ export function CommunityDiscovery() {
     const next = new URLSearchParams(params); next.delete('page');
     if (value) next.set(name,value); else next.delete(name); setParams(next);
   }
-  function submit(e: FormEvent) { e.preventDefault(); update('q',input.trim()); }
+  function submit(e: FormEvent) { e.preventDefault(); recordPilotMetric('searches'); update('q',input.trim()); }
   const selectedDomain = taxonomy.domains.find(d => d.slug === domain);
   const current = result?.key === key ? result : null;
   const invalidDomain = domain && !['cloud-devops','professional-av'].includes(domain);
