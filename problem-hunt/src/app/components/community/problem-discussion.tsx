@@ -1,3 +1,4 @@
+import { ReportControl } from './moderation';
 import { VoteControl, ReverseAcceptance, AcceptanceHistory } from './reputation';
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useLocation, useParams } from 'react-router';
@@ -57,7 +58,7 @@ function Discussion({ id, userId }: { id: string; userId?: string }) {
     <Link to="/browse">← Community problems</Link><div className="community-actions"><StateLabel problem={problem} />
       {owner && problem.state !== 'solved' && <Link to={`/problem/${id}/edit`}>Edit problem</Link>}
       <button onClick={() => setRetry(n => n + 1)} disabled={busy}>Refresh discussion</button></div>
-    <h1>{problem.title}</h1>
+    <h1>{problem.title}</h1>{userId && problem.visibility === 'public' && <ReportControl target={{problem_id:id}} label="problem" />}
     {problem.visibility === 'draft' && <p className="community-notice">Only you can see this private draft. <Link to={`/problem/${id}/edit`}>Edit and publish</Link> when it is ready.</p>}
     {problem.state === 'solved' && <section className="community-card community-confirmed" aria-label="Confirmed fix">
       <h2>Confirmed fix</h2><p>The problem author tested and accepted this solution for this case.</p>
@@ -160,7 +161,7 @@ function SolutionCard({ solution: s, problem, userId, comments, onComment, onAcc
   return <article id={`solution-${s.id}`} className={`board-panel community-card ${accepted ? 'community-confirmed' : ''}`}>
     <p className="community-muted">{contributorLabel(s.author_id, problem.author_id, userId)}{accepted ? ' · Accepted by the author' : ' · Proposed solution'}</p>
     <Link to={`/problem/${problem.id}#solution-${s.id}`}>Link to this solution</Link>
-    <VoteControl problemId={problem.id} solutionId={s.id} own={s.author_id === userId} signedIn={!!userId} closed={problem.state === 'closed'} /><h3>{s.diagnosis}</h3><ol>{s.steps.map((step,i) => <li key={i}>{step}</li>)}</ol>
+    <VoteControl problemId={problem.id} solutionId={s.id} own={s.author_id === userId} signedIn={!!userId} closed={problem.state === 'closed'} /><h3>{s.diagnosis}</h3>{userId && problem.visibility === 'public' && <ReportControl target={{solution_id:s.id}} label="solution" />}<ol>{s.steps.map((step,i) => <li key={i}>{step}</li>)}</ol>
     <h3>Reasoning</h3><p className="community-copy">{s.reasoning}</p>
     <h3>Verification method</h3><p className="community-copy">{s.verification_method}</p>
     {s.observations && <p className="community-copy">{s.observations}</p>}
@@ -168,7 +169,7 @@ function SolutionCard({ solution: s, problem, userId, comments, onComment, onAcc
     <h3>Clarifications and test results</h3>
     {!comments.length && <p className="community-muted">No clarifications or test results yet.</p>}
     {comments.map(c => <div key={c.id} className="community-comments"><p className="community-muted">{contributorLabel(c.author_id, problem.author_id, userId)}</p>
-      <p className="community-copy">{c.body}</p>{c.kind === 'test_result' && <><p><strong>Test:</strong> {c.attempted_test}</p><p><strong>Observed:</strong> {c.observation}</p><p><strong>Verified:</strong> {c.verification_method || 'Not recorded'}</p></>}
+      <p className="community-copy">{c.body}</p>{userId && problem.visibility === 'public' && <ReportControl target={{comment_id:c.id}} label="comment" />}{c.kind === 'test_result' && <><p><strong>Test:</strong> {c.attempted_test}</p><p><strong>Observed:</strong> {c.observation}</p><p><strong>Verified:</strong> {c.verification_method || 'Not recorded'}</p></>}
     </div>)}
     {error && <ErrorNotice error={error} />}{message && <p role="status">{message}</p>}
     {userId && problem.visibility === 'public' && problem.state !== 'closed' && <form onSubmit={addComment} aria-label={`Clarify ${s.diagnosis}`}>

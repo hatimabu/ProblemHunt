@@ -27,7 +27,7 @@ export function CommunityLibrary({ mine = false, home = false }: { mine?: boolea
     <p>{mine ? 'Private drafts are visible only to you. Publish when you are ready for others to help.' : 'Share the symptoms. Compare explanations. Test a solution and record the fix that worked.'}</p>
     <div className="community-actions"><Link className="community-action" to="/post-problem">Post a problem</Link>
       {!mine && <><Link to="/domains/cloud-devops">Cloud / DevOps</Link><Link to="/domains/professional-av">Professional AV</Link><Link to="/browse">Search the library</Link></>}
-      {mine ? <Link to="/browse">Browse published problems</Link> : user && <Link to="/dashboard">Your drafts and problems</Link>}</div>
+      {mine && <Link to="/moderation">Moderator review</Link>}{mine ? <Link to="/browse">Browse published problems</Link> : user && <Link to="/dashboard">Your drafts and problems</Link>}</div>
     {error ? <ErrorNotice error={error} retry={() => setRetry(n => n + 1)} /> : rows === null
       ? <p role="status">Loading problems…</p>
       : rows.length ? <><ProblemList problems={rows} /><p className="community-muted">Showing up to 100 recent problems.</p></>

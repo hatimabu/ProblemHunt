@@ -407,4 +407,31 @@ await check('fictional examples earn no points and hidden content contributes no
  await q("UPDATE community_problems SET visibility='draft' WHERE id=$1",[otherProblem]);
  await actor(null,'anon');assert.equal((await q('SELECT * FROM community_reputation(NULL)')).rows.length,0);
 });
+await check('moderator hide/restore protects public discovery and does not expose drafts or private reviews',async()=>{
+ await actor('outsider');await denied(`SELECT community_moderate_report('${report}','actioned','No authority','hide')`);
+ await actor('moderator');await q('SELECT community_moderate_report($1,$2,$3,$4)',[report,'actioned','Synthetic safety review','hide']);
+ await actor(null,'anon');assert.equal((await q('SELECT id FROM community_problems WHERE id=$1',[publicProblem])).rows.length,0);
+ assert.equal((await q('SELECT id FROM community_solutions WHERE problem_id=$1',[publicProblem])).rows.length,0);
+ assert.equal((await q('SELECT * FROM community_solution_vote_counts($1)',[publicProblem])).rows.length,0);
+ assert.ok(!(await q('SELECT id FROM community_search()')).rows.some(p=>p.id===publicProblem));
+ await actor('outsider');assert.equal((await q('SELECT * FROM community_report_reviews')).rows.length,0);
+ await actor('moderator');assert.equal((await q('SELECT * FROM community_moderation_events')).rows.length,1);
+ await q('SELECT community_moderate_report($1,$2,$3,$4)',[report,'dismissed','Restored after review','restore']);
+ await actor('author');await q("UPDATE community_problems SET visibility='draft' WHERE id=$1",[publicProblem]);
+ await actor('moderator');await denied(`SELECT community_moderate_report('${report}','actioned','Cannot publish draft','restore')`);
+ assert.equal((await q('SELECT id FROM community_problems WHERE id=$1',[publicProblem])).rows.length,0);
+});
+await check('server rate limits cannot be bypassed by direct inserts or client counter edits',async()=>{
+ await actor('outsider');
+ for(let i=0;i<10;i++) await q('INSERT INTO community_reports(problem_id,reason) VALUES($1,$2)',[publicProblem,'Synthetic report']);
+ await denied(`INSERT INTO community_reports(problem_id,reason) VALUES('${publicProblem}','One too many')`,'P0001');
+ await denied('UPDATE community_write_limits SET hits=0');
+});
+await check('avatar storage rejects anonymous, foreign folder and active SVG uploads',async()=>{
+ await db.exec('GRANT USAGE ON SCHEMA storage TO anon,authenticated; GRANT SELECT,INSERT ON storage.objects TO anon,authenticated');
+ await actor(null,'anon');await denied("INSERT INTO storage.objects(bucket_id,name) VALUES('avatars','anonymous/test.png')");
+ await actor('author');await q("INSERT INTO storage.objects(bucket_id,name) VALUES('avatars',$1)",[ids.author+'/test.png']);
+ await denied(`INSERT INTO storage.objects(bucket_id,name) VALUES('avatars','${ids.contributor}/test.png')`);
+ await denied(`INSERT INTO storage.objects(bucket_id,name) VALUES('avatars','${ids.author}/test.svg')`);
+});
 await db.close();

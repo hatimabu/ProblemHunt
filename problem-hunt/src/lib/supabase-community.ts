@@ -10,6 +10,7 @@ const problemKeys = ['category_id','title','symptom','environment','product','pr
 
 export function communityError(error: unknown): string {
   const e = error as { code?: string; message?: string };
+  if (e?.code === 'P0001') return 'The hourly posting limit has been reached. Please try again later.';
   if (['42P01', '42883', 'PGRST202', 'PGRST205'].includes(e?.code || ''))
     return 'The community service is not ready in this environment. Please contact the site administrator.';
   if (['42501', 'PGRST301', 'PGRST303'].includes(e?.code || ''))
@@ -32,6 +33,17 @@ export function safeSourceUrl(value: string): string | null {
 
 export function createCommunityApi(client: SupabaseClient) {
   return {
+    async report(target: { problem_id?: string; solution_id?: string; comment_id?: string }, reason: string, details: string) {
+      const r = await client.from('community_reports').insert({ ...target, reason, details }); fail(r.error);
+    },
+    async moderator() { const r = await client.from('community_moderators').select('user_id').limit(1); fail(r.error); return !!r.data?.length; },
+    async reports() {
+      const r = await client.from('community_reports').select('id,problem_id,solution_id,comment_id,reason,details,target_excerpt,created_at').order('created_at',{ascending:false}).limit(100); fail(r.error); return r.data || [];
+    },
+    async reviews() { const r = await client.from('community_report_reviews').select('report_id,status,private_notes').limit(100); fail(r.error); return r.data || []; },
+    async review(id: string, status: string, notes: string, action: string) {
+      const r = await client.rpc('community_moderate_report',{p_report_id:id,p_status:status,p_notes:notes,p_action:action}); fail(r.error);
+    },
     async voteInfo(problemId: string, solutionId: string, signedIn: boolean) {
       const counts = await client.rpc('community_solution_vote_counts', { p_problem_id: problemId }); fail(counts.error);
       let voted = false;

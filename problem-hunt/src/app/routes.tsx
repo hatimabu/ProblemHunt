@@ -1,3 +1,4 @@
+import { ModeratorPage } from './components/community/moderation';
 import { ReputationPage } from './components/community/reputation';
 import { createBrowserRouter, Navigate } from "react-router";
 import { CommunityHome, CommunityLibrary, CommunityDashboard } from "./components/community/library";
@@ -8,7 +9,7 @@ import { AuthPage } from "./components/auth-page.tsx";
 import { ProtectedRoute } from "./components/ProtectedRoute.tsx";
 import { ResetPasswordPage } from "./components/reset-password-page.tsx";
 
-export const router = createBrowserRouter([
+export const router = createBrowserRouter([{ path: "/moderation", element: <ProtectedRoute><ModeratorPage /></ProtectedRoute> },
   {
     path: "/",
     Component: CommunityHome,
