@@ -1,6 +1,12 @@
 # ProblemHunt project state
 
-Updated 2026-09-26. Branch: `feature/community-knowledge-platform`.
+Updated 2026-09-26. Deployment workflow fix on `main`, following website merge `c51cac7`.
+
+## Deployment behavior
+
+Every push to `main` automatically runs the deployment workflow. Deployment waits for the reusable frontend checks to succeed. Manual `workflow_dispatch` remains available, but deployment requires both the `main` ref and `confirm_release: true`; false confirmation or another ref skips deployment. Azure resource selection, secrets, build output and upload settings are unchanged.
+
+Supabase/database migrations remain a separate deliberate operation: inspect hosted history and pending SQL before any authorized application. Azure deployment never applies hosted migrations. The reusable checks replay SQL only inside disposable PGlite tests, without connecting to Supabase. This workflow change was committed locally; pushing it to main will trigger deployment.
 
 ProblemHunt is a technical knowledge community: **Real problems. Tested solutions.** Cloud/DevOps and Professional AV authors publish structured problems, test contributions, and confirm the solution that worked. Sign-in email remains private; the editable display name is the sole community-facing identity.
 

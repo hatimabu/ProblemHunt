@@ -53,7 +53,7 @@ npm run build
 
 ## Deploy
 
-The GitHub workflow in `.github/workflows/deploy-azure.yml` is manual, requires the release confirmation input, and deploys only from `main` after frontend checks pass. It does **not** apply database migrations. Schema review, backup/restore checks and migration approval are separate release prerequisites. No release is authorized during local transformation work. The static deployment uses these GitHub Actions secrets:
+The GitHub workflow in `.github/workflows/deploy-azure.yml` deploys automatically on every push to `main` after frontend checks pass. Manual runs are also available from `main` with `confirm_release: true`. It does **not** apply hosted database migrations; those require a separate deliberate operation after schema/history review. Review database compatibility before pushing to main. The static deployment uses these GitHub Actions secrets:
 
 - `VITE_SUPABASE_URL`
 - `VITE_SUPABASE_ANON_KEY`
@@ -84,4 +84,4 @@ The browser uses the Supabase publishable/anon key. Authorization depends on Sup
 
 Start with [current project state](docs/PROJECT_STATE.md) and [release checklist](docs/RELEASE_CHECKLIST.md). These supersede historical runbook counts and fixture status. The public library has been cleared of the explicitly approved synthetic cases; future synthetic write tests require an isolated project.
 
-See [release report](docs/community-release-report.md), [pilot checklist](docs/pilot-tester-checklist.md), and stage runbooks 2–7. The existing hosted project was explicitly authorized for this transformation; normal setup should still use an isolated project. Run database tests with `npm test --prefix supabase/tests`. Never reset the hosted project. Deployment remains manual and does not provision resources or apply migrations.
+See [release report](docs/community-release-report.md), [pilot checklist](docs/pilot-tester-checklist.md), and stage runbooks 2–7. The existing hosted project was explicitly authorized for this transformation; normal setup should still use an isolated project. Run database tests with `npm test --prefix supabase/tests`. Never reset the hosted project. Frontend deployment is automatic on pushes to main; it does not provision resources or apply hosted migrations.

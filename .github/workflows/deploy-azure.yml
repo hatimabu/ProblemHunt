@@ -1,6 +1,8 @@
 name: Deploy ProblemHunt static app
 
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
     inputs:
       confirm_release:
@@ -27,7 +29,7 @@ jobs:
     uses: ./.github/workflows/frontend-tests.yml
 
   deploy:
-    if: github.ref == 'refs/heads/main' && inputs.confirm_release == true
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.confirm_release == true))
     runs-on: ubuntu-latest
     name: Deploy static app
     needs: test

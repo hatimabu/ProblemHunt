@@ -2,6 +2,14 @@
 
 Current checkpoint: 2026-09-26, `feature/community-knowledge-platform`. Read PROJECT_STATE first; earlier runbooks are historical evidence.
 
+## Current deployment policy (main)
+
+- Frontend pushes to `main` deploy automatically after the reusable checks pass. Review database compatibility before pushing/merging; there is no additional manual confirmation gate on push events.
+- Manual runs deploy only from `main` with `confirm_release` set to true. False confirmation skips the deploy job.
+- Database migrations require a separate deliberate, authorized operation after reviewing hosted history and pending SQL. No hosted migrations run during Azure deployment; disposable database tests are test-only.
+- Existing Azure resource, secrets, build path and deployment settings are retained. This fix does not change the custom domain or create resources.
+- Validation: YAML parsing and 18 event/ref/confirmation combinations pass; deployment settings and test dependency match the previous workflow. All 54 frontend tests, 35 disposable database tests, TypeScript and production build pass. Actual GitHub/Azure execution is not verified until this commit is pushed. The existing bundle-size warning remains.
+
 ## Completed for this milestone
 
 - [x] Compare dashboard layout with main and the supplied screenshots; retain compact cards, icon accents, identity/sidebar, lime states and bordered panels without marketplace behavior.
