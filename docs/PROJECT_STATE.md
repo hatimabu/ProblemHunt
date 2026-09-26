@@ -39,4 +39,6 @@ No merge, Azure deployment or domain change was made. Azure routing/headers, pro
 
 ## Next task
 
+Latest visual/avatar follow-up: HUNT now rises 14px with a slight tilt/scale on a two-second cycle; domain and workflow icons have distinct accents. The clickable identity card uses a blue treatment, clear name/username hierarchy and contained avatar status. Avatar signed URLs refresh every 45 seconds and on focus/tab return. Read-only Storage inspection found both referenced files present and downloadable; the exact screenshot failure was not reproduced in that user's session. Recovery is covered by a component regression test. No Storage policies or hosted data changed.
+
 Review the visual milestone, configure an isolated Supabase test project and rerun the complete write journey on the release candidate. Resolve operational release gates before requesting approval to merge and deploy to the existing Azure resource. Keep `problemhunt.cc` unchanged until explicitly approved.

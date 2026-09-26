@@ -1,9 +1,9 @@
-import {render,screen,waitFor} from '@testing-library/react';
+import {render,screen,waitFor,fireEvent} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {MemoryRouter,Routes,Route} from 'react-router';
 import {beforeEach,expect,it,vi} from 'vitest';
 import {DashboardShell} from '../community/workspace';
-import {CommunityAccountDashboard,CommunityProfilePage,MyContributions} from '../community/account';
+import {Avatar,CommunityAccountDashboard,CommunityProfilePage,MyContributions} from '../community/account';
 import {validateAvatar} from '../../../lib/community-profile';
 const api=vi.hoisted(()=>({get:vi.fn(),save:vi.fn(),counts:vi.fn(),activeCount:vi.fn(),contributions:vi.fn(),avatar:vi.fn(),replaceAvatar:vi.fn(),removeAvatar:vi.fn()}));
 vi.mock('../../../lib/community-profile',async()=>({...await vi.importActual('../../../lib/community-profile'),profileApi:api}));
@@ -20,3 +20,5 @@ it('saves profile consent and deduplicated expertise; public history always excl
 it('never shows editing controls or history for an unavailable public profile',async()=>{api.get.mockResolvedValue(null);page('/people/other');expect(await screen.findByText('This profile is private or has not been created.')).toBeInTheDocument();expect(screen.queryByRole('button',{name:'Save profile'})).not.toBeInTheDocument();expect(api.contributions).not.toHaveBeenCalled();});
 it('validates avatar type and size before decoding or uploading',()=>{expect(()=>validateAvatar({type:'image/svg+xml',size:10})).toThrow('PNG');expect(()=>validateAvatar({type:'image/png',size:6*1024*1024})).toThrow('5 MB');expect(()=>validateAvatar({type:'image/webp',size:100})).not.toThrow();});
 
+
+it('recovers an unavailable avatar on returning to the tab',async()=>{api.avatar.mockRejectedValueOnce(new Error('Expired')).mockResolvedValue('https://example.test/renewed.webp');render(<Avatar profile={{...profile,avatar_path:'author/avatar.webp'}}/>);expect(await screen.findByRole('status')).toHaveTextContent('Picture temporarily unavailable');fireEvent.focus(window);expect(await screen.findByRole('img')).toHaveAttribute('src','https://example.test/renewed.webp');expect(screen.queryByRole('status')).not.toBeInTheDocument();});
