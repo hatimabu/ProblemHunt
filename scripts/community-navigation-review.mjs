@@ -12,7 +12,7 @@ async function scan(page,label){assert.ok(await page.evaluate(()=>document.docum
 const path=name=>fileURLToPath(new URL('../supabase/.temp/'+name,import.meta.url));
 try{
  const context=await browser.newContext({viewport:{width:1440,height:1000}}),page=await context.newPage();
- await page.goto(base);assert.equal(await page.getByRole('link',{name:'HUNT',exact:true}).getAttribute('href'),'/browse');assert.equal(await page.locator('h1 a').count(),1);assert.equal(await page.locator('h1 span').innerText(),'problems');assert.equal(await page.getByText('Community problems',{exact:true}).count(),0);await scan(page,'Landing desktop');await page.screenshot({path:path('landing-redesign.png'),fullPage:true});
+ await page.goto(base);assert.equal(await page.getByRole('link',{name:'HUNT',exact:true}).getAttribute('href'),'/browse');assert.equal(await page.locator('h1 a').count(),1);assert.equal(await page.locator('h1 span').innerText(),'problem');assert.equal(await page.getByText('Community problems',{exact:true}).count(),0);await scan(page,'Landing desktop');await page.screenshot({path:path('landing-redesign.png'),fullPage:true});
  await page.getByRole('link',{name:'HUNT',exact:true}).click();await page.getByRole('search').waitFor();
  const shell=await page.getByRole('navigation',{name:'Knowledge domains'}).elementHandle(),form=await page.getByRole('search').elementHandle();
  await page.getByRole('navigation',{name:'Knowledge domains'}).getByRole('link',{name:'Cloud / DevOps'}).click();await page.waitForURL('**/domains/cloud-devops');assert.ok(await shell.evaluate(el=>el.isConnected));assert.ok(await form.evaluate(el=>el.isConnected));

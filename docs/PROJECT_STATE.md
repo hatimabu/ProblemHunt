@@ -12,9 +12,9 @@ React/Vite uses React Router and Supabase Auth, RLS/RPC, Postgres and Storage di
 
 ## Current UI
 
-- `/`: HUNT problems hero; only HUNT links to browse. Domain and workflow sections, no feed.
+- `/`: problem HUNT hero; only HUNT links to browse, with a gentle floating animation (disabled for reduced motion). Domain and workflow sections, no feed.
 - `/browse` and `/domains/:domain`: persistent navigation/search shell, category/tag/state filters.
-- `/dashboard`, `/my-problems`, `/my-solutions`, `/profile`, `/dashboard/reputation`: persistent workspace header, five summary cards, identity sidebar and six tabs. Accepted fixes use `/my-solutions?accepted=1`.
+- `/dashboard`, `/my-problems`, `/my-solutions`, `/profile`, `/dashboard/reputation`: persistent workspace header, clickable identity card and six tabs. Redundant upper summary cards and the separate edit-profile link have been removed. Accepted fixes use `/my-solutions?accepted=1`.
 - `/people/:id`: intended public profile view. `/problem/:id`: existing discussion, evidence and confirmed fix journey.
 - Tips is visibly planned and disabled. Tips/payments, Docker and grounded AI remain deferred.
 

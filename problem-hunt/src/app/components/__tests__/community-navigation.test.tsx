@@ -10,7 +10,7 @@ const search=vi.hoisted(()=>vi.fn(async()=>({rows:[],hasMore:false})));
 vi.mock('../../../lib/supabase-community',async()=>({...await vi.importActual('../../../lib/supabase-community'),communityApi:{search,taxonomy:async()=>({domains:[{id:'cloud',slug:'cloud-devops',name:'Cloud / DevOps'},{id:'av',slug:'professional-av',name:'Professional AV'}],categories:[]})}}));
 it('renders a landing hero with only HUNT linked and no feed request',()=>{
  search.mockClear();const {container}=render(<MemoryRouter><CommunityLanding/></MemoryRouter>);
- expect(screen.getByRole('link',{name:'HUNT'})).toHaveAttribute('href','/browse');expect(container.querySelectorAll('h1 a')).toHaveLength(1);expect(container.querySelector('h1 span')).toHaveTextContent('problems');expect(search).not.toHaveBeenCalled();
+ expect(screen.getByRole('link',{name:'HUNT'})).toHaveAttribute('href','/browse');expect(container.querySelectorAll('h1 a')).toHaveLength(1);expect(container.querySelector('h1 span')).toHaveTextContent('problem');expect(search).not.toHaveBeenCalled();
 });
 it('preserves Browse shell and filters across domain routes with visible active links',async()=>{
  render(<MemoryRouter initialEntries={['/browse?q=audio']}><Routes><Route element={<CommunityDiscovery/>}><Route path="/browse" element={null}/><Route path="/domains/:domain" element={null}/></Route></Routes></MemoryRouter>);

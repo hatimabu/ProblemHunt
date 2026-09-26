@@ -29,8 +29,8 @@
 .community-page fieldset { border: 0; min-width: 0; }
 @media (max-width: 600px) { .community-grid { grid-template-columns: 1fr; gap: 0; } .community-actions > * { flex: 1 1 auto; text-align: center; } }
 
-.community-skip { position: absolute; left: -10000px; }
-.community-skip:focus { left: 1rem; top: 1rem; z-index: 100; padding: 1rem; background: #fff; color: #000; }
+.board-app > .community-skip { position: absolute; left: -10000px; }
+.board-app > .community-skip:focus { left: 1rem; top: 1rem; z-index: 100; padding: 1rem; background: #fff; color: #000; }
 .community-account-stats { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 1rem; margin: 1.5rem 0; }
 .community-page .community-stat { display: grid; gap: .6rem; text-decoration: none !important; }
 .community-stat strong { font-size: 2rem; color: var(--board-ink); }
@@ -64,7 +64,12 @@
 .workspace-stat strong { display:block; font-size:1.9rem; line-height:1.2; margin:.35rem 0; }
 .workspace-stat-label,.workspace-stat-detail { display:block; font: .65rem/1.5 var(--font-mono); text-transform:uppercase; letter-spacing:.07em; color:#b0bdc4; }
 .workspace-stat-detail { font-size:.6rem; color:#a0afb7; }
-.workspace-grid { display:grid; grid-template-columns:280px minmax(0,1fr); gap:1.2rem; align-items:start; }
+.workspace-grid { display:grid; grid-template-columns:280px minmax(0,1fr); gap:1.2rem; align-items:start; margin-top:1.2rem; }
+.community-page .workspace-profile-link { display:block; border-radius:.7rem; text-decoration:none; color:inherit; }
+.workspace-profile-link:hover .community-card { border-color:#b8f34a; }
+.community-tabs[aria-label="Knowledge domains"] { align-items:center; }
+.community-page .community-tabs[aria-label="Knowledge domains"] .community-tab:not(:first-child) { font-size:.78rem; padding:.45rem .65rem; }
+.community-tabs[aria-label="Knowledge domains"] .community-tab:not(:first-child) .community-icon { width:1.8rem; height:1.8rem; }
 .workspace-sidebar { display:grid; gap:1rem; min-width:0; }
 .workspace-sidebar .community-card { margin:0; padding:1.25rem; }
 .workspace-sidebar .community-avatar { width:64px; height:64px; border-radius:50%; border-color:#b8f34a55; }
@@ -86,6 +91,9 @@
 .community-hero h1 { font-size:clamp(2.8rem,8vw,7rem); letter-spacing:-.055em; display:flex; align-items:center; flex-wrap:wrap; gap:1rem; }
 .community-page .community-hunt { display:inline-flex; align-items:center; gap:.35rem; padding:.1em .22em; background:#b8f34a; color:#101609; border-radius:.12em; text-decoration:none; transition:background 160ms,box-shadow 160ms; }
 .community-hunt svg { width:.5em; height:.5em; }
+.community-hunt { animation:hunt-float 2.8s ease-in-out infinite; }
+.community-hunt:hover,.community-hunt:focus-visible { animation-play-state:paused; }
+@keyframes hunt-float { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-6px); } }
 .community-hunt:hover { background:#d0ff80; box-shadow:0 0 30px #b8f34a30; }
 .community-hero > p { max-width:650px; font-size:1.15rem; color:#b1bfc5; }
 .community-hero-note { display:flex; align-items:center; gap:.5rem; color:#b8d99b; font-size:.9rem; }
@@ -96,3 +104,4 @@
 @media(max-width:760px) { .workspace-heading { flex-direction:column; align-items:stretch; } .workspace-grid { grid-template-columns:1fr; } .workspace-sidebar { grid-template-columns:1fr 1fr; } .workspace-sidebar .workspace-edit { grid-row:2; } .workspace-stats { grid-template-columns:repeat(2,minmax(0,1fr)); } .community-steps { grid-template-columns:repeat(2,minmax(0,1fr)); } }
 @media(max-width:480px) { .community-page { padding-top:1rem; } .workspace-sidebar { grid-template-columns:1fr; } .workspace-sidebar .workspace-edit { grid-row:auto; } .workspace-content { padding:1rem; } .workspace-stat { flex-direction:column; } .community-tabs,.workspace-panel .community-tabs { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); } .community-page .community-tab { font-size:.77rem; padding:.5rem; } .community-steps { grid-template-columns:1fr; } }
 @media(prefers-reduced-motion:reduce) { .community-page *, .community-page *::before,.community-page *::after { animation:none!important; transition:none!important; scroll-behavior:auto!important; } }
+
