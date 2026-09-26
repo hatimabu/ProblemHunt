@@ -9,6 +9,7 @@ Current checkpoint: 2026-09-26, `feature/community-knowledge-platform`. Read PRO
 - [x] Follow-up polish: problem HUNT word order/float, smaller domain tabs, clickable profile card, redundant summary removal and hidden skip-link layout fix. Frontend tests and build pass; no database changes.
 - [x] Dashboard follow-up: removed the redundant My profile tab and the identity card's lime hover treatment; profile editing remains available through the identity card. Frontend component tests, TypeScript and production build pass; no database changes.
 - [x] Dashboard navigation follow-up: moved the five workspace links directly below the dashboard summary and above the identity/sidebar and content panels. Frontend component tests, TypeScript and production build pass; no database changes.
+- [x] Identity/motion follow-up: replaced the HUNT float with a reduced-motion-safe gift-box shake and made display name the sole community-facing profile identity; sign-in email remains private. Frontend component tests, TypeScript and production build pass; no database changes.
 - [x] Stronger HUNT motion, distinct icon colors, redesigned identity card and avatar URL renewal/recovery. 54 frontend tests, TypeScript and build pass; both existing avatar objects resolve in read-only Storage inspection. Confirm the affected user's picture in their active session; that session was not available for reproduction.
 - [x] Username validation/uniqueness, private account view; existing avatar ownership retained.
 - [x] 53 frontend tests, TypeScript, production build; 35 disposable database scenarios.
@@ -21,7 +22,7 @@ Current checkpoint: 2026-09-26, `feature/community-knowledge-platform`. Read PRO
 
 - [ ] Configure isolated Supabase test credentials and replay migrations there. Match all admin and account configurations to that project.
 - [ ] Repeat complete author/contributor write journey on the candidate: private draft denial, edit/publish, clarification/solution, test evidence, Testing/Solved, forbidden acceptance, acceptance reversal, votes/removal and unresolved closure.
-- [ ] Repeat profile username/avatar upload/replace/remove and cross-account denial against that isolated hosted service. Earlier real-service evidence is in `community-profile-dashboard.md`; this milestone did not repeat hosted writes.
+- [ ] Repeat profile display-name/avatar upload/replace/remove and cross-account denial against that isolated hosted service. Earlier real-service evidence is in `community-profile-dashboard.md`; this milestone did not repeat hosted writes.
 - [ ] Review complete feature diff against main and rerun CI on the exact merge candidate.
 - [ ] Verify Supabase production Auth site/redirect URLs and signup/recovery email delivery.
 - [ ] Confirm moderator staffing, support/privacy request channel, retention and account export/deletion handling.

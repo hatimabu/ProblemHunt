@@ -2,11 +2,11 @@
 
 Updated 2026-09-26. Branch: `feature/community-knowledge-platform`.
 
-ProblemHunt is a technical knowledge community: **Real problems. Tested solutions.** Cloud/DevOps and Professional AV authors publish structured problems, test contributions, and confirm the solution that worked.
+ProblemHunt is a technical knowledge community: **Real problems. Tested solutions.** Cloud/DevOps and Professional AV authors publish structured problems, test contributions, and confirm the solution that worked. Sign-in email remains private; the editable display name is the sole community-facing identity.
 
 ## Milestones and architecture
 
-Stages 2–8 are implemented; their runbooks and `community-release-report.md` retain historical evidence. Profile/dashboard milestone: `fa90ac4`. Latest implementation milestone: **`61ea041`**, restoring the compact technical design from main and the supplied screenshots, with a landing page, persistent browse/dashboard shells, icon tabs, private account information, unique editable usernames and an empty public library.
+Stages 2–8 are implemented; their runbooks and `community-release-report.md` retain historical evidence. Profile/dashboard milestone: `fa90ac4`. Latest implementation milestone: **`61ea041`**, restoring the compact technical design from main and the supplied screenshots, with a landing page, persistent browse/dashboard shells, icon tabs, private account information, editable display names and an empty public library.
 
 React/Vite uses React Router and Supabase Auth, RLS/RPC, Postgres and Storage directly. The browser never receives a service-role key. Legacy tables remain; marketplace routes and wallet-dependent acceptance are outside the active journey. Only authors confirm acceptance; reputation is derived from trusted events. Reports and moderation notes are private. Profile ownership and avatar-folder policies protect edits; public profiles expose only selected identity/contribution fields, never sign-in email or private drafts.
 
@@ -39,8 +39,8 @@ No merge, Azure deployment or domain change was made. Azure routing/headers, pro
 
 ## Next task
 
-Latest visual/avatar follow-up: HUNT now rises 14px with a slight tilt/scale on a two-second cycle; domain and workflow icons have distinct accents. The clickable identity card uses a blue treatment, clear name/username hierarchy and contained avatar status. Avatar signed URLs refresh every 45 seconds and on focus/tab return. Read-only Storage inspection found both referenced files present and downloadable; the exact screenshot failure was not reproduced in that user's session. Recovery is covered by a component regression test. No Storage policies or hosted data changed.
+Latest visual/avatar follow-up: HUNT uses a brief gift-box-style shake to invite browsing; domain and workflow icons have distinct accents. The clickable identity card uses a blue treatment, clear display-name hierarchy and contained avatar status. Avatar signed URLs refresh every 45 seconds and on focus/tab return. Read-only Storage inspection found both referenced files present and downloadable; the exact screenshot failure was not reproduced in that user's session. Recovery is covered by a component regression test. No Storage policies or hosted data changed.
 
-Dashboard follow-up: removed the redundant My profile workspace tab because the identity card already links to `/profile`; removed its lime hover treatment; moved the five remaining workspace links directly under the dashboard summary, above the identity/sidebar and content panels. Frontend component tests, TypeScript and production build pass; no database or hosted changes.
+Dashboard follow-up: removed the redundant My profile workspace tab because the identity card already links to `/profile`; removed its lime hover treatment; moved the five remaining workspace links directly under the dashboard summary, above the identity/sidebar and content panels. HUNT now shakes like a clickable gift, and profile/dashboard identity uses only the editable display name; existing login identifiers remain stored and private. Frontend component tests, TypeScript and production build pass; no database or hosted changes.
 
 Review the visual milestone, configure an isolated Supabase test project and rerun the complete write journey on the release candidate. Resolve operational release gates before requesting approval to merge and deploy to the existing Azure resource. Keep `problemhunt.cc` unchanged until explicitly approved.

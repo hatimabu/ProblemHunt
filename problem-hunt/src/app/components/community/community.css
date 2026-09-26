@@ -105,9 +105,8 @@
 .workspace-identity .workspace-person-copy h2 { font-size:1.2rem; line-height:1.4; margin:0; overflow-wrap:anywhere; }
 .workspace-identity .workspace-person-copy p { margin:.3rem 0 0; overflow-wrap:anywhere; }
 .workspace-profile-prompt { display:flex; justify-content:space-between; gap:.5rem; border-top:1px solid #50678370; padding-top:.9rem; margin-top:.7rem; color:#bfdbfe; font-size:.8rem; }
-.community-hunt { animation:hunt-float 2s ease-in-out infinite; }
-.community-hunt:hover,.community-hunt:focus-visible { animation-play-state:paused; }
-@keyframes hunt-float { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-14px) rotate(-2deg) scale(1.035); } }
+.community-hunt { animation:hunt-shake 1.8s ease-in-out infinite; transform-origin:50% 85%; }
+@keyframes hunt-shake { 0%,58%,100% { transform:translate(0,0) rotate(0) scale(1); } 64% { transform:translate(-2px,-1px) rotate(-3deg) scale(1.025); } 70% { transform:translate(2px,0) rotate(3deg) scale(1.025); } 76% { transform:translate(-2px,-1px) rotate(-2deg) scale(1.025); } 82% { transform:translate(1px,0) rotate(2deg) scale(1.015); } 88% { transform:translate(-1px,0) rotate(-1deg) scale(1.01); } }
 .community-hunt:hover { background:#d0ff80; box-shadow:0 0 30px #b8f34a30; }
 .community-hero > p { max-width:650px; font-size:1.15rem; color:#b1bfc5; }
 .community-hero-note { display:flex; align-items:center; gap:.5rem; color:#b8d99b; font-size:.9rem; }
