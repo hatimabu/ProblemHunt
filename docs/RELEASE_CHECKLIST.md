@@ -4,6 +4,9 @@ Current checkpoint: 2026-09-26, `feature/community-knowledge-platform`. Read PRO
 
 ## Current deployment policy (main)
 
+- [x] Fix the missing app-name variable failure: workflow directly selects the user-confirmed `problemhunt-web-sdm7w4743u274` in `problemhunt`. YAML parsing, exact target/token lookup assertions, comparison of all other settings against HEAD, and `git diff --check` pass.
+- [ ] Push the app-selection fix during an authorized release and verify GitHub/Azure token retrieval and deployment. No deployment was performed for this fix; `AZURE_STATIC_WEB_APP_NAME` is no longer required as a repository variable.
+
 - Frontend pushes to `main` deploy automatically after the reusable checks pass. Review database compatibility before pushing/merging; there is no additional manual confirmation gate on push events.
 - Manual runs deploy only from `main` with `confirm_release` set to true. False confirmation skips the deploy job.
 - Database migrations require a separate deliberate, authorized operation after reviewing hosted history and pending SQL. No hosted migrations run during Azure deployment; disposable database tests are test-only.

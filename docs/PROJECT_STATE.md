@@ -4,6 +4,8 @@ Updated 2026-09-26. Deployment workflow fix on `main`, following website merge `
 
 ## Deployment behavior
 
+Static app selection fix (2026-09-26): the supplied failed run authenticated to Azure, then stopped because the repository variable `AZURE_STATIC_WEB_APP_NAME` was empty. The workflow now sets `STATIC_WEB_APP_NAME` directly to the user-confirmed existing app `problemhunt-web-sdm7w4743u274` in resource group `problemhunt`, removing that variable dependency. YAML parsing and comparison against HEAD passed: only app selection changed; triggers, release gates, token lookup, build and upload settings are preserved. `git diff --check` passed. This fix has not been pushed or run on GitHub/Azure; successful token retrieval and deployment remain unverified.
+
 Every push to `main` automatically runs the deployment workflow. Deployment waits for the reusable frontend checks to succeed. Manual `workflow_dispatch` remains available, but deployment requires both the `main` ref and `confirm_release: true`; false confirmation or another ref skips deployment. Azure resource selection, secrets, build output and upload settings are unchanged.
 
 Supabase/database migrations remain a separate deliberate operation: inspect hosted history and pending SQL before any authorized application. Azure deployment never applies hosted migrations. The reusable checks replay SQL only inside disposable PGlite tests, without connecting to Supabase. This workflow change was committed locally; pushing it to main will trigger deployment.

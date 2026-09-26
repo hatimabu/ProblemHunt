@@ -23,6 +23,7 @@ env:
   NODE_VERSION: '22'
   FRONTEND_PATH: problem-hunt
   AZURE_RESOURCE_GROUP: problemhunt
+  STATIC_WEB_APP_NAME: problemhunt-web-sdm7w4743u274
 
 jobs:
   test:
@@ -42,13 +43,6 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Select reviewed existing Static Web App
-        env:
-          REVIEWED_APP_NAME: ${{ vars.AZURE_STATIC_WEB_APP_NAME }}
-        run: |
-          set -euo pipefail
-          test -n "$REVIEWED_APP_NAME" || { echo "Set AZURE_STATIC_WEB_APP_NAME to the reviewed existing resource"; exit 1; }
-          echo "STATIC_WEB_APP_NAME=$REVIEWED_APP_NAME" >> "$GITHUB_ENV"
       - name: Fetch Static Web App deployment token
         id: fetch-token
         run: |
