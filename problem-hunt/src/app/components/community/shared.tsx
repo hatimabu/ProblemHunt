@@ -18,6 +18,8 @@ export function ProblemList({ problems }: { problems: CommunityProblem[] }) {
     <StateLabel problem={p} /><h2><Link to={`/problem/${p.id}`}>{p.title}</Link></h2>
     <p className="community-preview">{p.symptom || 'Draft in progress'}</p>
     <p className="community-muted">{p.product} {p.product_version}</p>
+    {p.state === 'solved' && <p><strong>Author-confirmed fix:</strong> {p.resolution_observation}</p>}
+    <div className="community-actions">{p.tags.map(tag => <Link key={tag} to={`/browse?tag=${encodeURIComponent(tag)}`}>#{tag}</Link>)}</div>
   </article>)}</div>;
 }
 export function TextField({ label, value, onChange, required = false, multiline = true, maxLength = 10000 }: {

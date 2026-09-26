@@ -32,6 +32,19 @@ export function safeSourceUrl(value: string): string | null {
 
 export function createCommunityApi(client: SupabaseClient) {
   return {
+    async search(filters: { query?: string; domain?: string; category?: string; tag?: string; state?: string; page?: number }) {
+      const { data, error } = await client.rpc('community_search', {
+        p_query: filters.query || '', p_domain: filters.domain || '', p_category: filters.category || '',
+        p_tag: filters.tag || '', p_state: filters.state || '', p_offset: ((filters.page || 1) - 1) * 20,
+      });
+      fail(error);
+      const rows = (data || []) as CommunityProblem[];
+      return { rows: rows.slice(0,20), hasMore: rows.length > 20 };
+    },
+    async voteCounts(problemId: string) {
+      const { data, error } = await client.rpc('community_solution_vote_counts', { p_problem_id: problemId });
+      fail(error); return Object.fromEntries((data || []).map((v: { solution_id: string; upvotes: number }) => [v.solution_id, Number(v.upvotes)])) as Record<string,number>;
+    },
     async taxonomy() {
       const [d, c] = await Promise.all([
         client.from('community_domains').select('id,slug,name').order('name'),

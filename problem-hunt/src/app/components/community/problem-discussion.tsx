@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { Link, useParams } from 'react-router';
+import { Link, useLocation, useParams } from 'react-router';
 import { useAuth } from '../../contexts/AuthContext';
 import { communityApi, communityError, safeSourceUrl } from '../../../lib/supabase-community';
 import type { CommunityProblem, CommunitySolution, CommunityComment } from '../../../lib/community';
@@ -13,6 +13,7 @@ export function CommunityDiscussion() {
 }
 
 function Discussion({ id, userId }: { id: string; userId?: string }) {
+  const { hash } = useLocation();
   const [problem, setProblem] = useState<CommunityProblem | null>(null);
   const [solutions, setSolutions] = useState<CommunitySolution[]>([]);
   const [comments, setComments] = useState<CommunityComment[]>([]);
@@ -23,6 +24,9 @@ function Discussion({ id, userId }: { id: string; userId?: string }) {
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
   const [confirmClose, setConfirmClose] = useState(false);
+  useEffect(() => {
+    if (!loading && /^#solution-[a-zA-Z0-9-]+$/.test(hash)) document.getElementById(hash.slice(1))?.scrollIntoView?.();
+  }, [loading, hash]);
   useEffect(() => {
     let active = true;
     setLoading(true); setError(''); setProblem(null); setSolutions([]); setComments([]);
@@ -69,7 +73,7 @@ function Discussion({ id, userId }: { id: string; userId?: string }) {
       <div><h2>Tests already attempted</h2>{problem.attempted_tests.length ? <ol>{problem.attempted_tests.map((a,i) => <li key={i}><strong>{a.test}</strong><p>{a.observation}</p>{a.verification_method && <p>Verification: {a.verification_method}</p>}</li>)}</ol> : <p>No tests recorded yet.</p>}</div>
       {problem.observations && <div><h3>Additional observations</h3><p className="community-copy">{problem.observations}</p></div>}
       {problem.verification_method && <div><h3>Planned verification</h3><p className="community-copy">{problem.verification_method}</p></div>}
-      <p className="community-muted">{problem.tags.join(' · ')}</p>
+      <div className="community-actions">{problem.tags.map(tag => <Link key={tag} to={`/browse?tag=${encodeURIComponent(tag)}`}>#{tag}</Link>)}</div>
     </section>
     {actionError && <ErrorNotice error={actionError} />}{message && <p role="status">{message}</p>}
     {owner && problem.state !== 'solved' && problem.state !== 'closed' && <div className="community-actions">
@@ -79,6 +83,7 @@ function Discussion({ id, userId }: { id: string; userId?: string }) {
     </div>}
     {problem.state === 'closed' && <p className="community-notice">This discussion is closed without a confirmed fix.</p>}
     <h2 className="community-stack">Proposed solutions ({solutions.length})</h2>
+    <VoteSummary problemId={id} solutions={solutions} />
     {!solutions.length && <p>No solutions yet.{eligible && !owner ? ' Share a diagnosis and steps to verify it.' : ''}</p>}
     <div className="community-stack">{ordered.map(s => <SolutionCard key={s.id} solution={s} problem={problem} userId={userId}
       comments={comments.filter(c => c.solution_id === s.id)} onComment={c => setComments(prev => [...prev, c])}
@@ -86,6 +91,20 @@ function Discussion({ id, userId }: { id: string; userId?: string }) {
     {eligible && userId && !owner && <SolutionForm problemId={id} onSaved={s => setSolutions(prev => [...prev, s])} />}
     {eligible && !userId && <p className="community-notice"><Link to={`/auth?returnTo=${encodeURIComponent(`/problem/${id}`)}`}>Sign in to propose a solution or ask a contributor for clarification</Link>.</p>}
   </CommunityLayout>;
+}
+
+function VoteSummary({ problemId, solutions }: { problemId: string; solutions: CommunitySolution[] }) {
+  const [counts, setCounts] = useState<Record<string,number> | null>(null);
+  const [error, setError] = useState('');
+  useEffect(() => {
+    let active = true;
+    (async () => { try { const data = await communityApi.voteCounts(problemId); if (active) setCounts(data); }
+      catch { if (active) setError('Community upvote counts are unavailable.'); } })();
+    return () => { active = false; };
+  }, [problemId]);
+  return <aside aria-label="Community feedback"><p>Accepted means the author confirmed a fix. Community upvotes indicate usefulness, not verification.</p>
+    {error ? <p>{error}</p> : counts === null ? <p role="status">Loading community feedback…</p> : <ul>{solutions.map(s => <li key={s.id}><a href={`#solution-${s.id}`}>{s.diagnosis}</a>: {(counts[s.id] || 0) > 0 ? `${counts[s.id]} community upvote${counts[s.id] === 1 ? '' : 's'}` : 'No community upvotes yet'}</li>)}</ul>}
+  </aside>;
 }
 
 function SolutionForm({ problemId, onSaved }: { problemId: string; onSaved: (s: CommunitySolution) => void }) {
@@ -139,6 +158,7 @@ function SolutionCard({ solution: s, problem, userId, comments, onComment, onAcc
   }
   return <article id={`solution-${s.id}`} className={`board-panel community-card ${accepted ? 'community-confirmed' : ''}`}>
     <p className="community-muted">{contributorLabel(s.author_id, problem.author_id, userId)}{accepted ? ' · Accepted by the author' : ' · Proposed solution'}</p>
+    <Link to={`/problem/${problem.id}#solution-${s.id}`}>Link to this solution</Link>
     <h3>{s.diagnosis}</h3><ol>{s.steps.map((step,i) => <li key={i}>{step}</li>)}</ol>
     <h3>Reasoning</h3><p className="community-copy">{s.reasoning}</p>
     <h3>Verification method</h3><p className="community-copy">{s.verification_method}</p>

@@ -2,6 +2,7 @@ import { createBrowserRouter, Navigate } from "react-router";
 import { CommunityHome, CommunityLibrary, CommunityDashboard } from "./components/community/library";
 import { CommunityDiscussion } from "./components/community/problem-discussion";
 import { CommunityEditor } from "./components/community/problem-editor";
+import { CommunityDiscovery } from "./components/community/discovery";
 import { AuthPage } from "./components/auth-page.tsx";
 import { ProtectedRoute } from "./components/ProtectedRoute.tsx";
 import { ResetPasswordPage } from "./components/reset-password-page.tsx";
@@ -13,8 +14,9 @@ export const router = createBrowserRouter([
   },
   {
     path: "/browse",
-    Component: CommunityLibrary,
+    Component: CommunityDiscovery,
   },
+  { path: "/domains/:domain", Component: CommunityDiscovery },
   {
     path: "/problem/:id",
     Component: CommunityDiscussion,

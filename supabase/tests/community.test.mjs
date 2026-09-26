@@ -330,4 +330,44 @@ await check('structured tests and solution steps reject malformed or empty evide
   await denied(`UPDATE community_solutions SET steps=ARRAY[NULL]::text[] WHERE id='${solution}'`, '23514');
 });
 
+
+await check('discovery searches public symptoms, products and tags while excluding owner drafts', async () => {
+  await q("UPDATE community_problems SET product='ExampleRouter',tags=ARRAY['routing'] WHERE id=$1",[publicProblem]);
+  await q("UPDATE community_problems SET title='PrivateNeedle',product='HiddenDevice',tags=ARRAY['hidden-tag'] WHERE id=$1",[draftProblem]);
+  await actor(null,'anon');
+  for(const query of ['gateway timeout','ExampleRouter','routing']) assert.ok((await q('SELECT id FROM community_search($1)',[query])).rows.some(p=>p.id===publicProblem));
+  for(const who of [null,'author']) {
+    await actor(who,who ? 'authenticated' : 'anon');
+    for(const query of ['PrivateNeedle','HiddenDevice','hidden-tag']) assert.equal((await q('SELECT id FROM community_search($1)',[query])).rows.length,0);
+    assert.equal((await q("SELECT id FROM community_search(p_tag=>'hidden-tag')")).rows.length,0);
+  }
+  assert.equal((await q("SELECT id FROM community_search(p_domain=>'professional-av')")).rows.length,0);
+  assert.ok((await q("SELECT id FROM community_search(p_domain=>'cloud-devops',p_category=>'cloud-platforms',p_state=>'open',p_tag=>'routing')")).rows.some(p=>p.id===publicProblem));
+  assert.equal((await q("SELECT id FROM community_search(p_state=>'solved')")).rows.length,0);
+  await q('SELECT community_set_problem_state($1,$2)',[publicProblem,'testing']);
+  await q('SELECT community_accept_solution($1,$2,$3,$4)',[publicProblem,solution,'Recovered','Repeated test']);
+  assert.equal((await q("SELECT id FROM community_search(p_state=>'solved')")).rows[0].id,publicProblem);
+});
+await check('vote aggregate reveals counts only and hides unpublished content even from its owner', async () => {
+  await actor('outsider');
+  await q('INSERT INTO community_solution_votes(solution_id) VALUES ($1)',[solution]);
+  await actor(null,'anon');
+  const row=(await q('SELECT * FROM community_solution_vote_counts($1)',[publicProblem])).rows[0];
+  assert.deepEqual(Object.keys(row).sort(),['solution_id','upvotes']); assert.equal(Number(row.upvotes),1);
+  await actor('author'); await q("UPDATE community_problems SET visibility='draft' WHERE id=$1",[publicProblem]);
+  for(const who of [null,'author','outsider']) {
+    await actor(who,who ? 'authenticated' : 'anon');
+    assert.equal((await q('SELECT * FROM community_solution_vote_counts($1)',[publicProblem])).rows.length,0);
+  }
+});
+await check('discovery pagination is bounded and stable', async () => {
+  for(let i=0;i<25;i++) await q(`INSERT INTO community_problems(author_id,category_id,title,symptom,environment,expected_behavior,actual_behavior,visibility)
+    VALUES ($1,$2,$3,'pagination-token','{"setup":"synthetic"}','working','failure','public')`,[ids.author,category,`Page fixture ${i}`]);
+  await actor(null,'anon');
+  const first=(await q("SELECT id FROM community_search(p_query=>'pagination-token')")).rows;
+  const next=(await q("SELECT id FROM community_search(p_query=>'pagination-token',p_offset=>20)")).rows;
+  assert.equal(first.length,21); assert.equal(next.length,5);
+  assert.equal(new Set([...first.slice(0,20),...next].map(p=>p.id)).size,25);
+  assert.deepEqual((await q("SELECT id FROM community_search(p_query=>'pagination-token')")).rows,first);
+});
 await db.close();

@@ -11,6 +11,7 @@
 .community-stack { display: grid; gap: 1.25rem; margin-top: 1.25rem; }
 .community-card { padding: clamp(1rem, 4vw, 1.75rem); min-width: 0; border-radius: .8rem; }
 .community-actions { display: flex; gap: .75rem; flex-wrap: wrap; align-items: center; margin: 1rem 0; }
+.community-actions > a { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; }
 .community-field { display: grid; gap: .4rem; margin-bottom: 1rem; font-size: 1rem; }
 .community-field input, .community-field textarea, .community-field select { width: 100%; min-width: 0; min-height: 44px; background: var(--board-bg); color: var(--board-ink); border: 1px solid var(--board-line-strong); border-radius: .4rem; padding: .75rem; font: inherit; }
 .community-field textarea { resize: vertical; }
