@@ -40,21 +40,28 @@ export function BrowseProblems() {
   const [sortBy, setSortBy] = useState("newest");
   const [posts, setPosts] = useState<ProblemPost[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
+    let active = true;
     const fetchPosts = async () => {
       try {
         setLoading(true);
-        const category = selectedCategory === "All" ? "all" : selectedCategory;
-        setPosts(await listProblems({ category, sortBy, type: selectedType }));
-      } catch {
+        setError(null);
         setPosts([]);
+        const category = selectedCategory === "All" ? "all" : selectedCategory;
+        const results = await listProblems({ category, sortBy, type: selectedType });
+        if (active) setPosts(results);
+      } catch {
+        if (active) setError("We couldn't load the problems. Please try again.");
       } finally {
-        setLoading(false);
+        if (active) setLoading(false);
       }
     };
     fetchPosts();
-  }, [selectedCategory, selectedType, sortBy]);
+    return () => { active = false; };
+  }, [selectedCategory, selectedType, sortBy, retryCount]);
 
   const deferredSearchQuery = useDeferredValue(searchQuery);
   const filteredPosts = useMemo(() => {
@@ -154,7 +161,7 @@ export function BrowseProblems() {
 
           <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-[color:var(--board-line)] pt-5">
             <p className="text-sm text-[var(--board-muted)]">
-              {loading ? "Loading the board..." : `${filteredPosts.length} listing${filteredPosts.length === 1 ? "" : "s"}`}
+              {loading ? "Loading the board..." : error ? "Problems unavailable" : `${filteredPosts.length} listing${filteredPosts.length === 1 ? "" : "s"}`}
               {deferredSearchQuery ? ` matching "${deferredSearchQuery}"` : ""}
             </p>
             <Link to="/dashboard" className="inline-flex">
@@ -167,7 +174,12 @@ export function BrowseProblems() {
 
           {/* Listings */}
           <div className="mt-4 border-t border-[color:var(--board-line)]">
-            {loading ? (
+            {error ? (
+              <div role="alert" className="py-8 text-[var(--board-muted)]">
+                <p>{error}</p>
+                <Button className="mt-4" onClick={() => setRetryCount((count) => count + 1)}>Try again</Button>
+              </div>
+            ) : loading ? (
               Array.from({ length: 4 }).map((_, index) => <LoadingRow key={index} />)
             ) : filteredPosts.length === 0 ? (
               <div className="board-empty">

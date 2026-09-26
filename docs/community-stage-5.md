@@ -1,0 +1,11 @@
+# Stage 5: votes and category reputation
+
+Adds solution upvote/removal controls, category reputation and own immutable event history, author-only acceptance reversal with required reason, and readable acceptance history. Proposed/accepted/upvoted labels stay distinct. Prior evidence and the solution snapshot are retained when acceptance is withdrawn.
+
+Rules: +2 per solution upvote; +10 per acceptance. Database triggers write the ledger in the same transaction. Vote deletion and acceptance reversal append exact negative events referencing the original award. Duplicate votes roll back their attempted award. Category changes are blocked after solutions exist. No client may write scores/events. Public totals only include currently public, non-example problems. Existing votes/acceptances were not retrospectively awarded; new transitions are scored. Fictional examples and existing Stage 3 fixtures were flagged as examples without deleting their content.
+
+Reviewed history and full pending SQL, dry-ran and applied only `20260926000200_community_reputation.sql`. No reset, legacy deletion, deployment or domain changes. Snapshot/history rows and ledger events are append-only. The new boolean example flag and vote-to-award reference cannot be set through client column grants.
+
+Checks: 25 database scenarios pass across 24 replayed migrations; 33 frontend tests pass; TypeScript and production build pass (large-chunk warning remains). Real hosted `community-reputation-smoke.mjs` verified self-vote/duplicate rejection, +2 then removal to zero, +10 then reversal to zero, contributor reversal rejection, repeated reversal rejection, retained evidence history and direct ledger-write denial. Test case is explicitly labelled and left Testing with zero net points. Browser vote/reversal controls receive expanded role coverage in Stage 7.
+
+Limits: point weights are transparent pilot defaults, not proof of expertise. No anti-collusion/Sybil system or retroactive scoring of legacy records. PGlite is not a multi-connection race test; row locks and transactional triggers serialize the implemented transitions. Public leaderboard currently shows neutral contributor IDs and up to 100 category totals, not private profile fields.

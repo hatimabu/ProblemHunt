@@ -29,7 +29,7 @@ function ProblemHuntWordmark({ className = "" }: { className?: string }) {
   return (
     <div className={`problem-hunt-wordmark ${className}`.trim()}>
       <p className="problem-hunt-wordmark__name">Problem Hunt</p>
-      <p className="problem-hunt-wordmark__tagline">Fix the blocker. Ship the work.</p>
+      <p className="problem-hunt-wordmark__tagline">Real problems. Tested solutions.</p>
     </div>
   );
 }

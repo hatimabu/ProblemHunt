@@ -22,6 +22,8 @@ problem-hunt/python-function/
 .env
 .env.local
 .env.production
+.env.*
+!.env.example
 
 # Built files with secrets
 problem-hunt/lib/config.js

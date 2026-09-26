@@ -2,7 +2,7 @@ name: Frontend checks
 
 on:
   push:
-    branches: [main]
+    branches: [main, feature/community-knowledge-platform]
   pull_request:
     branches: [main]
   workflow_call:
@@ -11,6 +11,24 @@ permissions:
   contents: read
 
 jobs:
+  database:
+    name: Disposable PostgreSQL migration and permission tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: supabase/tests
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+          cache: npm
+          cache-dependency-path: supabase/tests/package-lock.json
+      - name: Install isolated database test runtime
+        run: npm ci
+      - name: Replay migrations and test database permissions
+        run: npm test
+
   frontend:
     name: Type-check, test, and build
     runs-on: ubuntu-latest

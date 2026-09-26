@@ -1,3 +1,4 @@
+import { privateErrorEvent } from './lib/monitoring-privacy';
 import React from "react";
 import { createRoot } from "react-dom/client";
 import * as Sentry from "@sentry/react";
@@ -27,23 +28,13 @@ if (sentryDsn) {
     Sentry.init({
       dsn: sentryDsn,
       environment: import.meta.env.VITE_SENTRY_ENVIRONMENT ?? import.meta.env.MODE,
-      sendDefaultPii: true,
+      sendDefaultPii: false,
       denyUrls: [/chrome-extension:\/\//i, /moz-extension:\/\//i],
       beforeSend(event) {
         if (isReactRefreshDevToolsNoise(event)) return null;
-        return event;
+        return privateErrorEvent(event);
       },
-      integrations: import.meta.env.DEV
-        ? []
-        : [
-            Sentry.replayIntegration({
-              maskAllText: true,
-              blockAllMedia: true,
-            }),
-          ],
-      tracesSampleRate: 0.5,
-      replaysSessionSampleRate: import.meta.env.DEV ? 0 : 0.1,
-      replaysOnErrorSampleRate: import.meta.env.DEV ? 0 : 1.0,
+      integrations: [], tracesSampleRate: 0, replaysSessionSampleRate: 0, replaysOnErrorSampleRate: 0,
     });
   } catch (sentryError) {
     console.warn("Failed to initialize Sentry:", sentryError);

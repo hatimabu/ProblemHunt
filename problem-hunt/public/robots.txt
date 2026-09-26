@@ -1,0 +1,7 @@
+User-agent: *
+Disallow: /auth
+Disallow: /dashboard
+Disallow: /moderation
+Disallow: /post-problem
+Disallow: /reset-password
+Disallow: /problem/*/edit

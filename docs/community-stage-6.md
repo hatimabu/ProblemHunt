@@ -1,0 +1,15 @@
+# Stage 6: public-site safety
+
+Reporting is available on public problems, solutions and comments. Reports and target excerpts are private to their reporter and moderators; review notes and append-only moderation events are moderator-only. `/moderation` verifies the trusted membership table, not auth metadata. Moderators can review, hide or restore a reported public discussion. Hiding preserves all content while suppressing public reads, child content, search, vote counts and public reputation. Drafts remain private even to moderators; the moderation RPC cannot publish a draft.
+
+Database-enforced per-account hourly insert limits: 10 problems, 30 solutions, 60 comments, 10 reports and 60 votes. Transactional counters cannot be changed by clients, and vote/remove loops still consume the insert limit. These are basic pilot controls, not IP throttling, bot detection or Sybil resistance. Counter retention requires a trusted maintenance job before large-scale operation.
+
+User content is rendered as React text; external source links allow only HTTP(S). Report-payload rendering tests confirm markup is displayed rather than executed. Proposed, author-accepted and upvoted labels remain separate. Moderator hide/restore and acceptance reversal are independent actions; hidden cases contribute no public reputation.
+
+There are no uploads in the active community routes. The legacy public avatar bucket remains: restrictive insert/update policies require the authenticated user's folder and PNG/JPEG/WebP names; the bucket now limits uploads to those MIME types and 5 MB. Existing objects are not removed. Filename/MIME checks are not malware scanning; do not re-enable general attachments without a separate design. Private logs must not be uploaded to the public avatar bucket.
+
+Reviewed hosted history and exact SQL, then dry-ran/applied only `20260926000300_community_safety.sql`. No legacy records were deleted, no reset/deployment/domain change occurred.
+
+Validation: 28 SQL/RLS scenarios replay all 25 migrations, including nonmoderator rejection, hide/restore, moderator draft denial, private notes, rate-limit bypass rejection and avatar ownership/extension policy. Frontend tests cover votes/removal, reversal failure, private reporting, unauthorized moderator UI and plain-text malicious payload rendering. TypeScript and production build pass. Real hosted `community-safety-smoke.mjs` passed reporter/author privacy, nonmoderator denial, moderator hide/restore, private review notes, moderator draft denial, anonymous/foreign-folder Storage rejection and own-folder PNG success. Only the newly created test image was removed afterward. A dedicated synthetic moderator was created; credentials remain in ignored local files.
+
+Limits: existing private reports can retain excerpts of previously public content; they are not public search data. Moderation queue is latest 100 reports, without assignment notifications or email. Deployment and real operational moderator coverage remain release prerequisites. Tips and payments are deferred.
