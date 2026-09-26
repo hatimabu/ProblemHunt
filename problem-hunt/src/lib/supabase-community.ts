@@ -123,7 +123,7 @@ export function createCommunityApi(client: SupabaseClient) {
       const { data, error } = await client.from('community_comments').insert({ solution_id, kind, body, attempted_test, observation, verification_method }).select(COMMENT_COLUMNS).single();
       fail(error); return required(data) as CommunityComment;
     },
-    async state(id: string, state: 'open' | 'testing' | 'closed') {
+    async state(id: string, state: 'open' | 'testing') {
       const { data, error } = await client.rpc('community_set_problem_state', { p_problem_id: id, p_state: state });
       fail(error); return required(data) as CommunityProblem;
     },

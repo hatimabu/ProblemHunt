@@ -21,8 +21,8 @@ export function CommunityLayout({ children, title = 'Real problems. Tested solut
 export function ErrorNotice({ error, retry }: { error: string; retry?: () => void }) {
   return <div role="alert" className="community-notice"><p>{error}</p>{retry && <button type="button" onClick={retry}>Try again</button>}</div>;
 }
-export function StateLabel({ problem }: { problem: CommunityProblem }) {
-  return <span className={`board-pill community-state-${problem.state}`}>{problem.visibility === 'draft' ? 'Private draft' : problem.state[0].toUpperCase() + problem.state.slice(1)}</span>;
+export function StateLabel({ problem }: { problem: { state: string; visibility: string } }) {
+  return <span className={`board-pill community-state community-state-${problem.visibility === 'draft' ? 'draft' : problem.state}`}>{problem.visibility === 'draft' ? 'Private draft' : problem.state[0].toUpperCase() + problem.state.slice(1)}</span>;
 }
 export function ProblemList({ problems }: { problems: CommunityProblem[] }) {
   return <div className="community-stack">{problems.map(p => <article key={p.id} className="board-panel community-card">

@@ -2,6 +2,15 @@
 
 Updated 2026-09-26. Deployment workflow fix on `main`, following website merge `c51cac7`.
 
+## Problem status milestone — 2026-09-26
+
+Main integration authorized by the user: conflicts resolved while preserving main deployment settings and logo motion. Exact merged candidate passes 55 frontend tests, 36 disposable database tests, TypeScript, production build, YAML target/trigger checks and git diff whitespace checks. Hosted migration remains pending; deployment success is not yet verified.
+
+On `feature/community-knowledge-platform`, Browse and dashboard contribution cards now share centered status badges: filled green Open and yellow Testing with a subtle reduced-motion-safe pulse. Private drafts retain a neutral label. Authors can stop Testing and return to Open; the unresolved-close action is removed. Solved still requires accepting a tested answer with evidence.
+
+Prepared migration `20260927000400_community_author_states.sql` restricts the author state RPC to Open/Testing on public active cases. Existing closed records are preserved. It is pending, not applied to hosted Supabase: the old hosted RPC still permits closure until this migration is separately reviewed and authorized. The user authorized merging and pushing to main; hosted migration application remains separately gated. Local database verification passes 36 scenarios across 31 migrations, including forbidden closure, contributor denial, stop-testing and acceptance-only resolution. All 55 frontend tests pass; TypeScript, production build and git diff whitespace checks pass (existing bundle-size warning). Visual browser review and isolated hosted verification remain outstanding.
+
+
 ## Deployment behavior
 
 Static app selection fix (2026-09-26): the supplied failed run authenticated to Azure, then stopped because the repository variable `AZURE_STATIC_WEB_APP_NAME` was empty. The workflow now sets `STATIC_WEB_APP_NAME` directly to the user-confirmed existing app `problemhunt-web-sdm7w4743u274` in resource group `problemhunt`, removing that variable dependency. YAML parsing and comparison against HEAD passed: only app selection changed; triggers, release gates, token lookup, build and upload settings are preserved. `git diff --check` passed. This fix has not been pushed or run on GitHub/Azure; successful token retrieval and deployment remain unverified.

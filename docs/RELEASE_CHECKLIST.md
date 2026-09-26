@@ -2,6 +2,17 @@
 
 Current checkpoint: 2026-09-26, `feature/community-knowledge-platform`. Read PROJECT_STATE first; earlier runbooks are historical evidence.
 
+## Problem status milestone — 2026-09-26
+
+Main integration authorized by the user: conflicts resolved while preserving main deployment settings and logo motion. Exact merged candidate passes 55 frontend tests, 36 disposable database tests, TypeScript, production build, YAML target/trigger checks and git diff whitespace checks. Hosted migration remains pending; deployment success is not yet verified.
+
+- [x] Shared green Open/yellow Testing badges in Browse and dashboard; centered labels, reduced-motion-safe pulse, neutral private drafts.
+- [x] Author Stop testing returns to Open; remove unresolved closure; retain tested-answer acceptance as the path to Solved.
+- [x] 36 disposable database scenarios pass across 31 migrations; 55 frontend tests, TypeScript, production build and git diff whitespace checks pass, with the existing chunk warning.
+- [ ] Review hosted history and exact pending `20260927000400_community_author_states.sql`, then obtain migration authorization. Until applied, the hosted RPC still allows the former closure behavior.
+- [ ] Visually review badges on desktop/mobile and verify transitions on an isolated hosted test project. No production fixture writes or deployment were performed.
+
+
 ## Current deployment policy (main)
 
 - [x] Fix the missing app-name variable failure: workflow directly selects the user-confirmed `problemhunt-web-sdm7w4743u274` in `problemhunt`. YAML parsing, exact target/token lookup assertions, comparison of all other settings against HEAD, and `git diff --check` pass.
@@ -33,7 +44,7 @@ Current checkpoint: 2026-09-26, `feature/community-knowledge-platform`. Read PRO
 ## Required before launch approval
 
 - [ ] Configure isolated Supabase test credentials and replay migrations there. Match all admin and account configurations to that project.
-- [ ] Repeat complete author/contributor write journey on the candidate: private draft denial, edit/publish, clarification/solution, test evidence, Testing/Solved, forbidden acceptance, acceptance reversal, votes/removal and unresolved closure.
+- [ ] Repeat complete author/contributor write journey on the candidate: private draft denial, edit/publish, clarification/solution, test evidence, Testing/Solved, forbidden acceptance, acceptance reversal, votes/removal, stopping Testing and denial of unresolved closure.
 - [ ] Repeat profile display-name/avatar upload/replace/remove and cross-account denial against that isolated hosted service. Earlier real-service evidence is in `community-profile-dashboard.md`; this milestone did not repeat hosted writes.
 - [ ] Review complete feature diff against main and rerun CI on the exact merge candidate.
 - [ ] Verify Supabase production Auth site/redirect URLs and signup/recovery email delivery.
