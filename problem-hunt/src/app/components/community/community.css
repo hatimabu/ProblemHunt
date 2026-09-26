@@ -31,3 +31,11 @@
 
 .community-skip { position: absolute; left: -10000px; }
 .community-skip:focus { left: 1rem; top: 1rem; z-index: 100; padding: 1rem; background: #fff; color: #000; }
+.community-account-stats { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 1rem; margin: 1.5rem 0; }
+.community-page .community-stat { display: grid; gap: .6rem; text-decoration: none !important; }
+.community-stat strong { font-size: 2rem; color: var(--board-ink); }
+.community-stat span { color: var(--board-ink); }
+.community-avatar { width: 112px; height: 112px; object-fit: cover; border-radius: 1.25rem; border: 1px solid var(--board-line-strong); margin: 1rem 0; }
+.community-avatar-fallback { display: grid; place-items: center; font-size: 2.5rem; background: var(--board-panel-strong); }
+.community-page .dashboard-grid > * { min-width: 0; }
+@media(max-width:600px) { .community-account-stats { grid-template-columns:1fr; } .community-page .dashboard-page-header { align-items:stretch; } }

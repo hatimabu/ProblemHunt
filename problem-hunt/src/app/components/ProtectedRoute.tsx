@@ -20,7 +20,7 @@ export function ProtectedRoute({ children, requireBuilder = false }: ProtectedRo
 
   if (!user) {
     // Redirect to auth page if not logged in
-    return <Navigate to={`/auth?returnTo=${encodeURIComponent(location.pathname)}`} replace />;
+    return <Navigate to={`/auth?returnTo=${encodeURIComponent(location.pathname + location.search)}`} replace />;
   }
 
   if (requireBuilder && user.role !== 'builder') {

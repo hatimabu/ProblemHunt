@@ -2,7 +2,8 @@ import { PrivacyPage } from './components/community/privacy';
 import { ModeratorPage } from './components/community/moderation';
 import { ReputationPage } from './components/community/reputation';
 import { createBrowserRouter, Navigate } from "react-router";
-import { CommunityHome, CommunityLibrary, CommunityDashboard } from "./components/community/library";
+import { CommunityHome } from "./components/community/library";
+import { CommunityAccountDashboard, CommunityProfilePage, MyContributions } from './components/community/account';
 import { CommunityDiscussion } from "./components/community/problem-discussion";
 import { CommunityEditor } from "./components/community/problem-editor";
 import { CommunityDiscovery } from "./components/community/discovery";
@@ -29,7 +30,7 @@ export const router = createBrowserRouter([{path:"/privacy",Component:PrivacyPag
     path: "/dashboard",
     element: (
       <ProtectedRoute>
-        <CommunityDashboard />
+        <CommunityAccountDashboard />
       </ProtectedRoute>
     ),
   },
@@ -47,8 +48,11 @@ export const router = createBrowserRouter([{path:"/privacy",Component:PrivacyPag
   },
   {
     path: "/profile",
-    element: <Navigate to="/dashboard" replace />,
+    element: <ProtectedRoute><CommunityProfilePage /></ProtectedRoute>,
   },
+  {path:'/people/:id',Component:CommunityProfilePage},
+  {path:'/my-problems',element:<ProtectedRoute><MyContributions kind="problems"/></ProtectedRoute>},
+  {path:'/my-solutions',element:<ProtectedRoute><MyContributions kind="solutions"/></ProtectedRoute>},
   {
     path: "/leaderboard",
     Component: ReputationPage,

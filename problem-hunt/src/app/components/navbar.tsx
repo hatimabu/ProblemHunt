@@ -19,7 +19,7 @@ export function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [browserOnline, setBrowserOnline] = useState(() => typeof navigator === "undefined" || navigator.onLine);
   const navLinks = useMemo(
-    () => (user ? [...CORE_NAV_LINKS, { path: "/dashboard", label: "Your problems", icon: LayoutDashboard }] : CORE_NAV_LINKS),
+    () => (user ? [...CORE_NAV_LINKS, { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard }] : CORE_NAV_LINKS),
     [user]
   );
 
