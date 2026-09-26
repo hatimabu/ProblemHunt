@@ -10,11 +10,12 @@ export function checked(result, operation) {
   if (result.error) throw new Error(`${operation}: ${result.error.code || result.error.status || 'request failed'} ${result.error.message}`);
   return result.data;
 }
-export async function config() {
-  const c = await readJson(localFile);
+export async function config({readOnly=false}={}) {
+  const c = await readJson(process.env.COMMUNITY_TEST_CONFIG || localFile);
   const allowed = process.argv[process.argv.indexOf('--allow-project') + 1];
   if (!process.argv.includes('--allow-project') || allowed !== c.ref) throw new Error('Pass --allow-project <explicitly authorized ref> to enable hosted test writes.');
   if (c.url !== `https://${c.ref}.supabase.co`) throw new Error('Project reference/URL mismatch.');
+  if(c.ref==='ajvobbpwgopinxtbpcpu'&&!readOnly)throw new Error('Synthetic fixture writes are disabled on the production project. Set COMMUNITY_TEST_CONFIG to an isolated test project configuration.');
   return c;
 }
 export function client(c) { return createClient(c.url, c.anonKey, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } }); }
@@ -25,6 +26,7 @@ export async function signedIn(c, account) {
 }
 export async function setupAccounts() {
   const ref = (await readFile(new URL('../supabase/.temp/project-ref', import.meta.url), 'utf8')).trim();
+  if(ref==='ajvobbpwgopinxtbpcpu')throw new Error('Create synthetic accounts only in an isolated test project.');
   const allowed = process.argv[process.argv.indexOf('--allow-project') + 1];
   if (!process.argv.includes('--allow-project') || allowed !== ref) throw new Error('Explicit --allow-project required; no accounts created.');
   try { await readFile(localFile); console.log('Reusing existing ignored test account configuration.'); return; } catch (e) { if (e.code !== 'ENOENT') throw e; }

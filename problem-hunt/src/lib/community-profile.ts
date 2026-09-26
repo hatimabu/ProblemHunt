@@ -1,22 +1,23 @@
 import { supabase } from '../../lib/supabaseClient';
 import { communityError } from './supabase-community';
 
-export interface CommunityProfile { user_id:string; display_name:string; bio:string; expertise:string[]; is_public:boolean; avatar_path:string|null }
+export interface CommunityProfile { user_id:string; display_name:string; username?:string; bio:string; expertise:string[]; is_public:boolean; avatar_path:string|null }
 export interface Contribution { id:string; problem_id:string; title:string; summary:string; state:string; visibility:string; accepted:boolean; is_example:boolean; created_at:string }
 export type ContributionKind = 'problems'|'solutions'|'accepted';
-export const blankProfile = (id:string):CommunityProfile => ({user_id:id,display_name:'',bio:'',expertise:[],is_public:false,avatar_path:null});
+export const blankProfile = (id:string):CommunityProfile => ({user_id:id,display_name:'',username:'',bio:'',expertise:[],is_public:false,avatar_path:null});
 function result<T>(r:{data:T;error:unknown}):T { if(r.error)throw new Error(communityError(r.error));return r.data; }
 export const profileApi = {
- async get(id:string):Promise<CommunityProfile|null> { return result(await supabase.from('community_profiles').select('user_id,display_name,bio,expertise,is_public,avatar_path').eq('user_id',id).maybeSingle()); },
+ async get(id:string):Promise<CommunityProfile|null> { return result(await supabase.from('community_profiles').select('user_id,display_name,username,bio,expertise,is_public,avatar_path').eq('user_id',id).maybeSingle()); },
  async save(p:CommunityProfile) {
-  const fields={display_name:p.display_name.trim(),bio:p.bio.trim(),expertise:p.expertise,is_public:p.is_public,avatar_path:p.avatar_path};
+  const fields={display_name:p.display_name.trim(),username:(p.username||'').trim().toLowerCase(),bio:p.bio.trim(),expertise:p.expertise,is_public:p.is_public,avatar_path:p.avatar_path};
   const existing=await this.get(p.user_id);
   const query=existing?supabase.from('community_profiles').update(fields).eq('user_id',p.user_id):supabase.from('community_profiles').insert({user_id:p.user_id,...fields});
-  return result(await query.select().single()) as CommunityProfile;
+  const saved=await query.select().single();if(saved.error?.code==='23505')throw new Error('That username is already in use.');return result(saved) as CommunityProfile;
  },
  async contributions(id:string,kind:ContributionKind,state='',offset=0,publicOnly=true):Promise<Contribution[]> {
   return result(await supabase.rpc('community_contributions',{p_user_id:id,p_kind:kind,p_state:state,p_offset:offset,p_public:publicOnly}));
  },
+ async activeCount(id:string):Promise<number> {const r=await supabase.from('community_problems').select('id',{count:'exact',head:true}).eq('author_id',id).eq('visibility','public').eq('is_hidden',false).in('state',['open','testing']);if(r.error)throw new Error(communityError(r.error));return r.count||0;},
  async counts(id:string,publicOnly=true):Promise<{problems:number;solutions:number;accepted:number}> {
   return result(await supabase.rpc('community_contribution_counts',{p_user_id:id,p_public:publicOnly}))[0];
  },

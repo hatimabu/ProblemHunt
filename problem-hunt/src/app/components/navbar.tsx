@@ -42,7 +42,7 @@ export function Navbar() {
 
   const isActive = (path: string) => {
     if (path === "/dashboard") {
-      return location.pathname === "/dashboard" || location.pathname === "/builder-dashboard" || location.pathname === "/profile";
+      return location.pathname.startsWith("/dashboard") || location.pathname === "/my-problems" || location.pathname === "/my-solutions" || location.pathname === "/builder-dashboard" || location.pathname === "/profile";
     }
     return location.pathname === path;
   };

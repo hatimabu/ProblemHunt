@@ -486,4 +486,29 @@ await check('private avatar storage limits read/write/delete to owner or chosen 
  await actor(null,'anon');assert.equal((await q("SELECT * FROM storage.objects WHERE bucket_id='community-avatars'")).rows.length,0);
  await actor('author');assert.equal((await q("DELETE FROM storage.objects WHERE bucket_id='community-avatars' RETURNING id")).rows.length,1);
 });
+await check('usernames are unique, validated, owner-editable and private with the profile',async()=>{
+ await actor('author');await q("INSERT INTO community_profiles(username) VALUES('cloud_author')");
+ await actor('contributor');await denied("INSERT INTO community_profiles(username) VALUES('cloud_author')",'23505');await denied("INSERT INTO community_profiles(username) VALUES('BAD NAME')",'23514');
+ assert.equal((await q("UPDATE community_profiles SET username='forged' RETURNING user_id")).rows.length,0);
+ await actor(null,'anon');assert.equal((await q("SELECT username FROM community_profiles WHERE username='cloud_author'")).rows.length,0);
+});
+await check('targeted cleanup deletes exact fixtures, preserves unrelated content and restores immutable triggers',async()=>{
+ const manifest=JSON.parse(await read(new URL('../../docs/community-fixture-cleanup-manifest.json',import.meta.url)));
+ const fixture=manifest.community_problems[0];
+ await q('INSERT INTO auth.users(id,email,raw_user_meta_data) VALUES($1,$2,$3)',[fixture.author_id,'fixture@example.invalid','{"username":"cleanup_fixture","user_type":"builder"}']);
+ await q("INSERT INTO community_problems(id,author_id,category_id,title,is_example) VALUES($1,$2,$3,$4,true)",[fixture.id,fixture.author_id,category,fixture.title]);
+ const sql=(await read(new URL('../migrations/20260927000300_remove_known_community_fixtures.sql',import.meta.url))).replace(/^BEGIN;/,'').replace(/COMMIT;\s*$/,'');
+ await db.exec(sql);
+ assert.equal((await q('SELECT id FROM community_problems WHERE id=$1',[fixture.id])).rows.length,0);
+ assert.equal((await q('SELECT id FROM community_problems WHERE id=$1',[publicProblem])).rows.length,1);
+ assert.equal((await one("SELECT count(*)::int n FROM pg_trigger WHERE tgname IN ('history_immutable','moderation_events_immutable','community_reputation_immutable','community_vote_award','community_acceptance_award') AND tgenabled='O'")).n,5);
+});
+await check('fixture cleanup aborts instead of deleting a new contribution',async()=>{
+ const manifest=JSON.parse(await read(new URL('../../docs/community-fixture-cleanup-manifest.json',import.meta.url)));const fixture=manifest.community_problems[0];
+ await q('INSERT INTO auth.users(id,email,raw_user_meta_data) VALUES($1,$2,$3)',[fixture.author_id,'fixture@example.invalid','{"username":"cleanup_fixture","user_type":"builder"}']);
+ await q("INSERT INTO community_problems(id,author_id,category_id,title,symptom,environment,expected_behavior,actual_behavior,visibility,is_example) VALUES($1,$2,$3,$4,'Symptom','{\"platform\":\"test\"}','OK','Fault','public',true)",[fixture.id,fixture.author_id,category,fixture.title]);
+ await q(newSolutionSql(fixture.id));
+ const sql=(await read(new URL('../migrations/20260927000300_remove_known_community_fixtures.sql',import.meta.url))).replace(/^BEGIN;/,'').replace(/COMMIT;\s*$/,'');
+ await denied(sql,'P0001');assert.equal((await q('SELECT id FROM community_problems WHERE id=$1',[fixture.id])).rows.length,1);
+});
 await db.close();

@@ -2,7 +2,8 @@ import { PrivacyPage } from './components/community/privacy';
 import { ModeratorPage } from './components/community/moderation';
 import { ReputationPage } from './components/community/reputation';
 import { createBrowserRouter, Navigate } from "react-router";
-import { CommunityHome } from "./components/community/library";
+import { CommunityLanding } from './components/community/home';
+import { DashboardShell } from './components/community/workspace';
 import { CommunityAccountDashboard, CommunityProfilePage, MyContributions } from './components/community/account';
 import { CommunityDiscussion } from "./components/community/problem-discussion";
 import { CommunityEditor } from "./components/community/problem-editor";
@@ -14,26 +15,21 @@ import { ResetPasswordPage } from "./components/reset-password-page.tsx";
 export const router = createBrowserRouter([{path:"/privacy",Component:PrivacyPage},{ path: "/moderation", element: <ProtectedRoute><ModeratorPage /></ProtectedRoute> },
   {
     path: "/",
-    Component: CommunityHome,
+    Component: CommunityLanding,
   },
-  {
-    path: "/browse",
-    Component: CommunityDiscovery,
-  },
-  { path: "/domains/:domain", Component: CommunityDiscovery },
+  {element:<CommunityDiscovery/>,children:[{path:'/browse',element:null},{path:'/domains/:domain',element:null}]},
   {
     path: "/problem/:id",
     Component: CommunityDiscussion,
   },
   { path: "/problem/:id/edit", element: <ProtectedRoute><CommunityEditor /></ProtectedRoute> },
-  {
-    path: "/dashboard",
-    element: (
-      <ProtectedRoute>
-        <CommunityAccountDashboard />
-      </ProtectedRoute>
-    ),
-  },
+  {element:<ProtectedRoute><DashboardShell/></ProtectedRoute>,children:[
+    {path:'/dashboard',Component:CommunityAccountDashboard},
+    {path:'/my-problems',element:<MyContributions kind="problems"/>},
+    {path:'/my-solutions',element:<MyContributions kind="solutions"/>},
+    {path:'/profile',Component:CommunityProfilePage},
+    {path:'/dashboard/reputation',element:<ReputationPage embedded/>},
+  ]},
   {
     path: "/post-problem",
     element: (
@@ -46,13 +42,7 @@ export const router = createBrowserRouter([{path:"/privacy",Component:PrivacyPag
     path: "/builder-dashboard",
     element: <Navigate to="/dashboard" replace />,
   },
-  {
-    path: "/profile",
-    element: <ProtectedRoute><CommunityProfilePage /></ProtectedRoute>,
-  },
   {path:'/people/:id',Component:CommunityProfilePage},
-  {path:'/my-problems',element:<ProtectedRoute><MyContributions kind="problems"/></ProtectedRoute>},
-  {path:'/my-solutions',element:<ProtectedRoute><MyContributions kind="solutions"/></ProtectedRoute>},
   {
     path: "/leaderboard",
     Component: ReputationPage,

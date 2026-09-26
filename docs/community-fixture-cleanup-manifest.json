@@ -1,0 +1,341 @@
+{
+  "community_problems": [
+    {
+      "id": "9e2a6e3b-9f3d-4697-8322-52b68f9e8744",
+      "author_id": "65b0fa8f-0101-4b37-9c29-85f5a315cfa6",
+      "title": "[Stage 3 browser test] Unresolved case"
+    },
+    {
+      "id": "3a370580-5c30-4f34-b112-a9ebf3533af8",
+      "author_id": "65b0fa8f-0101-4b37-9c29-85f5a315cfa6",
+      "title": "[Stage 3 browser test] Audio dropouts 1790387256812"
+    },
+    {
+      "id": "07b168e3-577c-4fef-8a84-0a2a1f9d12e9",
+      "author_id": "65b0fa8f-0101-4b37-9c29-85f5a315cfa6",
+      "title": "Fictional automated reputation scoring fixture"
+    },
+    {
+      "id": "52a755ad-eec3-4326-b9e7-60a5b3f6793d",
+      "author_id": "65b0fa8f-0101-4b37-9c29-85f5a315cfa6",
+      "title": "[Stage 3 API test] Gateway timeout 1790375906457"
+    },
+    {
+      "id": "f3b10fae-e602-42b5-a749-127cee637468",
+      "author_id": "65b0fa8f-0101-4b37-9c29-85f5a315cfa6",
+      "title": "[Stage 3 API test] Unresolved draft"
+    },
+    {
+      "id": "489f065e-e409-4a21-9200-40b8490b6367",
+      "author_id": "65b0fa8f-0101-4b37-9c29-85f5a315cfa6",
+      "title": "[Stage 3 browser test] Audio dropouts 1790376238626"
+    },
+    {
+      "id": "26ab3477-4ed6-484b-a3f6-5832c79ea4c1",
+      "author_id": "65b0fa8f-0101-4b37-9c29-85f5a315cfa6",
+      "title": "[Stage 3 browser test] Audio dropouts 1790379895606"
+    },
+    {
+      "id": "fccbafe3-6d43-480c-bb30-4f64a8cba7d6",
+      "author_id": "65b0fa8f-0101-4b37-9c29-85f5a315cfa6",
+      "title": "[Stage 3 browser test] Unresolved case"
+    },
+    {
+      "id": "91ed1a62-6ea0-4ed7-aff9-f440fdcd1800",
+      "author_id": "65b0fa8f-0101-4b37-9c29-85f5a315cfa6",
+      "title": "[Stage 3 API test] Gateway timeout 1790380165403"
+    },
+    {
+      "id": "d466d36e-cd47-408f-b7fc-96f3b17a10f3",
+      "author_id": "65b0fa8f-0101-4b37-9c29-85f5a315cfa6",
+      "title": "[Stage 3 API test] Unresolved draft"
+    },
+    {
+      "id": "81f57013-16c4-4e4b-9c1d-02e492dfb330",
+      "author_id": "65b0fa8f-0101-4b37-9c29-85f5a315cfa6",
+      "title": "[Stage 3 browser test] Audio dropouts 1790380203630"
+    },
+    {
+      "id": "cafd30b4-48db-49de-ab72-e8cf7e6a0385",
+      "author_id": "65b0fa8f-0101-4b37-9c29-85f5a315cfa6",
+      "title": "[Stage 3 browser test] Unresolved case"
+    },
+    {
+      "id": "9270451e-cb77-4470-a8b5-4541a4f6c89a",
+      "author_id": "65b0fa8f-0101-4b37-9c29-85f5a315cfa6",
+      "title": "[Example] Digital mixer clicks when an interface uses a different clock"
+    },
+    {
+      "id": "538184ae-539b-42af-a4f6-b9e3d535b6a5",
+      "author_id": "65b0fa8f-0101-4b37-9c29-85f5a315cfa6",
+      "title": "[Example] CI job cannot locate a generated configuration file"
+    },
+    {
+      "id": "7b8fe971-f316-4a55-a195-de8f38a89856",
+      "author_id": "65b0fa8f-0101-4b37-9c29-85f5a315cfa6",
+      "title": "[Pilot test] Reputation reversals"
+    },
+    {
+      "id": "fe527d61-7f9e-4fa2-8300-fb70a91fcb0d",
+      "author_id": "65b0fa8f-0101-4b37-9c29-85f5a315cfa6",
+      "title": "[Stage 3 browser test] Audio dropouts 1790416868250"
+    },
+    {
+      "id": "5770c562-85df-4021-9ad7-3a8dec1a2858",
+      "author_id": "65b0fa8f-0101-4b37-9c29-85f5a315cfa6",
+      "title": "[Stage 3 browser test] Audio dropouts 1790422035567"
+    },
+    {
+      "id": "c1502d2d-6dbd-4096-98bc-880463a968f3",
+      "author_id": "65b0fa8f-0101-4b37-9c29-85f5a315cfa6",
+      "title": "[Stage 3 browser test] Unresolved case"
+    },
+    {
+      "id": "6300c272-23c5-4ba1-864a-a096089c3f45",
+      "author_id": "65b0fa8f-0101-4b37-9c29-85f5a315cfa6",
+      "title": "[Example] NGINX returns 502 after an application port change"
+    },
+    {
+      "id": "64aa7409-e2d6-4155-884e-ed07f16fd629",
+      "author_id": "65b0fa8f-0101-4b37-9c29-85f5a315cfa6",
+      "title": "[Stage 3 browser test] Unresolved case"
+    }
+  ],
+  "community_solutions": [
+    {
+      "id": "cbf4d7b6-055b-492e-b7f0-db69aaa7fcaf"
+    },
+    {
+      "id": "0662927a-af99-498f-9661-92a654c3ae58"
+    },
+    {
+      "id": "a7c21f68-4c0f-4026-abc8-89f525491208"
+    },
+    {
+      "id": "2ad837f6-8844-4953-902c-68e1d6f14873"
+    },
+    {
+      "id": "8d4d59c0-a3fa-448c-8549-8a8961b081e8"
+    },
+    {
+      "id": "9b6a4891-f4ef-482d-b44e-10752341d81d"
+    },
+    {
+      "id": "0e8e7a5c-f06c-4fe8-8bb9-35bef806baf1"
+    },
+    {
+      "id": "e130b8f5-fc8d-4105-b354-c5156acafa12"
+    },
+    {
+      "id": "5d9e2a23-fe8a-493e-8530-cf8e9acd8d1c"
+    },
+    {
+      "id": "c701c5dd-b9ad-4476-9979-353a47c04f85"
+    },
+    {
+      "id": "f028589d-8c29-4af8-8c06-9fa1efd6e30d"
+    },
+    {
+      "id": "47df7487-9d68-4c54-b958-e05e08ed7b51"
+    },
+    {
+      "id": "b72b635e-5a0c-4c04-85cd-dce3f10efa81"
+    }
+  ],
+  "community_comments": [
+    {
+      "id": "d91f54a5-5980-4269-90aa-8d48ec42e636"
+    },
+    {
+      "id": "8b0dae63-7112-4256-a8aa-cd7c068b5376"
+    },
+    {
+      "id": "2f085edd-d492-4c9a-b19a-3a89f2f62817"
+    },
+    {
+      "id": "61fcf4b8-bc76-4184-ae6a-fd31fc10a4d3"
+    },
+    {
+      "id": "b4d8f473-61ce-43ce-bce8-d87f9bba020f"
+    },
+    {
+      "id": "dfeb0925-b071-471c-a31e-a945011cedd0"
+    },
+    {
+      "id": "614f3217-a0e1-4fca-b83d-300a4d01ae89"
+    },
+    {
+      "id": "ff83ccce-e8bb-4eb8-bb71-5c998ba9a476"
+    },
+    {
+      "id": "e034785b-83aa-4e30-b9ee-fabaa54cdfd8"
+    },
+    {
+      "id": "b35cc228-9c94-47c3-bf31-f1abbd0c39d1"
+    },
+    {
+      "id": "527aa027-ea78-417e-8d28-2adcd930a660"
+    },
+    {
+      "id": "63433227-af8a-4bda-819f-140a62f82f3d"
+    },
+    {
+      "id": "917abde9-f747-4ffd-813a-a52533a54552"
+    },
+    {
+      "id": "efbcb2e5-0cdc-4add-9ba4-e4b2df08130f"
+    },
+    {
+      "id": "dfc61113-547a-4e98-bcb8-a9f79cb38085"
+    },
+    {
+      "id": "16bfb631-49be-425e-aa3f-d9edc85c84b2"
+    },
+    {
+      "id": "895ceb52-7c2c-4fb5-a5d5-9003171c3c39"
+    },
+    {
+      "id": "8526ffd2-f21b-4118-8d30-fc96778d3ffe"
+    }
+  ],
+  "community_solution_votes": [],
+  "community_reports": [
+    {
+      "id": "ff9b48c9-79a5-40b9-ac4d-5d1f0d27014e"
+    },
+    {
+      "id": "48e3b41b-96dd-437a-b135-ff8c894ee2f0"
+    },
+    {
+      "id": "d35830ff-114e-46cc-93ba-1af9a963f247"
+    },
+    {
+      "id": "c8917c97-3c0d-4770-a077-dcbcfc398a23"
+    },
+    {
+      "id": "a8bcc4b8-f04c-4fe8-b57a-7a3d9c2ba779"
+    },
+    {
+      "id": "0dea4915-4fe4-41a0-bd7a-9eb4582cfa4f"
+    },
+    {
+      "id": "93eace0f-c77d-45eb-a029-21f1ef26a5ee"
+    }
+  ],
+  "community_report_reviews": [
+    {
+      "report_id": "ff9b48c9-79a5-40b9-ac4d-5d1f0d27014e"
+    },
+    {
+      "report_id": "d35830ff-114e-46cc-93ba-1af9a963f247"
+    },
+    {
+      "report_id": "93eace0f-c77d-45eb-a029-21f1ef26a5ee"
+    }
+  ],
+  "community_moderation_events": [
+    {
+      "id": "2031d607-19a5-4cea-acda-e2fd25bd5003"
+    },
+    {
+      "id": "a71062ac-1e57-40fb-8708-6716b28a9e64"
+    },
+    {
+      "id": "6809a433-132a-4f7f-80e4-cb9b055a79fa"
+    },
+    {
+      "id": "76e2d6b0-542f-43ff-8757-828c2459c2f7"
+    },
+    {
+      "id": "21714bdf-10bc-4e38-b66e-fe567dc9f84a"
+    },
+    {
+      "id": "549dbc90-e349-4458-a1e8-3c70029bec0f"
+    }
+  ],
+  "community_acceptance_history": [
+    {
+      "id": "a7987602-a8e4-4bdf-862a-e0959db29a19"
+    },
+    {
+      "id": "de4a2c7d-ae8d-4368-941c-70960d09207c"
+    },
+    {
+      "id": "b2c08204-6938-4a2d-9c35-720d2bafc17a"
+    },
+    {
+      "id": "bfc2c5ad-733f-4bfc-8f13-b2c6b36f1759"
+    },
+    {
+      "id": "f39438f8-c6a1-4d50-bebf-41894d3b1257"
+    },
+    {
+      "id": "9638aa41-6fbc-4a19-b3bc-58fdd0c82b6c"
+    },
+    {
+      "id": "36697ad7-de3f-40ab-8a72-284ba3373c19"
+    },
+    {
+      "id": "e4349aca-9813-4807-8006-8f53f91143ff"
+    },
+    {
+      "id": "7f48df5a-3d87-471e-bc6d-fc2ef92ef618"
+    },
+    {
+      "id": "e86b23c0-130c-41b4-bba9-7f1241020c87"
+    },
+    {
+      "id": "69b61598-619f-484f-8ba8-cca7979c8843"
+    },
+    {
+      "id": "941e1f4f-5ce4-449a-b876-a4376d527890"
+    },
+    {
+      "id": "fe64f6ab-0508-4bf2-bb40-0c34ea8e3a7d"
+    },
+    {
+      "id": "f088224c-aa18-4fb0-969f-7a497b5c14bb"
+    },
+    {
+      "id": "2385be5f-d599-4f3c-8d07-370c3daee0f6"
+    },
+    {
+      "id": "8e1e4dd1-e697-4a49-878c-8253d0b2fabd"
+    },
+    {
+      "id": "e6d1f716-97d6-4796-8ad6-0ffcc894b0e5"
+    },
+    {
+      "id": "477755e4-f111-4840-9035-fa7c51b98cba"
+    },
+    {
+      "id": "985ae240-5b15-4960-ba10-31ab892dabd4"
+    }
+  ],
+  "community_reputation_events": [
+    {
+      "id": "fba196ba-e864-49f3-a60d-6f6be480b6e5"
+    },
+    {
+      "id": "7fe18454-2e48-4272-9668-06429a1fae7e"
+    },
+    {
+      "id": "73c22bbe-d1c2-41b9-9e22-ad5d9462e512"
+    },
+    {
+      "id": "1e6afbf6-ea37-46b2-a8ba-fb009fe44c9c"
+    },
+    {
+      "id": "715f4542-2424-4134-823b-bba0e1e14d9b"
+    },
+    {
+      "id": "3bfa6d27-3b00-495d-a658-b5e093dc1cb2"
+    },
+    {
+      "id": "3fabe5ef-d174-4e1e-aba8-16f4e11065fe"
+    },
+    {
+      "id": "0161ff4a-21d9-4110-9188-cd43bac0ab02"
+    }
+  ]
+}

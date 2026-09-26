@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { Fragment, useEffect, useState, type FormEvent } from 'react';
 import { Link } from 'react-router';
 import { useAuth } from '../../contexts/AuthContext';
 import { communityApi, communityError } from '../../../lib/supabase-community';
@@ -24,10 +24,10 @@ export function AcceptanceHistory({id,version}:{id:string;version:string}){
  useEffect(()=>{let active=true;(async()=>{try{const r=await communityApi.history(id);if(active)setRows(r);}catch(e){if(active)setError(communityError(e));}})();return()=>{active=false;};},[id,version]);
  return <section aria-label="Acceptance history">{rows.length>0&&<><h2>Acceptance history</h2>{rows.map(r=><details key={r.id}><summary>{r.action==='accepted'?'Author accepted':'Acceptance withdrawn'} · {new Date(r.created_at).toLocaleDateString()}</summary><p>{r.reason}</p><p>Previous observation: {r.observation}</p><p>Verification: {r.verification}</p></details>)}</>}{error&&<p>Acceptance history is unavailable. Refresh to retry.</p>}</section>;
 }
-export function ReputationPage(){
+export function ReputationPage({embedded=false}:{embedded?:boolean}){ const Frame=embedded?Fragment:CommunityLayout;const Title=embedded?"h2":"h1";
  const {user}=useAuth();const [data,setData]=useState<{rows:Awaited<ReturnType<typeof communityApi.reputation>>;categories:Record<string,string>;ledger:Awaited<ReturnType<typeof communityApi.ledger>>}|null>(null),[error,setError]=useState(''),[retry,setRetry]=useState(0);
  useEffect(()=>{let active=true;setData(null);setError('');(async()=>{try{const [rows,t,ledger]=await Promise.all([communityApi.reputation(),communityApi.taxonomy(),user?communityApi.ledger():Promise.resolve([])]);if(active)setData({rows,categories:Object.fromEntries(t.categories.map(c=>[c.id,c.name])),ledger});}catch(e){if(active)setError(communityError(e));}})();return()=>{active=false;};},[user?.id,retry]);
- return <CommunityLayout><h1>Category reputation</h1><p>+2 for an upvote and +10 for author acceptance. Removing a vote or acceptance reverses its award. Examples earn no points. Reputation reflects community activity, not professional certification.</p>
+ return <Frame><Title>Category reputation</Title><p>+2 for an upvote and +10 for author acceptance. Removing a vote or acceptance reverses its award. Examples earn no points. Reputation reflects community activity, not professional certification.</p>
  {error?<ErrorNotice error={error} retry={()=>setRetry(n=>n+1)}/>:!data?<p role="status">Loading reputation…</p>:<><h2>Public contributions</h2>{!data.rows.length?<p>No reputation awards yet.</p>:<ul>{data.rows.map(r=><li key={`${r.user_id}:${r.category_id}`}>Contributor {r.user_id.slice(0,8)} · {data.categories[r.category_id]}: {r.points} points</li>)}</ul>}{user&&<><h2>Your event history</h2><p>Latest 100 events, including compensating reversals. Public totals include only currently public cases.</p>{!data.ledger.length?<p>No events yet.</p>:<ul>{data.ledger.map(e=><li key={e.id}>{data.categories[e.category_id]} · {e.reason.replaceAll('_',' ')}: {e.points>0?'+':''}{e.points}</li>)}</ul>}</>}</>}
- </CommunityLayout>;
+ </Frame>;
 }

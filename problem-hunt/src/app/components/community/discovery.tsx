@@ -1,12 +1,14 @@
+import {RouteTabs} from './route-tabs';
+import {Layers3,Cloud,AudioLines} from 'lucide-react';
 import { recordPilotMetric } from '../../../lib/pilot-privacy';
 import { useEffect, useState, type FormEvent } from 'react';
-import { Link, useParams, useSearchParams } from 'react-router';
+import { Link, useMatch, useSearchParams } from 'react-router';
 import { communityApi, communityError } from '../../../lib/supabase-community';
 import type { CommunityCategory, CommunityDomain, CommunityProblem } from '../../../lib/community';
 import { CommunityLayout, ErrorNotice, ProblemList } from './shared';
 
 export function CommunityDiscovery() {
-  const { domain = '' } = useParams();
+  const domain = useMatch('/domains/:domain')?.params.domain || '';
   const [params, setParams] = useSearchParams();
   const query = params.get('q') || '', category = params.get('category') || '', tag = params.get('tag') || '', state = params.get('state') || '';
   const page = Math.min(501, Math.max(1, Number.parseInt(params.get('page') || '1',10) || 1));
@@ -28,11 +30,12 @@ export function CommunityDiscovery() {
     if (value) next.set(name,value); else next.delete(name); setParams(next);
   }
   function submit(e: FormEvent) { e.preventDefault(); recordPilotMetric('searches'); update('q',input.trim()); }
+  function domainLink(slug:string){const next=new URLSearchParams(params);next.delete('category');next.delete('page');const path=slug?`/domains/${slug}`:'/browse';return path+(next.size?'?'+next.toString():'');}
   const selectedDomain = taxonomy.domains.find(d => d.slug === domain);
   const current = result?.key === key ? result : null;
   const invalidDomain = domain && !['cloud-devops','professional-av'].includes(domain);
   return <CommunityLayout title={selectedDomain?.name || 'Search the knowledge library'} indexable={!!domain && !invalidDomain && !query && !tag && !category && !state}>
-    <nav aria-label="Knowledge domains" className="community-actions"><Link to="/browse">All domains</Link><Link to="/domains/cloud-devops">Cloud / DevOps</Link><Link to="/domains/professional-av">Professional AV</Link></nav>
+    <RouteTabs label="Knowledge domains" items={[{label:"All domains",to:domainLink(""),active:!domain,icon:Layers3},{label:"Cloud / DevOps",to:domainLink("cloud-devops"),active:domain==="cloud-devops",icon:Cloud},{label:"Professional AV",to:domainLink("professional-av"),active:domain==="professional-av",icon:AudioLines}]}/>
     <h1>{invalidDomain ? 'Domain unavailable' : selectedDomain?.name || 'Search the knowledge library'}</h1>
     <p>Find symptoms, products and tags. Solved cases show what the author tested and confirmed; proposed answers still need testing.</p>
     {!invalidDomain && <><form onSubmit={submit} role="search" className="board-panel community-card">

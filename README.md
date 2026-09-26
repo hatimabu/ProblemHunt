@@ -69,7 +69,10 @@ Any static host is compatible as long as it serves the `problem-hunt/dist/` outp
 - `/browse` — public search and filters
 - `/problem/:id` — discussion and tested evidence; `#solution-:id` links to an answer
 - `/post-problem` — structured drafts and publication
-- `/dashboard` — own problems and drafts
+- `/dashboard` — persistent community workspace, overview and contribution links
+- `/my-problems`, `/my-solutions` — own problems/drafts and submitted answers
+- `/profile`, `/people/:id` — private account editing and public community profile
+- `/dashboard/reputation` — own category reputation and event history
 - `/leaderboard` — category reputation and own event history
 - `/auth` — Supabase authentication
 
@@ -78,5 +81,7 @@ Any static host is compatible as long as it serves the `problem-hunt/dist/` outp
 The browser uses the Supabase publishable/anon key. Authorization depends on Supabase Auth, RLS and versioned SQL RPCs. The audit documents current policy gaps; frontend tests do not prove database authorization. Never place `SUPABASE_SERVICE_ROLE_KEY`, database credentials or private RPC provider credentials in frontend variables or Git. Every `VITE_*` value is public in the built bundle.
 
 ## Community release review
+
+Start with [current project state](docs/PROJECT_STATE.md) and [release checklist](docs/RELEASE_CHECKLIST.md). These supersede historical runbook counts and fixture status. The public library has been cleared of the explicitly approved synthetic cases; future synthetic write tests require an isolated project.
 
 See [release report](docs/community-release-report.md), [pilot checklist](docs/pilot-tester-checklist.md), and stage runbooks 2–7. The existing hosted project was explicitly authorized for this transformation; normal setup should still use an isolated project. Run database tests with `npm test --prefix supabase/tests`. Never reset the hosted project. Deployment remains manual and does not provision resources or apply migrations.
