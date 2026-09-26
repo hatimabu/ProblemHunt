@@ -32,6 +32,28 @@ export function safeSourceUrl(value: string): string | null {
 
 export function createCommunityApi(client: SupabaseClient) {
   return {
+    async voteInfo(problemId: string, solutionId: string, signedIn: boolean) {
+      const counts = await client.rpc('community_solution_vote_counts', { p_problem_id: problemId }); fail(counts.error);
+      let voted = false;
+      if (signedIn) { const v = await client.from('community_solution_votes').select('solution_id').eq('solution_id',solutionId); fail(v.error); voted = !!v.data?.length; }
+      return { count: Number(counts.data?.find((v: { solution_id: string }) => v.solution_id === solutionId)?.upvotes || 0), voted };
+    },
+    async vote(solutionId: string, remove: boolean) {
+      const r = remove ? await client.from('community_solution_votes').delete().eq('solution_id',solutionId) : await client.from('community_solution_votes').insert({ solution_id: solutionId });
+      fail(r.error);
+    },
+    async reverse(id: string, reason: string) {
+      const r = await client.rpc('community_reverse_acceptance', { p_problem_id: id, p_reason: reason }); fail(r.error); return required(r.data) as CommunityProblem;
+    },
+    async history(id: string) {
+      const r = await client.from('community_acceptance_history').select('id,action,reason,observation,verification,created_at').eq('problem_id',id).order('created_at'); fail(r.error); return r.data || [];
+    },
+    async reputation(userId?: string) {
+      const r = await client.rpc('community_reputation', { p_user_id: userId || null }); fail(r.error); return (r.data || []) as { user_id: string; category_id: string; points: number }[];
+    },
+    async ledger() {
+      const r = await client.from('community_reputation_events').select('id,category_id,reason,points,created_at').order('created_at',{ascending:false}).limit(100); fail(r.error); return r.data || [];
+    },
     async search(filters: { query?: string; domain?: string; category?: string; tag?: string; state?: string; page?: number }) {
       const { data, error } = await client.rpc('community_search', {
         p_query: filters.query || '', p_domain: filters.domain || '', p_category: filters.category || '',

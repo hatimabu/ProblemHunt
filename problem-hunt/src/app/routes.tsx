@@ -1,3 +1,4 @@
+import { ReputationPage } from './components/community/reputation';
 import { createBrowserRouter, Navigate } from "react-router";
 import { CommunityHome, CommunityLibrary, CommunityDashboard } from "./components/community/library";
 import { CommunityDiscussion } from "./components/community/problem-discussion";
@@ -48,7 +49,7 @@ export const router = createBrowserRouter([
   },
   {
     path: "/leaderboard",
-    element: <Navigate to="/browse" replace />,
+    Component: ReputationPage,
   },
   {
     path: "/auth",

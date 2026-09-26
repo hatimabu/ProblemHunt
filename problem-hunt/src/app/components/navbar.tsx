@@ -8,7 +8,7 @@ import { BrandLogo } from "./brand-logo";
 
 const CORE_NAV_LINKS = [
   { path: "/", label: "Home" },
-  { path: "/browse", label: "Browse" },
+  { path: "/browse", label: "Browse" }, { path: "/leaderboard", label: "Reputation" },
   { path: "/post-problem", label: "Post a problem" },
 ];
 

@@ -1,3 +1,4 @@
+import { VoteControl, ReverseAcceptance, AcceptanceHistory } from './reputation';
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useLocation, useParams } from 'react-router';
 import { useAuth } from '../../contexts/AuthContext';
@@ -82,8 +83,8 @@ function Discussion({ id, userId }: { id: string; userId?: string }) {
         : <><p>Close this discussion without a confirmed fix?</p><button disabled={busy} onClick={() => void changeState('closed')}>Confirm close</button><button disabled={busy} onClick={() => setConfirmClose(false)}>Keep open</button></>}
     </div>}
     {problem.state === 'closed' && <p className="community-notice">This discussion is closed without a confirmed fix.</p>}
-    <h2 className="community-stack">Proposed solutions ({solutions.length})</h2>
-    <VoteSummary problemId={id} solutions={solutions} />
+    <AcceptanceHistory id={id} version={problem.updated_at} />{owner && problem.state === 'solved' && <ReverseAcceptance problem={problem} onReversed={setProblem} />}<h2 className="community-stack">Proposed solutions ({solutions.length})</h2>
+    <p>Accepted means the author confirmed a fix. Community upvotes indicate usefulness, not verification.</p>
     {!solutions.length && <p>No solutions yet.{eligible && !owner ? ' Share a diagnosis and steps to verify it.' : ''}</p>}
     <div className="community-stack">{ordered.map(s => <SolutionCard key={s.id} solution={s} problem={problem} userId={userId}
       comments={comments.filter(c => c.solution_id === s.id)} onComment={c => setComments(prev => [...prev, c])}
@@ -159,7 +160,7 @@ function SolutionCard({ solution: s, problem, userId, comments, onComment, onAcc
   return <article id={`solution-${s.id}`} className={`board-panel community-card ${accepted ? 'community-confirmed' : ''}`}>
     <p className="community-muted">{contributorLabel(s.author_id, problem.author_id, userId)}{accepted ? ' · Accepted by the author' : ' · Proposed solution'}</p>
     <Link to={`/problem/${problem.id}#solution-${s.id}`}>Link to this solution</Link>
-    <h3>{s.diagnosis}</h3><ol>{s.steps.map((step,i) => <li key={i}>{step}</li>)}</ol>
+    <VoteControl problemId={problem.id} solutionId={s.id} own={s.author_id === userId} signedIn={!!userId} closed={problem.state === 'closed'} /><h3>{s.diagnosis}</h3><ol>{s.steps.map((step,i) => <li key={i}>{step}</li>)}</ol>
     <h3>Reasoning</h3><p className="community-copy">{s.reasoning}</p>
     <h3>Verification method</h3><p className="community-copy">{s.verification_method}</p>
     {s.observations && <p className="community-copy">{s.observations}</p>}

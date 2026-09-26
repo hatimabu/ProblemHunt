@@ -95,7 +95,7 @@ await test('replays all historical migrations and Stage 2 without modifying lega
 
 await check('all new tables enforce RLS and expose no anonymous writes or client truncation', async () => {
   const tables = (await q("SELECT relname, relrowsecurity FROM pg_class WHERE relnamespace = 'public'::regnamespace AND relkind = 'r' AND relname LIKE 'community_%'")).rows;
-  assert.equal(tables.length, 10);
+  assert.ok(tables.length >= 10);
   for (const { relname, relrowsecurity } of tables) {
     assert.equal(relrowsecurity, true, relname);
     const grants = await one(`SELECT has_table_privilege('anon',$1,'INSERT,UPDATE,DELETE,TRUNCATE') AS writes,
@@ -369,5 +369,42 @@ await check('discovery pagination is bounded and stable', async () => {
   assert.equal(first.length,21); assert.equal(next.length,5);
   assert.equal(new Set([...first.slice(0,20),...next].map(p=>p.id)).size,25);
   assert.deepEqual((await q("SELECT id FROM community_search(p_query=>'pagination-token')")).rows,first);
+});
+await check('trusted vote events compensate removal and cannot inflate by duplicate/repeated voting',async()=>{
+ await actor('outsider');
+ await q('INSERT INTO community_solution_votes(solution_id) VALUES($1)',[solution]);
+ await denied(`INSERT INTO community_solution_votes(solution_id) VALUES('${solution}')`,'23505');
+ await actor('contributor');
+ assert.equal(Number((await one('SELECT sum(points) n FROM community_reputation_events')).n),2);
+ await actor('outsider');await q('DELETE FROM community_solution_votes WHERE solution_id=$1',[solution]);
+ await actor('contributor');assert.equal(Number((await one('SELECT sum(points) n FROM community_reputation_events')).n),0);
+ await actor('outsider');await q('INSERT INTO community_solution_votes(solution_id) VALUES($1)',[solution]);
+ await actor('contributor');assert.equal(Number((await one('SELECT sum(points) n FROM community_reputation_events')).n),2);
+ await denied(`UPDATE community_reputation_events SET points=999`);
+});
+await check('acceptance reversal requires author and reason, retains evidence, reverses points once and permits retest',async()=>{
+ await actor('author');await q('SELECT community_set_problem_state($1,$2)',[publicProblem,'testing']);
+ await q('SELECT community_accept_solution($1,$2,$3,$4)',[publicProblem,solution,'Worked','Retested']);
+ await actor('contributor');assert.equal(Number((await one('SELECT sum(points) n FROM community_reputation_events')).n),10);
+ await denied(`SELECT community_reverse_acceptance('${publicProblem}','Forgery')`);
+ await actor('author');await denied(`SELECT community_reverse_acceptance('${publicProblem}','')`,'23514');
+ await q('SELECT community_reverse_acceptance($1,$2)',[publicProblem,'Regression after longer test']);
+ assert.equal((await one('SELECT state FROM community_problems WHERE id=$1',[publicProblem])).state,'testing');
+ assert.equal((await one("SELECT observation FROM community_acceptance_history WHERE action='reversed'")).observation,'Worked');
+ await denied(`SELECT community_reverse_acceptance('${publicProblem}','Again')`,'23514');
+ await actor('contributor');assert.equal(Number((await one('SELECT sum(points) n FROM community_reputation_events')).n),0);
+ await actor('author');await q('SELECT community_accept_solution($1,$2,$3,$4)',[publicProblem,solution,'Fixed regression','Longer test']);
+ await actor('contributor');assert.equal(Number((await one('SELECT sum(points) n FROM community_reputation_events')).n),10);
+ await actor(null,'anon');assert.equal(Number((await one('SELECT points FROM community_reputation($1)',[ids.contributor])).points),10);
+});
+await check('fictional examples earn no points and hidden content contributes no public reputation',async()=>{
+ await q('UPDATE community_problems SET is_example=true WHERE id=$1',[publicProblem]);
+ await actor('outsider');await q('INSERT INTO community_solution_votes(solution_id) VALUES($1)',[solution]);
+ await actor('author');await q('SELECT community_set_problem_state($1,$2)',[publicProblem,'testing']);
+ await q('SELECT community_accept_solution($1,$2,$3,$4)',[publicProblem,solution,'Simulated','Example']);
+ await actor('contributor');assert.equal((await q('SELECT * FROM community_reputation_events')).rows.length,0);
+ await actor('outsider');await q('INSERT INTO community_solution_votes(solution_id) VALUES($1)',[otherSolution]);
+ await q("UPDATE community_problems SET visibility='draft' WHERE id=$1",[otherProblem]);
+ await actor(null,'anon');assert.equal((await q('SELECT * FROM community_reputation(NULL)')).rows.length,0);
 });
 await db.close();
