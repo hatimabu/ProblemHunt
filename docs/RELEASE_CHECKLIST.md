@@ -8,6 +8,7 @@ Current checkpoint: 2026-09-26, `feature/community-knowledge-platform`. Read PRO
 - [x] Landing page, persistent browse/workspace shells, keyboard focus and reduced motion.
 - [x] Follow-up polish: problem HUNT word order/float, smaller domain tabs, clickable profile card, redundant summary removal and hidden skip-link layout fix. Frontend tests and build pass; no database changes.
 - [x] Dashboard follow-up: removed the redundant My profile tab and the identity card's lime hover treatment; profile editing remains available through the identity card. Frontend component tests, TypeScript and production build pass; no database changes.
+- [x] Dashboard navigation follow-up: moved the five workspace links directly below the dashboard summary and above the identity/sidebar and content panels. Frontend component tests, TypeScript and production build pass; no database changes.
 - [x] Stronger HUNT motion, distinct icon colors, redesigned identity card and avatar URL renewal/recovery. 54 frontend tests, TypeScript and build pass; both existing avatar objects resolve in read-only Storage inspection. Confirm the affected user's picture in their active session; that session was not available for reproduction.
 - [x] Username validation/uniqueness, private account view; existing avatar ownership retained.
 - [x] 53 frontend tests, TypeScript, production build; 35 disposable database scenarios.
