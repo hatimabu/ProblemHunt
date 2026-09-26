@@ -66,7 +66,6 @@
 .workspace-stat-detail { font-size:.6rem; color:#a0afb7; }
 .workspace-grid { display:grid; grid-template-columns:280px minmax(0,1fr); gap:1.2rem; align-items:start; margin-top:1.2rem; }
 .community-page .workspace-profile-link { display:block; border-radius:.7rem; text-decoration:none; color:inherit; }
-.workspace-profile-link:hover .community-card { border-color:#b8f34a; }
 .community-tabs[aria-label="Knowledge domains"] { align-items:center; }
 .community-page .community-tabs[aria-label="Knowledge domains"] .community-tab:not(:first-child) { font-size:.78rem; padding:.45rem .65rem; }
 .community-tabs[aria-label="Knowledge domains"] .community-tab:not(:first-child) .community-icon { width:1.8rem; height:1.8rem; }

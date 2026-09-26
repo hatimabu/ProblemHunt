@@ -14,7 +14,7 @@ React/Vite uses React Router and Supabase Auth, RLS/RPC, Postgres and Storage di
 
 - `/`: problem HUNT hero; only HUNT links to browse, with a gentle floating animation (disabled for reduced motion). Domain and workflow sections, no feed.
 - `/browse` and `/domains/:domain`: persistent navigation/search shell, category/tag/state filters.
-- `/dashboard`, `/my-problems`, `/my-solutions`, `/profile`, `/dashboard/reputation`: persistent workspace header, clickable identity card and six tabs. Redundant upper summary cards and the separate edit-profile link have been removed. Accepted fixes use `/my-solutions?accepted=1`.
+- `/dashboard`, `/my-problems`, `/my-solutions`, `/profile`, `/dashboard/reputation`: persistent workspace header, clickable identity card and five tabs. The identity card is the sole dashboard route to profile editing; its hover state no longer adds a lime shine/border, while its existing behavior remains. Redundant upper summary cards and the separate edit-profile tab have been removed. Accepted fixes use `/my-solutions?accepted=1`.
 - `/people/:id`: intended public profile view. `/problem/:id`: existing discussion, evidence and confirmed fix journey.
 - Tips is visibly planned and disabled. Tips/payments, Docker and grounded AI remain deferred.
 
@@ -40,5 +40,7 @@ No merge, Azure deployment or domain change was made. Azure routing/headers, pro
 ## Next task
 
 Latest visual/avatar follow-up: HUNT now rises 14px with a slight tilt/scale on a two-second cycle; domain and workflow icons have distinct accents. The clickable identity card uses a blue treatment, clear name/username hierarchy and contained avatar status. Avatar signed URLs refresh every 45 seconds and on focus/tab return. Read-only Storage inspection found both referenced files present and downloadable; the exact screenshot failure was not reproduced in that user's session. Recovery is covered by a component regression test. No Storage policies or hosted data changed.
+
+Dashboard follow-up: removed the redundant My profile workspace tab because the identity card already links to `/profile`; removed its lime hover treatment. Frontend component tests, TypeScript and production build pass; no database or hosted changes.
 
 Review the visual milestone, configure an isolated Supabase test project and rerun the complete write journey on the release candidate. Resolve operational release gates before requesting approval to merge and deploy to the existing Azure resource. Keep `problemhunt.cc` unchanged until explicitly approved.
