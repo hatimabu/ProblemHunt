@@ -26,7 +26,6 @@ function Discussion({ id, userId }: { id: string; userId?: string }) {
   const [actionError, setActionError] = useState('');
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
-  const [confirmClose, setConfirmClose] = useState(false);
   useEffect(() => {
     if (!loading && /^#solution-[a-zA-Z0-9-]+$/.test(hash)) document.getElementById(hash.slice(1))?.scrollIntoView?.();
   }, [loading, hash]);
@@ -42,9 +41,9 @@ function Discussion({ id, userId }: { id: string; userId?: string }) {
     return () => { active = false; };
   }, [id, retry]);
 
-  async function changeState(state: 'testing' | 'closed') {
+  async function changeState(state: 'open' | 'testing') {
     setBusy(true); setActionError(''); setMessage('');
-    try { setProblem(await communityApi.state(id, state)); setConfirmClose(false); setMessage(state === 'testing' ? 'Marked as Testing. Record your observations below.' : 'Closed without a confirmed fix.'); }
+    try { setProblem(await communityApi.state(id, state)); setMessage(state === 'testing' ? 'Marked as Testing. Record your observations below.' : 'Testing stopped. This problem is Open again.'); }
     catch (e) { setActionError(communityError(e)); } finally { setBusy(false); }
   }
   if (loading) return <CommunityLayout><p role="status">Loading discussion…</p></CommunityLayout>;
@@ -80,10 +79,10 @@ function Discussion({ id, userId }: { id: string; userId?: string }) {
       <div className="community-actions">{problem.tags.map(tag => <Link key={tag} to={`/browse?tag=${encodeURIComponent(tag)}`}>#{tag}</Link>)}</div>
     </section>
     {actionError && <ErrorNotice error={actionError} />}{message && <p role="status">{message}</p>}
-    {owner && problem.state !== 'solved' && problem.state !== 'closed' && <div className="community-actions">
-      {eligible && problem.state !== 'testing' && <button disabled={busy} onClick={() => void changeState('testing')}>Mark as Testing</button>}
-      {!confirmClose ? <button disabled={busy} onClick={() => setConfirmClose(true)}>Close unresolved problem</button>
-        : <><p>Close this discussion without a confirmed fix?</p><button disabled={busy} onClick={() => void changeState('closed')}>Confirm close</button><button disabled={busy} onClick={() => setConfirmClose(false)}>Keep open</button></>}
+    {owner && eligible && <div className="community-actions">
+      {problem.state === 'testing'
+        ? <button disabled={busy} onClick={() => void changeState('open')}>Stop testing — return to Open</button>
+        : <button disabled={busy} onClick={() => void changeState('testing')}>Mark as Testing</button>}
     </div>}
     {problem.state === 'closed' && <p className="community-notice">This discussion is closed without a confirmed fix.</p>}
     <AcceptanceHistory id={id} version={problem.updated_at} />{owner && problem.state === 'solved' && <ReverseAcceptance problem={problem} onReversed={setProblem} />}<h2 className="community-stack">Proposed solutions ({solutions.length})</h2>

@@ -162,7 +162,9 @@ await check('contributors propose to open/testing public problems, never drafts/
   await actor('contributor');
   assert.ok((await one(newSolutionSql(publicProblem))).id);
   await actor('author');
-  await q('SELECT community_set_problem_state($1,$2)', [publicProblem, 'closed']);
+  // Historical closed fixture in this disposable database only.
+  await db.exec('RESET ROLE');
+  await q("UPDATE community_problems SET state='closed' WHERE id=$1", [publicProblem]);
   await actor('contributor');
   await denied(newSolutionSql(publicProblem));
 });
@@ -214,7 +216,9 @@ await check('votes cannot be added to hidden or closed cases', async () => {
   await denied(`INSERT INTO community_solution_votes(solution_id) VALUES ('${solution}')`);
   await actor('author');
   await q("UPDATE community_problems SET visibility='public' WHERE id=$1", [publicProblem]);
-  await q('SELECT community_set_problem_state($1,$2)', [publicProblem, 'closed']);
+  // Historical closed fixture in this disposable database only.
+  await db.exec('RESET ROLE');
+  await q("UPDATE community_problems SET state='closed' WHERE id=$1", [publicProblem]);
   await actor('outsider');
   await denied(`INSERT INTO community_solution_votes(solution_id) VALUES ('${solution}')`);
 });
@@ -230,6 +234,20 @@ await check('only the author can transition or accept; direct status/acceptance 
   await denied(`UPDATE community_problems SET solved_at=now() WHERE id='${publicProblem}'`);
   await denied(`SELECT community_set_problem_state('${publicProblem}','solved')`, '23514');
   await denied(`SELECT community_set_problem_state('${draftProblem}','testing')`, '23514');
+  await denied(`SELECT community_accept_solution('${publicProblem}','${solution}','Worked','Repeated')`, '23514');
+});
+
+await check('authors can stop testing but cannot close unresolved problems', async () => {
+  await actor('author');
+  await denied(`SELECT community_set_problem_state('${publicProblem}','closed')`, '23514');
+  await q('SELECT community_set_problem_state($1,$2)', [publicProblem, 'testing']);
+  await actor('contributor');
+  await denied(`SELECT community_set_problem_state('${publicProblem}','open')`);
+  await actor('author');
+  const p = await one('SELECT * FROM community_set_problem_state($1,$2)', [publicProblem, 'open']);
+  assert.equal(p.state, 'open');
+  assert.equal(p.accepted_solution_id, null);
+  await denied(`SELECT community_set_problem_state('${publicProblem}','closed')`, '23514');
   await denied(`SELECT community_accept_solution('${publicProblem}','${solution}','Worked','Repeated')`, '23514');
 });
 

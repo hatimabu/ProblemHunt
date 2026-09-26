@@ -21,6 +21,11 @@
 .community-notice { margin: 1rem 0; padding: 1rem; border: 1px solid #bb6a6a; border-radius: .5rem; }
 .community-confirmed { border: 2px solid #68b995; background: rgba(55,130,91,.1); }
 .community-state-solved { border-color: #68b995; color: #9fdfb9; }
+.board-pill.community-state { display: inline-flex; align-items: center; justify-content: center; min-width: 5rem; padding: .4rem .85rem; text-align: center; font-weight: 700; }
+.board-pill.community-state-open { background: #173e2c; border-color: #40865e; color: #b8f5cd; }
+.board-pill.community-state-testing { background: #463813; border-color: #b39135; color: #ffe89a; animation: community-testing-pulse 2.8s ease-in-out infinite; }
+@keyframes community-testing-pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(234, 191, 73, 0); } 50% { box-shadow: 0 0 0 4px rgba(234, 191, 73, .16); } }
+@media (prefers-reduced-motion: reduce) { .board-pill.community-state-testing { animation: none; } }
 .community-copy { white-space: pre-wrap; margin: .4rem 0 1rem; }
 .community-page ol { list-style: decimal; padding-left: 1.5rem; }
 .community-page li { margin: .6rem 0; white-space: pre-wrap; }
@@ -124,4 +129,3 @@
 @media(max-width:760px) { .workspace-heading { flex-direction:column; align-items:stretch; } .workspace-grid { grid-template-columns:1fr; } .workspace-sidebar { grid-template-columns:1fr 1fr; } .workspace-sidebar .workspace-edit { grid-row:2; } .workspace-stats { grid-template-columns:repeat(2,minmax(0,1fr)); } .community-steps { grid-template-columns:repeat(2,minmax(0,1fr)); } }
 @media(max-width:480px) { .community-page { padding-top:1rem; } .workspace-sidebar { grid-template-columns:1fr; } .workspace-sidebar .workspace-edit { grid-row:auto; } .workspace-content { padding:1rem; } .workspace-stat { flex-direction:column; } .community-tabs,.workspace-heading + .community-tabs { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); } .community-page .community-tab { font-size:.77rem; padding:.5rem; } .community-steps { grid-template-columns:1fr; } }
 @media(prefers-reduced-motion:reduce) { .community-page *, .community-page *::before,.community-page *::after { animation:none!important; transition:none!important; scroll-behavior:auto!important; } }
-

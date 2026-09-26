@@ -4,6 +4,12 @@ Updated 2026-09-26. Branch: `feature/community-knowledge-platform`.
 
 ProblemHunt is a technical knowledge community: **Real problems. Tested solutions.** Cloud/DevOps and Professional AV authors publish structured problems, test contributions, and confirm the solution that worked. Sign-in email remains private; the editable display name is the sole community-facing identity.
 
+## Problem status milestone — 2026-09-26
+
+On `feature/community-knowledge-platform`, Browse and dashboard contribution cards now share centered status badges: filled green Open and yellow Testing with a subtle reduced-motion-safe pulse. Private drafts retain a neutral label. Authors can stop Testing and return to Open; the unresolved-close action is removed. Solved still requires accepting a tested answer with evidence.
+
+Prepared migration `20260927000400_community_author_states.sql` restricts the author state RPC to Open/Testing on public active cases. Existing closed records are preserved. It is pending, not applied to hosted Supabase: the old hosted RPC still permits closure until this migration is separately reviewed and authorized. No hosted writes, merge or deployment occurred. Local database verification passes 36 scenarios across 31 migrations, including forbidden closure, contributor denial, stop-testing and acceptance-only resolution. All 55 frontend tests pass; TypeScript, production build and git diff whitespace checks pass (existing bundle-size warning). Visual browser review and isolated hosted verification remain outstanding.
+
 ## Milestones and architecture
 
 Stages 2â€“8 are implemented; their runbooks and `community-release-report.md` retain historical evidence. Profile/dashboard milestone: `fa90ac4`. Latest implementation milestone: **`61ea041`**, restoring the compact technical design from main and the supplied screenshots, with a landing page, persistent browse/dashboard shells, icon tabs, private account information, editable display names and an empty public library.

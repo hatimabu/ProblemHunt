@@ -6,7 +6,7 @@ import { CommunityDiscussion } from '../community/problem-discussion';
 import { CommunityEditor } from '../community/problem-editor';
 import type { CommunityProblem } from '../../../lib/community';
 
-const api = vi.hoisted(() => ({ get: vi.fn(), discussion: vi.fn(), taxonomy: vi.fn(), save: vi.fn(), solution: vi.fn(), comment: vi.fn(), state: vi.fn(), accept: vi.fn() }));
+const api = vi.hoisted(() => ({ get: vi.fn(), discussion: vi.fn(), taxonomy: vi.fn(), save: vi.fn(), solution: vi.fn(), comment: vi.fn(), state: vi.fn(), accept: vi.fn(), voteInfo: vi.fn() }));
 const auth = vi.hoisted(() => ({ user: { id: 'author' } as { id: string } | null, isLoading: false }));
 vi.mock('../../contexts/AuthContext', () => ({ useAuth: () => auth }));
 vi.mock('../navbar', () => ({ Navbar: () => null }));
@@ -30,6 +30,7 @@ function page(path: string) {
 }
 beforeEach(() => {
   Object.values(api).forEach(m => m.mockReset()); auth.user = { id: 'author' }; auth.isLoading = false;
+  api.voteInfo.mockResolvedValue({ count: 0, voted: false });
   api.get.mockResolvedValue({ ...problem });
   api.discussion.mockResolvedValue({ solutions: [solution], comments: [] });
   api.taxonomy.mockResolvedValue({ domains: [{ id: 'domain', name: 'Cloud Computing and DevOps' }], categories: [{ id: 'category', domain_id: 'domain', name: 'Cloud platforms' }] });
@@ -104,13 +105,24 @@ describe('community core journey', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Try again' }));
     expect(await screen.findByRole('heading', { name: 'Gateway timeout' })).toBeVisible();
   });
-  it('requires confirmation to close an unresolved problem', async () => {
-    api.state.mockResolvedValue({ ...problem, state: 'closed' });
+  it('returns Testing to Open and removes acceptance controls until testing resumes', async () => {
+    api.get.mockResolvedValue({ ...problem, state: 'testing' });
+    api.state.mockResolvedValue(problem);
     page('/problem/case-1');
-    await userEvent.click(await screen.findByRole('button', { name: 'Close unresolved problem' }));
-    expect(api.state).not.toHaveBeenCalled();
-    await userEvent.click(screen.getByRole('button', { name: 'Confirm close' }));
-    await waitFor(() => expect(api.state).toHaveBeenCalledWith('case-1', 'closed'));
-    expect(await screen.findByText('This discussion is closed without a confirmed fix.')).toBeVisible();
+    await userEvent.click(await screen.findByRole('button', { name: /Stop testing/ }));
+    await waitFor(() => expect(api.state).toHaveBeenCalledWith('case-1', 'open'));
+    expect(await screen.findByText('Testing stopped. This problem is Open again.')).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Mark as Testing' })).toBeVisible();
+    expect(screen.queryByRole('button', { name: /Accept solution/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Close unresolved/ })).not.toBeInTheDocument();
+  });
+  it('preserves Testing and allows retry when stopping testing fails', async () => {
+    api.get.mockResolvedValue({ ...problem, state: 'testing' });
+    api.state.mockRejectedValue(new Error('Network unavailable'));
+    page('/problem/case-1');
+    await userEvent.click(await screen.findByRole('button', { name: /Stop testing/ }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Network unavailable');
+    expect(screen.getByRole('button', { name: /Stop testing/ })).toBeEnabled();
+    expect(screen.queryByRole('button', { name: 'Mark as Testing' })).not.toBeInTheDocument();
   });
 });
