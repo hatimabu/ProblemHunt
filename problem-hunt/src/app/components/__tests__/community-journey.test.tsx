@@ -6,7 +6,7 @@ import { CommunityDiscussion } from '../community/problem-discussion';
 import { CommunityEditor } from '../community/problem-editor';
 import type { CommunityProblem } from '../../../lib/community';
 
-const api = vi.hoisted(() => ({ get: vi.fn(), discussion: vi.fn(), taxonomy: vi.fn(), save: vi.fn(), solution: vi.fn(), comment: vi.fn(), state: vi.fn(), accept: vi.fn(), voteInfo: vi.fn() }));
+const api = vi.hoisted(() => ({ get: vi.fn(), discussion: vi.fn(), taxonomy: vi.fn(), save: vi.fn(), solution: vi.fn(), comment: vi.fn(), state: vi.fn(), accept: vi.fn(), voteInfo: vi.fn(), publicNames: vi.fn() }));
 const auth = vi.hoisted(() => ({ user: { id: 'author' } as { id: string } | null, isLoading: false }));
 vi.mock('../../contexts/AuthContext', () => ({ useAuth: () => auth }));
 vi.mock('../navbar', () => ({ Navbar: () => null }));
@@ -31,12 +31,30 @@ function page(path: string) {
 beforeEach(() => {
   Object.values(api).forEach(m => m.mockReset()); auth.user = { id: 'author' }; auth.isLoading = false;
   api.voteInfo.mockResolvedValue({ count: 0, voted: false });
+  api.publicNames.mockResolvedValue([{ user_id: 'author', display_name: 'Hatim' }, { user_id: 'contributor', display_name: 'Maya' }]);
   api.get.mockResolvedValue({ ...problem });
   api.discussion.mockResolvedValue({ solutions: [solution], comments: [] });
   api.taxonomy.mockResolvedValue({ domains: [{ id: 'domain', name: 'Cloud Computing and DevOps' }], categories: [{ id: 'category', domain_id: 'domain', name: 'Cloud platforms' }] });
 });
 
 describe('community core journey', () => {
+  it('attributes the problem, solutions and comments by public name and role for visitors', async () => {
+    auth.user = null;
+    api.discussion.mockResolvedValue({ solutions: [solution], comments: [
+      { id: 'comment-1', solution_id: solution.id, author_id: 'author', kind: 'clarification', body: 'I tested this.' },
+    ] });
+    page('/problem/case-1');
+    expect(await screen.findByRole('link', { name: 'Maya Contributor' })).toHaveAttribute('href', '/people/contributor');
+    expect(screen.getAllByRole('link', { name: 'Hatim Author' })).toHaveLength(2);
+    expect(api.publicNames).toHaveBeenCalledWith(['author', 'contributor']);
+  });
+  it('preserves attribution and readable content when public names are unavailable', async () => {
+    api.publicNames.mockRejectedValue(new Error('offline'));
+    page('/problem/case-1');
+    expect(await screen.findByRole('link', { name: 'Member author Author (you)' })).toBeVisible();
+    expect(screen.getByRole('link', { name: 'Member contribu Contributor' })).toBeVisible();
+    expect(screen.getByRole('heading', { name: 'Wrong backend' })).toBeVisible();
+  });
   it('saves incomplete private drafts and navigates to their persisted page', async () => {
     const draft = { ...problem, title: 'My draft', visibility: 'draft', symptom: '' };
     api.save.mockResolvedValue(draft); api.get.mockResolvedValue(draft);

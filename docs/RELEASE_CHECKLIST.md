@@ -1,5 +1,13 @@
 # Release checklist
 
+## Discussion attribution and motion — 2026-09-27
+
+- [x] Steady green solution contour, confirmed-summary-only idle glow, reduced-motion support and compact report actions.
+- [x] Public display names and roles on the problem, solutions and comments; consistent fallback for private/unavailable identities. No private account fields fetched.
+- [x] 57 frontend tests, TypeScript, production build and whitespace checks; existing bundle-size warning remains.
+- [x] Compiled preview reviewed at 1440px and 390px with intercepted sample responses; verified name labels, motion, report open/close and no overflow. No hosted writes.
+- [ ] Verify live assets after the authorized main push. Hosted identity reads and write workflows are not proved by the mocked preview; isolated hosted checks remain outstanding.
+
 ## Discussion design — 2026-09-27
 
 - [x] Distinguish problem context, proposed answers, author-accepted fixes, clarification and test evidence using color, borders, labels and icons.

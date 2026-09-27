@@ -33,6 +33,14 @@ export function safeSourceUrl(value: string): string | null {
 
 export function createCommunityApi(client: SupabaseClient) {
   return {
+    async publicNames(ids: string[]): Promise<{ user_id: string; display_name: string }[]> {
+      if (!ids.length) return [];
+      // Explicit consent filter keeps identity consistent for visitors and signed-in readers.
+      // Never read legacy profiles or sign-in fields for public attribution.
+      const r = await client.from('community_profiles').select('user_id,display_name')
+        .in('user_id', [...new Set(ids)]).eq('is_public', true);
+      fail(r.error); return r.data || [];
+    },
     async report(target: { problem_id?: string; solution_id?: string; comment_id?: string }, reason: string, details: string) {
       const r = await client.from('community_reports').insert({ ...target, reason, details }); fail(r.error);
     },

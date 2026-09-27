@@ -2,11 +2,12 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { communityApi, communityError } from '../../../lib/supabase-community';
 import { CommunityLayout, ErrorNotice, TextField } from './shared';
 import { useAuth } from '../../contexts/AuthContext';
+import { Flag } from 'lucide-react';
 
 export function ReportControl({target,label}:{target:{problem_id?:string;solution_id?:string;comment_id?:string};label:string}){
  const [open,setOpen]=useState(false),[reason,setReason]=useState(''),[details,setDetails]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState(''),[done,setDone]=useState(false);
  async function submit(e:FormEvent){e.preventDefault();setBusy(true);setError('');try{await communityApi.report(target,reason.trim(),details.trim());setDone(true);setOpen(false);}catch(e){setError(communityError(e));}finally{setBusy(false);}}
- return <div className="community-stack">{done?<p role="status">Report sent privately to moderators.</p>:<button onClick={()=>setOpen(v=>!v)} aria-expanded={open}>Report {label}</button>}
+ return <div className="community-report">{done?<p role="status">Report sent privately to moderators.</p>:<button type="button" className="community-report-trigger" onClick={()=>setOpen(v=>!v)} aria-expanded={open}><Flag size={14} aria-hidden="true"/>Report {label}</button>}
  {open&&<form onSubmit={submit} aria-label={`Report ${label}`}><p>Only you and moderators can read your report. Do not include passwords or customer information.</p><fieldset disabled={busy}><TextField label="Report reason" value={reason} onChange={setReason} required maxLength={200}/><TextField label="Private report details" value={details} onChange={setDetails}/><button type="submit">Send report</button><button type="button" onClick={()=>setOpen(false)}>Cancel</button></fieldset></form>}{error&&<ErrorNotice error={error}/>}</div>;
 }
 export function ModeratorPage(){
