@@ -155,7 +155,7 @@
 .discussion-solution-meta { display:flex; align-items:center; flex-wrap:wrap; gap:.65rem; }
 .solution-label { display:inline-block; font-size:.75rem; font-weight:600; color:#d8cafa; margin:.3rem; }
 .solution-label.is-confirmed { color:#99e7b8; }
-.discussion-page .community-confirmed { background:linear-gradient(130deg,#143b2b,#14231f); border:1px solid #4d9d72; border-top:3px solid #6ee7b7; }
+.discussion-page .community-confirmed { background:#141c22; border:1px solid #4d9d72; border-top:3px solid #6ee7b7; }
 .discussion-page .discussion-confirmed-summary { animation:confirmed-fix-glow 3.5s ease-in-out infinite; }
 @keyframes confirmed-fix-glow { 0%,100% { box-shadow:0 0 0 0 #6ee7b700; } 50% { box-shadow:0 0 18px 1px #6ee7b71c; } }
 .discussion-person strong { overflow-wrap:anywhere; min-width:0; }
