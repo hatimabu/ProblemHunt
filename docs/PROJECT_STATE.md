@@ -1,5 +1,9 @@
 # ProblemHunt project state
 
+## Discussion design — 2026-09-27
+
+Feature-branch visual update: blue structured context, violet proposed solutions, green accepted fixes, amber test evidence, contributor/profile chips, tag links, section icons and stronger form boundaries. Solution upvotes use the lime HUNT arrow with count, pressed/busy states and reduced-motion-safe interaction animation. Acceptance remains distinct from community votes; existing permissions and API operations are unchanged. No hosted data, migration or deployment changes. Browser visual review of a populated discussion remains outstanding; no production fixtures were created.
+
 Updated 2026-09-26. Deployment workflow fix on `main`, following website merge `c51cac7`.
 
 ## Problem status milestone — 2026-09-26

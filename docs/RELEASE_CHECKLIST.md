@@ -1,5 +1,12 @@
 # Release checklist
 
+## Discussion design — 2026-09-27
+
+- [x] Distinguish problem context, proposed answers, author-accepted fixes, clarification and test evidence using color, borders, labels and icons.
+- [x] Lime HUNT-arrow upvote with accessible pressed/busy state, server-confirmed count, removal and reduced-motion support; unchanged voting permissions.
+- [x] 55 frontend tests, TypeScript, production build and whitespace validation pass. Existing bundle-size warning remains. Tests use mocks; no fresh hosted write checks were run for this presentation-only change.
+- [ ] Review a populated discussion on desktop/mobile in an isolated environment. No hosted synthetic records were created for this visual change.
+
 Current checkpoint: 2026-09-26, `feature/community-knowledge-platform`. Read PROJECT_STATE first; earlier runbooks are historical evidence.
 
 ## Problem status milestone — 2026-09-26

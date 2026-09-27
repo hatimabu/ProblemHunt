@@ -1,3 +1,4 @@
+import { Activity, Server, FlaskConical, ShieldCheck, Lightbulb, MessageCircle, UserRound, ArrowLeft, Link2 } from 'lucide-react';
 import { recordPilotMetric } from '../../../lib/pilot-privacy';
 import { ReportControl } from './moderation';
 import { VoteControl, ReverseAcceptance, AcceptanceHistory } from './reputation';
@@ -55,25 +56,25 @@ function Discussion({ id, userId }: { id: string; userId?: string }) {
   const accepted = solutions.find(s => s.id === problem.accepted_solution_id);
   const ordered = [...solutions].sort((a,b) => Number(b.id === problem.accepted_solution_id) - Number(a.id === problem.accepted_solution_id));
   return <CommunityLayout title={problem.visibility === 'public' && !problem.is_hidden ? problem.title : 'Private problem'} description={problem.visibility === 'public' && !problem.is_hidden ? problem.symptom.slice(0,160) : undefined} indexable={problem.visibility === 'public' && !problem.is_example && !problem.is_hidden}>
-    <Link to="/browse">← Community problems</Link><div className="community-actions"><StateLabel problem={problem} />
-      <Link to={`/people/${problem.author_id}`}>Author profile</Link>
+    <div className="discussion-page"><Link className="discussion-back" to="/browse"><ArrowLeft size={16} aria-hidden="true"/> Community problems</Link><div className="community-actions"><StateLabel problem={problem} />
+      <Link className="discussion-person" to={`/people/${problem.author_id}`}><UserRound size={16} aria-hidden="true"/> Problem author</Link>
       {owner && problem.state !== 'solved' && <Link to={`/problem/${id}/edit`}>Edit problem</Link>}
       <button onClick={() => setRetry(n => n + 1)} disabled={busy}>Refresh discussion</button></div>
-    <h1>{problem.title}</h1>{problem.is_example && <p className="community-notice">Fictional example. Test results and acceptance are simulated, not a real verified fix.</p>}{problem.is_hidden && <p className="community-notice">This discussion is hidden from public view pending moderator review.</p>}{userId && problem.visibility === 'public' && <ReportControl target={{problem_id:id}} label="problem" />}
+    <p className="board-kicker discussion-kicker">Community / technical discussion</p><h1>{problem.title}</h1>{problem.is_example && <p className="community-notice">Fictional example. Test results and acceptance are simulated, not a real verified fix.</p>}{problem.is_hidden && <p className="community-notice">This discussion is hidden from public view pending moderator review.</p>}{userId && problem.visibility === 'public' && <ReportControl target={{problem_id:id}} label="problem" />}
     {problem.visibility === 'draft' && <p className="community-notice">Only you can see this private draft. <Link to={`/problem/${id}/edit`}>Edit and publish</Link> when it is ready.</p>}
     {problem.state === 'solved' && <section className="community-card community-confirmed" aria-label="Confirmed fix">
-      <h2>{problem.is_example ? 'Illustrative solution outcome' : 'Confirmed fix'}</h2><p>{problem.is_example ? 'This fictional case demonstrates the acceptance workflow. It is not evidence from real equipment or a production system.' : 'The problem author tested and accepted this solution for this case.'}</p>
+      <h2><ShieldCheck aria-hidden="true"/>{problem.is_example ? 'Illustrative solution outcome' : 'Confirmed fix'}</h2><p>{problem.is_example ? 'This fictional case demonstrates the acceptance workflow. It is not evidence from real equipment or a production system.' : 'The problem author tested and accepted this solution for this case.'}</p>
       {accepted && <p><a href={`#solution-${accepted.id}`}>{accepted.diagnosis}</a></p>}
       <h3>What worked</h3><p className="community-copy">{problem.resolution_observation}</p>
       <h3>How it was verified</h3><p className="community-copy">{problem.resolution_verification}</p>
     </section>}
-    <section className="board-panel community-card community-stack" aria-label="Problem context">
-      <div><h2>Symptom</h2><p className="community-copy">{problem.symptom || 'Not added yet.'}</p></div>
-      <div><h2>Environment</h2>{Object.entries(problem.environment).map(([key,value]) => <p key={key} className="community-copy">{key === 'description' ? '' : `${key}: `}{typeof value === 'string' ? value : JSON.stringify(value)}</p>)}
+    <section className="board-panel community-card community-stack discussion-context" aria-label="Problem context">
+      <div><h2><Activity aria-hidden="true"/>Symptom</h2><p className="community-copy">{problem.symptom || 'Not added yet.'}</p></div>
+      <div><h2><Server aria-hidden="true"/>Environment</h2>{Object.entries(problem.environment).map(([key,value]) => <p key={key} className="community-copy">{key === 'description' ? '' : `${key}: `}{typeof value === 'string' ? value : JSON.stringify(value)}</p>)}
         <p>{problem.product} {problem.product_version}</p></div>
       <div className="community-grid"><div><h3>Expected result</h3><p className="community-copy">{problem.expected_behavior || 'Not added yet.'}</p></div>
         <div><h3>Actual result</h3><p className="community-copy">{problem.actual_behavior || 'Not added yet.'}</p></div></div>
-      <div><h2>Tests already attempted</h2>{problem.attempted_tests.length ? <ol>{problem.attempted_tests.map((a,i) => <li key={i}><strong>{a.test}</strong><p>{a.observation}</p>{a.verification_method && <p>Verification: {a.verification_method}</p>}</li>)}</ol> : <p>No tests recorded yet.</p>}</div>
+      <div><h2><FlaskConical aria-hidden="true"/>Tests already attempted</h2>{problem.attempted_tests.length ? <ol>{problem.attempted_tests.map((a,i) => <li key={i}><strong>{a.test}</strong><p>{a.observation}</p>{a.verification_method && <p>Verification: {a.verification_method}</p>}</li>)}</ol> : <p>No tests recorded yet.</p>}</div>
       {problem.observations && <div><h3>Additional observations</h3><p className="community-copy">{problem.observations}</p></div>}
       {problem.verification_method && <div><h3>Planned verification</h3><p className="community-copy">{problem.verification_method}</p></div>}
       <div className="community-actions">{problem.tags.map(tag => <Link key={tag} to={`/browse?tag=${encodeURIComponent(tag)}`}>#{tag}</Link>)}</div>
@@ -85,7 +86,7 @@ function Discussion({ id, userId }: { id: string; userId?: string }) {
         : <button disabled={busy} onClick={() => void changeState('testing')}>Mark as Testing</button>}
     </div>}
     {problem.state === 'closed' && <p className="community-notice">This discussion is closed without a confirmed fix.</p>}
-    <AcceptanceHistory id={id} version={problem.updated_at} />{owner && problem.state === 'solved' && <ReverseAcceptance problem={problem} onReversed={setProblem} />}<h2 className="community-stack">Proposed solutions ({solutions.length})</h2>
+    <AcceptanceHistory id={id} version={problem.updated_at} />{owner && problem.state === 'solved' && <ReverseAcceptance problem={problem} onReversed={setProblem} />}<h2 className="discussion-section-title"><Lightbulb aria-hidden="true"/> Solutions <span className="discussion-count">{solutions.length}</span></h2>
     <p>Accepted means the author confirmed a fix. Community upvotes indicate usefulness, not verification.</p>
     {!solutions.length && <p>No solutions yet.{eligible && !owner ? ' Share a diagnosis and steps to verify it.' : ''}</p>}
     <div className="community-stack">{ordered.map(s => <SolutionCard key={s.id} solution={s} problem={problem} userId={userId}
@@ -93,7 +94,7 @@ function Discussion({ id, userId }: { id: string; userId?: string }) {
       onAccepted={p => { setProblem(p); setMessage('Solution accepted. This problem is now Solved.'); }} />)}</div>
     {eligible && userId && !owner && <SolutionForm problemId={id} onSaved={s => setSolutions(prev => [...prev, s])} />}
     {eligible && !userId && <p className="community-notice"><Link to={`/auth?returnTo=${encodeURIComponent(`/problem/${id}`)}`}>Sign in to propose a solution or ask a contributor for clarification</Link>.</p>}
-  </CommunityLayout>;
+  </div></CommunityLayout>;
 }
 
 function SolutionForm({ problemId, onSaved }: { problemId: string; onSaved: (s: CommunitySolution) => void }) {
@@ -145,17 +146,17 @@ function SolutionCard({ solution: s, problem, userId, comments, onComment, onAcc
     try { onAccepted(await communityApi.accept({ p_problem_id: problem.id, p_solution_id: s.id, p_observation: acceptObservation.trim(), p_verification: acceptVerification.trim() })); }
     catch (e) { setError(communityError(e)); } finally { setBusy(false); }
   }
-  return <article id={`solution-${s.id}`} className={`board-panel community-card ${accepted ? 'community-confirmed' : ''}`}>
-    <p className="community-muted"><Link to={`/people/${s.author_id}`}>{contributorLabel(s.author_id, problem.author_id, userId)}</Link>{accepted ? ' · Accepted by the author' : ' · Proposed solution'}</p>
-    <Link to={`/problem/${problem.id}#solution-${s.id}`}>Link to this solution</Link>
+  return <article id={`solution-${s.id}`} className={`board-panel community-card discussion-solution ${accepted ? 'community-confirmed' : ''}`}>
+    <p className="discussion-solution-meta"><Link className="discussion-person" to={`/people/${s.author_id}`}><UserRound size={16} aria-hidden="true"/>{contributorLabel(s.author_id, problem.author_id, userId)}</Link><span className={accepted?"solution-label is-confirmed":"solution-label"}>{accepted ? ' · Accepted by the author' : ' · Proposed solution'}</span></p>
+    <Link className="discussion-permalink" to={`/problem/${problem.id}#solution-${s.id}`}><Link2 size={14} aria-hidden="true"/> Link to this solution</Link>
     <VoteControl problemId={problem.id} solutionId={s.id} own={s.author_id === userId} signedIn={!!userId} closed={problem.state === 'closed'} /><h3>{s.diagnosis}</h3>{userId && problem.visibility === 'public' && <ReportControl target={{solution_id:s.id}} label="solution" />}<ol>{s.steps.map((step,i) => <li key={i}>{step}</li>)}</ol>
     <h3>Reasoning</h3><p className="community-copy">{s.reasoning}</p>
     <h3>Verification method</h3><p className="community-copy">{s.verification_method}</p>
     {s.observations && <p className="community-copy">{s.observations}</p>}
     {s.sources.map((source,i) => { const url = safeSourceUrl(source); return url ? <p key={i}><a href={url} target="_blank" rel="noreferrer noopener">{source}</a></p> : <p key={i}>{source}</p>; })}
-    <h3>Clarifications and test results</h3>
+    <h3 className="discussion-section-title"><MessageCircle size={19} aria-hidden="true"/>Clarifications and test results</h3>
     {!comments.length && <p className="community-muted">No clarifications or test results yet.</p>}
-    {comments.map(c => <div key={c.id} className="community-comments"><p className="community-muted">{contributorLabel(c.author_id, problem.author_id, userId)}</p>
+    {comments.map(c => <div key={c.id} className={`community-comments discussion-comment ${c.kind==='test_result'?'is-evidence':''}`}><p><Link className="discussion-person" to={`/people/${c.author_id}`}><UserRound size={15} aria-hidden="true"/>{contributorLabel(c.author_id, problem.author_id, userId)}</Link><span className="solution-label">{c.kind==='test_result'?'Test evidence':'Clarification'}</span></p>
       <p className="community-copy">{c.body}</p>{userId && problem.visibility === 'public' && <ReportControl target={{comment_id:c.id}} label="comment" />}{c.kind === 'test_result' && <><p><strong>Test:</strong> {c.attempted_test}</p><p><strong>Observed:</strong> {c.observation}</p><p><strong>Verified:</strong> {c.verification_method || 'Not recorded'}</p></>}
     </div>)}
     {error && <ErrorNotice error={error} />}{message && <p role="status">{message}</p>}

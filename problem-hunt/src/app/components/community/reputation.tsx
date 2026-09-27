@@ -1,3 +1,4 @@
+import { ArrowUpRight } from 'lucide-react';
 import { Fragment, useEffect, useState, type FormEvent } from 'react';
 import { Link } from 'react-router';
 import { useAuth } from '../../contexts/AuthContext';
@@ -9,8 +10,8 @@ export function VoteControl({ problemId, solutionId, own, signedIn, closed }: {p
   const [info,setInfo]=useState<{count:number;voted:boolean}|null>(null), [error,setError]=useState(''), [busy,setBusy]=useState(false), [retry,setRetry]=useState(0);
   useEffect(()=>{let active=true;setInfo(null);(async()=>{try{const v=await communityApi.voteInfo(problemId,solutionId,signedIn);if(active)setInfo(v);}catch(e){if(active)setError(communityError(e));}})();return()=>{active=false;};},[problemId,solutionId,signedIn,retry]);
   async function toggle(){if(!info)return;setBusy(true);setError('');try{await communityApi.vote(solutionId,info.voted);setInfo(await communityApi.voteInfo(problemId,solutionId,signedIn));}catch(e){setError(communityError(e));}finally{setBusy(false);}}
-  return <div className="community-actions"><p>{info ? info.count ? `${info.count} community upvote${info.count===1?'':'s'}` : 'No community upvotes yet' : 'Loading upvotes…'}</p>
-    {signedIn && !own && info && (!closed || info.voted) && <button disabled={busy} aria-pressed={info.voted} onClick={()=>void toggle()}>{info.voted?'Remove upvote':'Upvote solution'}</button>}
+  return <div className="community-actions hunt-vote-control"><p aria-live="polite">{info ? info.count ? `${info.count} community upvote${info.count===1?'':'s'}` : 'No community upvotes yet' : 'Loading upvotes…'}</p>
+    {signedIn && !own && info && (!closed || info.voted) && <button className="hunt-vote" disabled={busy} aria-busy={busy} aria-label={info.voted?'Remove upvote':'Upvote solution'} aria-pressed={info.voted} onClick={()=>void toggle()}><span className="hunt-vote-icon"><ArrowUpRight size={25} strokeWidth={2.8} aria-hidden="true"/></span><strong>{info.count}</strong><span>{busy?'Updating…':info.voted?'Upvoted':'Upvote'}</span></button>}
     {own && <p>You cannot upvote your own solution.</p>}{!signedIn && <Link to={`/auth?returnTo=${encodeURIComponent(`/problem/${problemId}`)}`}>Sign in to upvote</Link>}
     {error && <ErrorNotice error={error} retry={()=>{setError('');setRetry(n=>n+1);}}/>}</div>;
 }
