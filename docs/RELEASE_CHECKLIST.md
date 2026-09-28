@@ -1,5 +1,18 @@
 # Release checklist
 
+## Session 05 private reply notifications — 2026-09-28
+
+- [x] Approved discussion follows, private inbox/read controls, follow removal and account isolation; legacy marketplace entries remain outside the active inbox.
+- [x] Additive pending notification migration: transactional identifier-only events, durable queue, lease fencing, idempotence, bounded retry/recovery, opt-out generations and visibility rechecks.
+- [x] Existing notification table reused; narrow browser updates and dedicated server worker role. Local credentials/context stay ignored and are excluded from the image context.
+- [x] 91 frontend/API tests, 59 disposable SQL/recovery scenarios across 34 migrations, worker config test, TypeScript/build and whitespace checks.
+- [x] Mocked compiled desktop/mobile journeys, axe/no-overflow/no page errors; screenshots inspected.
+- [x] Real Docker/PostgreSQL build/init, UID 1000/Node 22, healthy endpoint and graceful exit, crash-before/after effects, deduplication, stale lease fencing, two-connection claims and hidden-content suppression.
+- [x] Actual database/worker restart preserves one delivery; deliberate database outage yields 503 and recovery restores 200. Local lab stopped with its dedicated volume retained.
+- [ ] Fresh hosted history/grant/role review and separately authorized isolated migration; real Supabase Auth/PostgREST and full browser-to-worker integration remain unverified.
+- [ ] Define retention, export/deletion handling, capacity/load limits and wider concurrent visibility/opt-out exercises before launch.
+- [ ] Session 06 requires fresh approval. Cloud resources, main integration/deployment and registry publishing remain unapproved.
+
 ## Session 04 typed knowledge posts — 2026-09-28
 
 - [x] Approved typed editor, structured lab/incident publication requirements, draft/edit flow, accurate feed/browse/workspace labels and content-type filtering.

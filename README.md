@@ -2,7 +2,7 @@
 
 **Real problems. Tested solutions.** ProblemHunt is being transformed into a free technical community for Cloud/DevOps and Professional AV. Authors post problems, test proposed solutions and accept the fix that worked.
 
-The active UI now implements public discovery, structured problems, tested solutions, votes, category reputation and private moderation. Legacy marketplace files and tables remain for retention, outside the active routes; unsafe legacy helpers are separately restricted. See [the audit and staged migration map](docs/community-platform-audit.md) for historical context and the [community/cloud roadmap](docs/COMMUNITY_CLOUD_ROADMAP.md) for the approval-gated next milestones. Docker and AI are future milestones; payment behavior remains excluded.
+The active UI implements public discovery, structured problems and write-ups, tested solutions, votes, reputation, private follows/saves and reply notifications. Legacy marketplace files and tables remain outside the active routes. See [the audit](docs/community-platform-audit.md), [community/cloud roadmap](docs/COMMUNITY_CLOUD_ROADMAP.md) and [local Docker notification runbook](docs/community-session-05-notifications.md). Cloud operation and AI remain later milestones; payment behavior remains excluded.
 
 ## Architecture
 
@@ -13,11 +13,11 @@ React + Vite static site
 Supabase: Auth, Postgres, RLS/RPC, Storage
 ```
 
-There is no application server, Python runtime, Azure Function, Cosmos DB dependency, or service-role key in the browser. Azure Static Web Apps is retained only as an optional static-file host.
+The frontend talks directly to Supabase; no service-role key is placed in the browser. A separate Node/Docker notification worker is implemented and verified in an isolated PostgreSQL lab. Azure Static Web Apps remains the static-file host; worker cloud deployment is not configured or authorized.
 
 ## Local setup
 
-Requirements: Node.js 22 and npm (`.nvmrc` records the CI major version). From the repository root, install both locked test packages and verify the baseline without hosted credentials:
+Requirements: Node.js 22 and npm (`.nvmrc` records the CI major version). From the repository root, install the locked frontend, test and worker packages and verify without hosted credentials:
 
 ```powershell
 npm run install:all
@@ -84,6 +84,7 @@ Any static host is compatible as long as it serves the `problem-hunt/dist/` outp
 - `/profile`, `/people/:id` — private account editing and public community profile
 - `/dashboard/reputation` — own category reputation and event history
 - `/leaderboard` — category reputation and own event history
+- `/notifications` — private reply inbox and discussion follow management
 - `/auth` — Supabase authentication
 
 ## Security model

@@ -1,3 +1,4 @@
+vi.mock('../../../lib/community-notifications', () => ({ notificationApi: { follows: async () => false }, notificationLink: () => null }));
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Routes, Route } from 'react-router';

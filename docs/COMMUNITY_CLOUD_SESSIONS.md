@@ -1,6 +1,6 @@
 # Approval-gated session prompts
 
-Use one numbered prompt per approved session. Each prompt incorporates the shared contract below. In a new chat, paste the shared contract plus the selected prompt, or instruct the agent to read this file and execute that numbered session. Merely reading this file is not approval. Sessions 01–04 were approved and implemented locally; Session 05 awaits approval. See AGENT_MEMORY.md for current evidence and gaps.
+Use one numbered prompt per approved session. Each prompt incorporates the shared contract below. In a new chat, paste the shared contract plus the selected prompt, or instruct the agent to read this file and execute that numbered session. Merely reading this file is not approval. Sessions 01–05 were approved and implemented locally, including real Docker verification for Session 05; the user explicitly authorized a same-branch GitHub push. Session 06 awaits approval. See AGENT_MEMORY.md for current evidence and gaps.
 
 ## Shared contract for every prompt
 

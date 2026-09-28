@@ -1,4 +1,5 @@
 import { isProblemPost } from '../../../lib/community';
+import { FollowDiscussion } from './notifications';
 import { Activity, Server, FlaskConical, ShieldCheck, Lightbulb, MessageCircle, ArrowLeft, Link2 } from 'lucide-react';
 import { recordPilotMetric } from '../../../lib/pilot-privacy';
 import { PersonalLibraryProvider, LibraryNotice, SaveCaseButton, FollowTagButton } from './personal-library';
@@ -84,6 +85,7 @@ function Discussion({ id, userId }: { id: string; userId?: string }) {
       {writeup && <div><h3>Lessons learned</h3><p className="community-copy">{problem.lessons || 'Not added yet.'}</p></div>}
       <div className="community-actions">{problem.tags.map(tag => <span key={tag}><Link to={`/browse?tag=${encodeURIComponent(tag)}`}>#{tag}</Link>{problem.visibility === 'public' && !problem.is_hidden && <FollowTagButton tag={tag} />}</span>)}</div>
     </section>
+    {!writeup && problem.visibility === 'public' && !problem.is_hidden && <div className="community-actions"><FollowDiscussion id={id} /><Link to="/notifications">Reply notifications</Link></div>}
     {actionError && <ErrorNotice error={actionError} />}{message && <p role="status">{message}</p>}
     {owner && eligible && <div className="community-actions">
       {problem.state === 'testing'

@@ -1,0 +1,55 @@
+name: problemhunt-notification-lab
+services:
+  db:
+    image: postgres:17-bookworm
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: problemhunt_notification_lab
+      POSTGRES_PASSWORD_FILE: /run/secrets/admin_password
+    secrets: [admin_password]
+    volumes: [notification-data:/var/lib/postgresql/data]
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U postgres -d problemhunt_notification_lab"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+  init:
+    build:
+      context: ./.local/context
+      dockerfile: services/notifications/Dockerfile
+    command: [node, lab/init.mjs]
+    environment:
+      PGHOST: db
+      PGDATABASE: problemhunt_notification_lab
+      PGUSER: postgres
+      PGPASSWORD_FILE: /run/secrets/admin_password
+    secrets: [admin_password, worker_password]
+    depends_on:
+      db: {condition: service_healthy}
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    healthcheck: {disable: true}
+  worker:
+    build:
+      context: ./.local/context
+      dockerfile: services/notifications/Dockerfile
+    environment:
+      PGHOST: db
+      PGDATABASE: problemhunt_notification_lab
+      PGUSER: notification_worker_login
+      PGPASSWORD_FILE: /run/secrets/worker_password
+    secrets: [worker_password]
+    depends_on:
+      init: {condition: service_completed_successfully}
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    init: true
+    restart: unless-stopped
+    stop_grace_period: 25s
+secrets:
+  admin_password: {file: ./.local/admin-password}
+  worker_password: {file: ./.local/worker-password}
+volumes:
+  notification-data:

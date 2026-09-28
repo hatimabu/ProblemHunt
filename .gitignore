@@ -52,4 +52,5 @@ AzuriteConfig
 problem-hunt/python-function/func-host*.log
 problem-hunt/supabase/.temp/
 supabase/.temp/
+services/notifications/.local/
 diagnosis_report.txt

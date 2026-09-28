@@ -1,0 +1,8 @@
+{
+  "name": "problemhunt-notification-worker",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=22" },
+  "scripts": { "start": "node src/main.mjs", "test": "node --test test/*.test.mjs", "lab:prepare": "node lab/prepare.mjs" },
+  "dependencies": { "pg": "8.23.0" }
+}
