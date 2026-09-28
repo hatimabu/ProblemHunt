@@ -3,10 +3,11 @@ import { recordPilotVisit } from '../../../lib/pilot-privacy';
 import type { ReactNode } from 'react';
 import { Link } from 'react-router';
 import { Navbar } from '../navbar';
-import type { CommunityProblem } from '../../../lib/community';
+import { isProblemPost, postTypeLabels, type CommunityPostType, type CommunityProblem } from '../../../lib/community';
 import './community.css';
+import { SaveCaseButton } from './personal-library';
 
-export function CommunityLayout({ children, title = 'Real problems. Tested solutions.', description = 'Cloud/DevOps and Professional AV community problems and tested solutions.', indexable = false }: { children: ReactNode; title?: string; description?: string; indexable?: boolean }) {
+export function CommunityLayout({ children, title = 'Real problems. Tested solutions.', description = 'Cloud/DevOps and Professional AV community problems and tested solutions.', indexable = false, wide = false }: { children: ReactNode; title?: string; description?: string; indexable?: boolean; wide?: boolean }) {
   useEffect(() => { recordPilotVisit(); }, []);
   useEffect(() => {
     document.title = `${title} | ProblemHunt`;
@@ -16,12 +17,13 @@ export function CommunityLayout({ children, title = 'Real problems. Tested solut
       meta.content = content;
     }
   }, [title, description, indexable]);
-  return <div className="board-app"><a className="community-skip" href="#main-content">Skip to content</a><Navbar /><main id="main-content" className="board-container community-page">{children}<footer className="community-stack"><Link to="/privacy">Privacy and pilot feedback</Link></footer></main></div>;
+  return <div className={`board-app${wide ? ' community-wide' : ''}`}><a className="community-skip" href="#main-content">Skip to content</a><Navbar /><main id="main-content" tabIndex={-1} className="board-container community-page">{children}<footer className="community-stack"><Link to="/privacy">Privacy and pilot feedback</Link></footer></main></div>;
 }
 export function ErrorNotice({ error, retry }: { error: string; retry?: () => void }) {
   return <div role="alert" className="community-notice"><p>{error}</p>{retry && <button type="button" onClick={retry}>Try again</button>}</div>;
 }
-export function StateLabel({ problem }: { problem: { state: string; visibility: string } }) {
+export function StateLabel({ problem }: { problem: { state: string; visibility: string; post_type?: CommunityPostType } }) {
+  if (!isProblemPost(problem)) return <span className="board-pill community-state">{problem.visibility === 'draft' ? 'Private draft · ' : ''}{postTypeLabels[problem.post_type!]}</span>;
   return <span className={`board-pill community-state community-state-${problem.visibility === 'draft' ? 'draft' : problem.state}`}>{problem.visibility === 'draft' ? 'Private draft' : problem.state[0].toUpperCase() + problem.state.slice(1)}</span>;
 }
 export function ProblemList({ problems }: { problems: CommunityProblem[] }) {
@@ -29,8 +31,8 @@ export function ProblemList({ problems }: { problems: CommunityProblem[] }) {
     {p.is_example && <p className="community-notice">Fictional example â€” outcomes are simulated.</p>}<StateLabel problem={p} /><h2><Link to={`/problem/${p.id}`}>{p.title}</Link></h2>
     <p className="community-preview">{p.symptom || 'Draft in progress'}</p>
     <p className="community-muted">{p.product} {p.product_version}</p>
-    {p.state === 'solved' && <p><strong>{p.is_example ? 'Illustrative outcome:' : 'Author-confirmed fix:'}</strong> {p.resolution_observation}</p>}
-    <div className="community-actions">{p.tags.map(tag => <Link key={tag} to={`/browse?tag=${encodeURIComponent(tag)}`}>#{tag}</Link>)}</div>
+    {isProblemPost(p) && p.state === 'solved' && p.accepted_solution_id && <p><strong>{p.is_example ? 'Illustrative outcome:' : 'Author-confirmed fix:'}</strong> {p.resolution_observation}</p>}
+    <div className="community-actions">{p.tags.map(tag => <Link key={tag} to={`/browse?tag=${encodeURIComponent(tag)}`}>#{tag}</Link>)}{p.visibility === 'public' && !p.is_hidden && <SaveCaseButton id={p.id} />}</div>
   </article>)}</div>;
 }
 export function TextField({ label, value, onChange, required = false, multiline = true, maxLength = 10000 }: {

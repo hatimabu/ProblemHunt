@@ -1,8 +1,9 @@
+import type { CommunityPostType } from './community';
 import { supabase } from '../../lib/supabaseClient';
 import { communityError } from './supabase-community';
 
 export interface CommunityProfile { user_id:string; display_name:string; username?:string; bio:string; expertise:string[]; is_public:boolean; avatar_path:string|null }
-export interface Contribution { id:string; problem_id:string; title:string; summary:string; state:string; visibility:string; accepted:boolean; is_example:boolean; created_at:string }
+export interface Contribution { post_type?: CommunityPostType; id:string; problem_id:string; title:string; summary:string; state:string; visibility:string; accepted:boolean; is_example:boolean; created_at:string }
 export type ContributionKind = 'problems'|'solutions'|'accepted';
 export const blankProfile = (id:string):CommunityProfile => ({user_id:id,display_name:'',username:'',bio:'',expertise:[],is_public:false,avatar_path:null});
 function result<T>(r:{data:T;error:unknown}):T { if(r.error)throw new Error(communityError(r.error));return r.data; }
@@ -17,7 +18,7 @@ export const profileApi = {
  async contributions(id:string,kind:ContributionKind,state='',offset=0,publicOnly=true):Promise<Contribution[]> {
   return result(await supabase.rpc('community_contributions',{p_user_id:id,p_kind:kind,p_state:state,p_offset:offset,p_public:publicOnly}));
  },
- async activeCount(id:string):Promise<number> {const r=await supabase.from('community_problems').select('id',{count:'exact',head:true}).eq('author_id',id).eq('visibility','public').eq('is_hidden',false).in('state',['open','testing']);if(r.error)throw new Error(communityError(r.error));return r.count||0;},
+ async activeCount(id:string):Promise<number> {const r=await supabase.from('community_problems').select('id',{count:'exact',head:true}).eq('author_id',id).eq('visibility','public').eq('is_hidden',false).eq('post_type','problem').in('state',['open','testing']);if(r.error)throw new Error(communityError(r.error));return r.count||0;},
  async counts(id:string,publicOnly=true):Promise<{problems:number;solutions:number;accepted:number}> {
   return result(await supabase.rpc('community_contribution_counts',{p_user_id:id,p_public:publicOnly}))[0];
  },

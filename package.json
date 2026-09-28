@@ -3,11 +3,12 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "install:all": "cd problem-hunt && npm install",
-    "dev": "cd problem-hunt && npm run dev",
-    "start": "cd problem-hunt && npm start",
-    "build": "cd problem-hunt && npm run build",
-    "server": "cd problem-hunt && npm run server"
+    "install:all": "node scripts/community-baseline.mjs --install",
+    "dev": "npm run dev --prefix problem-hunt",
+    "start": "npm run dev --prefix problem-hunt",
+    "build": "npm run build --prefix problem-hunt",
+    "server": "node scripts/community-preview.mjs",
+    "verify": "node scripts/community-baseline.mjs"
   },
   "dependencies": {
     "@openai/codex-security": "^0.1.1"

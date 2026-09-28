@@ -1,18 +1,19 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Routes, Route } from 'react-router';
 import { beforeEach, expect, it, vi } from 'vitest';
 import { CommunityDiscovery } from '../community/discovery';
-const api=vi.hoisted(()=>({taxonomy:vi.fn(),search:vi.fn()}));
+const api=vi.hoisted(()=>({taxonomy:vi.fn(),search:vi.fn(),feed:vi.fn()}));
 vi.mock('../navbar',()=>({Navbar:()=>null}));
+vi.mock('../../contexts/AuthContext',()=>({useAuth:()=>({user:null,isLoading:false})}));
 vi.mock('../../../lib/supabase-community',()=>({communityApi:api,communityError:()=> 'Search unavailable'}));
 const row={id:'one',title:'Example case',state:'solved',visibility:'public',symptom:'Dropouts',product:'Mixer',tags:['audio'],resolution_observation:'Clock synchronized'};
 function page(path='/browse') {return render(<MemoryRouter initialEntries={[path]}><Routes><Route path='/browse' element={<CommunityDiscovery/>}/><Route path='/domains/:domain' element={<CommunityDiscovery/>}/></Routes></MemoryRouter>);}
-beforeEach(()=>{vi.resetAllMocks();api.taxonomy.mockResolvedValue({domains:[{id:'av',slug:'professional-av',name:'Professional AV and Audio'}],categories:[{id:'audio',domain_id:'av',slug:'audio-rf',name:'Audio and RF'}]});api.search.mockResolvedValue({rows:[row],hasMore:false});});
+beforeEach(()=>{vi.resetAllMocks();api.feed.mockResolvedValue({rows:[],hasMore:false});api.taxonomy.mockResolvedValue({domains:[{id:'av',slug:'professional-av',name:'Professional AV and Audio'}],categories:[{id:'audio',domain_id:'av',slug:'audio-rf',name:'Audio and RF'}]});api.search.mockResolvedValue({rows:[row],hasMore:false});});
 it('restores domain and all filters from direct URL and preserves filters on pagination',async()=>{
  page('/domains/professional-av?q=dropouts&category=audio-rf&tag=audio&state=solved');
  expect(await screen.findByText('Example case')).toBeVisible();
- expect(api.search).toHaveBeenCalledWith({domain:'professional-av',query:'dropouts',category:'audio-rf',tag:'audio',state:'solved',page:1});
+ expect(api.search).toHaveBeenCalledWith({domain:'professional-av',query:'dropouts',category:'audio-rf',tag:'audio',state:'solved',postType:'',page:1});
  expect(screen.getByLabelText('Search symptoms, products or tags')).toHaveValue('dropouts');
  api.search.mockResolvedValue({rows:[row],hasMore:true});
  await userEvent.selectOptions(screen.getByLabelText('Status'),'open');
@@ -24,7 +25,7 @@ it('shows loading, errors with retry and useful empty results',async()=>{
  expect(screen.getByRole('status')).toHaveTextContent('Searching');
  reject(new Error('offline'));expect(await screen.findByRole('alert')).toHaveTextContent('Search unavailable');
  api.search.mockResolvedValue({rows:[],hasMore:false});await userEvent.click(screen.getByRole('button',{name:'Try again'}));
- expect(await screen.findByText(/No matching public problems/)).toBeVisible();expect(screen.getByRole('link',{name:'Post a problem'})).toBeVisible();
+ expect(await screen.findByText(/No matching public posts/)).toBeVisible();expect(screen.getAllByRole('link',{name:/Post a problem/}).length).toBeGreaterThan(0);
 });
 it('ignores stale search responses after a filter changes',async()=>{
  let resolve!: (r:unknown)=>void;api.search.mockImplementationOnce(()=>new Promise(r=>{resolve=r;}));page();
@@ -32,4 +33,22 @@ it('ignores stale search responses after a filter changes',async()=>{
  await userEvent.click(screen.getByRole('button',{name:'Search'}));expect(await screen.findByText('Example case')).toBeVisible();
  resolve({rows:[{...row,title:'Stale result'}],hasMore:false});
  await waitFor(()=>expect(screen.queryByText('Stale result')).not.toBeInTheDocument());
+});
+it('restores content type and resets problem status and page when selecting a write-up',async()=>{
+ page('/browse?q=audio&tag=audio&state=open&page=3');
+ await screen.findByText('Example case');
+ await userEvent.selectOptions(screen.getByLabelText('Content type'),'lab');
+ await waitFor(()=>expect(api.search).toHaveBeenLastCalledWith(expect.objectContaining({postType:'lab',state:'',page:1,query:'audio',tag:'audio'})));
+ expect(screen.getByLabelText('Status')).toBeDisabled();
+ await userEvent.selectOptions(screen.getByLabelText('Content type'),'incident');
+ await waitFor(()=>expect(api.search).toHaveBeenLastCalledWith(expect.objectContaining({postType:'incident'})));
+});
+it('shows write-up type without acceptance labels on browse cards',async()=>{
+ api.search.mockResolvedValue({rows:[{...row,post_type:'lab',accepted_solution_id:'invalid'}],hasMore:false});
+ page('/browse?type=lab');
+ await screen.findByText('Example case');
+ expect(api.search).toHaveBeenCalledWith(expect.objectContaining({postType:'lab'}));
+ expect(screen.queryByText(/Author-confirmed fix/)).not.toBeInTheDocument();
+ expect(within(screen.getByRole('article')).queryByText('Solved')).not.toBeInTheDocument();
+ expect(within(screen.getByRole('article')).getByText('Lab write-up')).toBeVisible();
 });
