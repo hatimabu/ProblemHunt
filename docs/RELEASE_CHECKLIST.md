@@ -1,5 +1,19 @@
 # Release checklist
 
+## Session 06 operations and cloud preparation — 2026-09-29
+
+- [x] Explicit Session 06 approval; preserve community branch and production isolation.
+- [x] Sanitized structured logs, event correlation, per-job duration, bounded process counters/histogram, durable queue/failed/age gauges and stale-snapshot signal.
+- [x] Worker-only aggregate SQL; local replay now 35 migrations. No hosted application.
+- [x] 60 disposable SQL scenarios and five worker tests; Node 22 image test parity for worker, real crash/concurrency/replay drills and database-outage health/metrics recovery.
+- [x] Separate liveness/readiness, final-attempt versus retry/lease-loss outcomes, atomic retained-lab upgrade and no volume reset.
+- [x] Pinned runtime/scanner, runtime excludes bootstrap/package managers, offline image scan and SBOM; CI workflow prepared and YAML parsed, not remotely executed.
+- [x] ARM foundation/worker drafts, offline policy checks and Bicep round-trip validation, monitoring queries, current regional pricing inputs, permission/rollback/teardown plan.
+- [ ] Resolve 52 HIGH + 4 CRITICAL OS findings or obtain a reviewed explicit exception before image publication/deployment. Scan gate is failing, not waived.
+- [ ] Approve exact isolated subscription/group/region/budget/expiry, registry publication, resources, SQL fixture/operator path and teardown scope. Session 07 separately gated.
+- [ ] Rehearse managed-PostgreSQL-compatible bootstrap/grants; do not replay the local-only Supabase bootstrap in Azure. Validate provider what-if, quota, network/TLS, identity and alert delivery after authorization.
+- [ ] Hosted Supabase history/migrations, real Auth/PostgREST integration, retention/export/delete and broader load/race gates remain open. No Session 06 push or cloud mutation authorized.
+
 ## Session 05 private reply notifications — 2026-09-28
 
 - [x] Approved discussion follows, private inbox/read controls, follow removal and account isolation; legacy marketplace entries remain outside the active inbox.

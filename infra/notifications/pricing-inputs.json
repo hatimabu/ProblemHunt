@@ -1,0 +1,53 @@
+{
+  "retrievedAt": "2026-09-30T00:57:20.0001084Z",
+  "region": "canadacentral",
+  "currency": "USD",
+  "method": "Official en-us Azure pricing HTML data-amount regional canada-central values, pay-as-you-go column; DNS zone1. Retail API returned HTTP 429. Recheck account currency, offer and SKU availability before approval.",
+  "rates": {
+    "containerAppsActiveVcpuSecond": 3.4E-05,
+    "containerAppsActiveGibSecond": 4E-06,
+    "postgresB1msHour": 0.0185,
+    "postgresPremiumSsdGibMonth": 0.1265,
+    "postgresExtraBackupGibMonth": 0.105,
+    "registryBasicDay": 0.1666,
+    "logAnalyticsIngestGb": 2.76,
+    "logAlertFiveMinuteMonth": 1.5,
+    "keyVaultTenThousandSecretOperations": 0.03,
+    "dnsZoneMonth": 0.5,
+    "dnsMillionQueries": 0.4,
+    "standardLoadBalancerFirstFiveRulesHour": 0.025,
+    "standardPublicIpv4Hour": 0.005
+  },
+  "assumptions": {
+    "monthHours": 730,
+    "workerReplicas": 1,
+    "workerVcpu": 0.25,
+    "workerGib": 0.5,
+    "postgresGib": 32,
+    "logGbPerMonth": 0.1,
+    "fiveMinuteAlerts": 2,
+    "dnsQueriesPerMonth": 1000000,
+    "secretOperationsPerMonth": 10000,
+    "networkAllowance": "One standard load balancer plus public IPv4 for managed VNet infrastructure; confirm actual managed-resource billing. No NAT gateway or dedicated profile.",
+    "excluded": [
+      "tax",
+      "currency conversion",
+      "data egress",
+      "backup beyond included allowance",
+      "extra IOPS",
+      "temporary bootstrap job",
+      "support plan"
+    ],
+    "freeGrant": "Show both zero remaining free allowance and full remaining 180000 vCPU-seconds / 360000 GiB-seconds. Shared at subscription level; never assume unused."
+  },
+  "sources": [
+    "https://azure.microsoft.com/en-us/pricing/details/container-apps/",
+    "https://azure.microsoft.com/en-us/pricing/details/postgresql/flexible-server/",
+    "https://azure.microsoft.com/en-us/pricing/details/container-registry/",
+    "https://azure.microsoft.com/en-us/pricing/details/monitor/",
+    "https://azure.microsoft.com/en-us/pricing/details/key-vault/",
+    "https://azure.microsoft.com/en-us/pricing/details/dns/",
+    "https://azure.microsoft.com/en-us/pricing/details/load-balancer/",
+    "https://azure.microsoft.com/en-us/pricing/details/ip-addresses/"
+  ]
+}

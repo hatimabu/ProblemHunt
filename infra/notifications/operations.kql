@@ -1,0 +1,22 @@
+// Proposed Log Analytics queries. Verify table/column names after the first cloud logs arrive.
+// Trace one event across retries; replace the UUID with a correlation ID from a claimed record.
+ContainerAppConsoleLogs_CL
+| where ContainerAppName_s == 'phnotif-worker'
+| extend d=parse_json(Log_s)
+| where tostring(d.correlation_id) == 'REVIEWED-EVENT-UUID'
+| project TimeGenerated, event=tostring(d.event), attempt=toint(d.attempt), outcome=tostring(d.outcome), duration_ms=todouble(d.duration_ms)
+| order by TimeGenerated asc
+
+// Completed-job latency includes delivery/retry handling, not time waiting in the queue.
+ContainerAppConsoleLogs_CL
+| where ContainerAppName_s == 'phnotif-worker'
+| extend d=parse_json(Log_s)
+| where d.event == 'completed'
+| summarize count(), p50_ms=percentile(todouble(d.duration_ms),50), p95_ms=percentile(todouble(d.duration_ms),95) by bin(TimeGenerated,5m), tostring(d.outcome)
+
+// Queue age is the end-to-end backlog signal; failed messages are a separate gauge.
+ContainerAppConsoleLogs_CL
+| where ContainerAppName_s == 'phnotif-worker'
+| extend d=parse_json(Log_s)
+| where d.event == 'queue_snapshot'
+| project TimeGenerated, ready=tolong(d.ready), failed=tolong(d.failed), expired=tolong(d.expired_leases), oldest_pending_seconds=todouble(d.oldest_pending_seconds)

@@ -17,6 +17,7 @@ services:
     build:
       context: ./.local/context
       dockerfile: services/notifications/Dockerfile
+      target: lab
     command: [node, lab/init.mjs]
     environment:
       PGHOST: db
@@ -34,6 +35,7 @@ services:
     build:
       context: ./.local/context
       dockerfile: services/notifications/Dockerfile
+      target: runtime
     environment:
       PGHOST: db
       PGDATABASE: problemhunt_notification_lab

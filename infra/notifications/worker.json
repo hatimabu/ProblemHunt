@@ -1,0 +1,70 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "location": {"type": "string", "defaultValue": "canadacentral"},
+    "imageDigest": {"type": "string", "minLength": 71, "maxLength": 71, "metadata": {"description": "Reviewed registry manifest digest, sha256:<64 lowercase hex>. Never a tag or local image config ID."}}
+  },
+  "variables": {
+    "suffix": "[uniqueString(resourceGroup().id)]",
+    "identityId": "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', 'phnotif-worker')]",
+    "registry": "[concat('phnotif', variables('suffix'), '.azurecr.io')]",
+    "workspace": "[resourceId('Microsoft.OperationalInsights/workspaces', 'phnotif-logs')]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.App/containerApps", "apiVersion": "2025-01-01", "name": "phnotif-worker", "location": "[parameters('location')]",
+      "tags": {"project": "problemhunt-notification-lab", "environment": "isolated-learning"},
+      "identity": {"type": "UserAssigned", "userAssignedIdentities": {"[variables('identityId')]": {}}},
+      "properties": {
+        "environmentId": "[resourceId('Microsoft.App/managedEnvironments', 'phnotif-environment')]", "workloadProfileName": "Consumption",
+        "configuration": {
+          "activeRevisionsMode": "Single", "maxInactiveRevisions": 3,
+          "registries": [{"server": "[variables('registry')]", "identity": "[variables('identityId')]"}],
+          "secrets": [{"name": "database-password", "identity": "[variables('identityId')]", "keyVaultUrl": "[concat('https://phnotif-', variables('suffix'), '.vault.azure.net/secrets/notification-worker-password')]"}]
+        },
+        "template": {
+          "terminationGracePeriodSeconds": 25,
+          "containers": [{
+            "name": "worker", "image": "[concat(variables('registry'), '/notification-worker@', parameters('imageDigest'))]",
+            "resources": {"cpu": 0.25, "memory": "0.5Gi"},
+            "env": [
+              {"name": "NOTIFICATION_ENV", "value": "azure-lab"},
+              {"name": "PGHOST", "value": "[concat('phnotif-', variables('suffix'), '.postgres.database.azure.com')]"},
+              {"name": "PGDATABASE", "value": "problemhunt_notification_lab"},
+              {"name": "PGUSER", "value": "notification_worker_login"},
+              {"name": "PGPASSWORD", "secretRef": "database-password"}
+            ],
+            "probes": [
+              {"type": "Startup", "httpGet": {"path": "/live", "port": 8080}, "periodSeconds": 5, "failureThreshold": 12, "timeoutSeconds": 2},
+              {"type": "Liveness", "httpGet": {"path": "/live", "port": 8080}, "periodSeconds": 10, "failureThreshold": 3, "timeoutSeconds": 2},
+              {"type": "Readiness", "httpGet": {"path": "/health", "port": 8080}, "periodSeconds": 10, "failureThreshold": 3, "timeoutSeconds": 2}
+            ]
+          }],
+          "scale": {"minReplicas": 1, "maxReplicas": 1}
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Insights/scheduledQueryRules", "apiVersion": "2023-12-01", "name": "phnotif-worker-failures", "location": "[parameters('location')]",
+      "dependsOn": ["[resourceId('Microsoft.App/containerApps', 'phnotif-worker')]"],
+      "properties": {
+        "displayName": "Notification worker failures or delayed queue", "enabled": true, "severity": 2,
+        "evaluationFrequency": "PT5M", "windowSize": "PT5M", "scopes": ["[variables('workspace')]"], "skipQueryValidation": true,
+        "criteria": {"allOf": [{"query": "ContainerAppConsoleLogs_CL | where ContainerAppName_s == 'phnotif-worker' | extend d=parse_json(Log_s) | where d.event in ('cycle_failed','startup_failed','snapshot_failed') or (d.event == 'queue_snapshot' and (todouble(d.failed) > 0 or todouble(d.oldest_pending_seconds) > 120))", "timeAggregation": "Count", "operator": "GreaterThan", "threshold": 0, "failingPeriods": {"numberOfEvaluationPeriods": 1, "minFailingPeriodsToAlert": 1}}]},
+        "autoMitigate": true
+      }
+    },
+    {
+      "type": "Microsoft.Insights/scheduledQueryRules", "apiVersion": "2023-12-01", "name": "phnotif-worker-missing-heartbeat", "location": "[parameters('location')]",
+      "dependsOn": ["[resourceId('Microsoft.App/containerApps', 'phnotif-worker')]"],
+      "properties": {
+        "displayName": "No notification worker queue snapshot in five minutes", "enabled": true, "severity": 2,
+        "evaluationFrequency": "PT5M", "windowSize": "PT5M", "scopes": ["[variables('workspace')]"], "skipQueryValidation": true,
+        "criteria": {"allOf": [{"query": "ContainerAppConsoleLogs_CL | where ContainerAppName_s == 'phnotif-worker' | extend d=parse_json(Log_s) | where d.event == 'queue_snapshot'", "timeAggregation": "Count", "operator": "LessThan", "threshold": 1, "failingPeriods": {"numberOfEvaluationPeriods": 1, "minFailingPeriodsToAlert": 1}}]},
+        "autoMitigate": true
+      }
+    }
+  ],
+  "outputs": {"workerResourceId": {"type": "string", "value": "[resourceId('Microsoft.App/containerApps', 'phnotif-worker')]"}}
+}

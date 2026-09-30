@@ -85,7 +85,7 @@ await check('hiding before processing suppresses delivery; hiding after delivery
 await check('unsupported events back off, reach failed state and recover only through operator replay',async()=>{
  await follow();await reply();await root();await q('UPDATE community_notification_outbox SET version=999');
  for(let n=1;n<=5;n++){
-  await worker();assert.equal(await runOnce(transactionalDb),'retry');await root();const job=await first('SELECT * FROM community_notification_queue');assert.equal(job.attempts,n);assert.equal(job.status,n===5?'failed':'ready');assert.equal(job.last_error,'invalid_event');
+  await worker();assert.equal(await runOnce(transactionalDb),n===5?'failed':'retry');await root();const job=await first('SELECT * FROM community_notification_queue');assert.equal(job.attempts,n);assert.equal(job.status,n===5?'failed':'ready');assert.equal(job.last_error,'invalid_event');
   if(n<5){await worker();assert.equal(await runOnce(transactionalDb),'idle');await root();await q("UPDATE community_notification_queue SET available_at=clock_timestamp()-interval '1 second'");}
  }
  await worker();const event=(await root(),await first('SELECT id FROM community_notification_outbox')).id;
@@ -105,6 +105,19 @@ await check('expired final attempt fails without an endless retry loop',async()=
  await follow();await reply();await worker();await assert.rejects(runOnce(transactionalDb,{afterClaim:()=>{throw new Error('crash');}}));
  await root();await q("UPDATE community_notification_queue SET attempts=5,lease_until=clock_timestamp()-interval '1 second'");await worker();assert.equal(await runOnce(transactionalDb),'idle');
  await root();assert.equal((await first('SELECT status FROM community_notification_queue')).status,'failed');
+});
+await check('operations aggregate is worker-only and tracks backlog, failed work and age without identifiers',async()=>{
+ await follow(); await reply(); await worker();
+ let stats=await first('SELECT * FROM community_notification_stats()');
+ assert.equal(Number(stats.undispatched),1); assert.ok(stats.oldest_pending_seconds>=0);
+ assert.deepEqual(Object.keys(stats).sort(),['expired_leases','failed','oldest_pending_seconds','processing','ready','undispatched']);
+ await q('SELECT community_dispatch_notifications(50)');
+ assert.equal(Number((await first('SELECT * FROM community_notification_stats()')).ready),1);
+ await q('SELECT * FROM community_claim_notification(30)'); await expire();
+ assert.equal(Number((await first('SELECT * FROM community_notification_stats()')).expired_leases),1);
+ await root(); await q("UPDATE community_notification_queue SET status='failed',lease_id=NULL,lease_until=NULL");
+ await worker();stats=await first('SELECT * FROM community_notification_stats()');assert.equal(Number(stats.failed),1);assert.equal(stats.oldest_pending_seconds,0);
+ for(const role of ['anon','authenticated','service_role']){await root();await db.exec(`SET LOCAL ROLE ${role}`);await denied('SELECT * FROM community_notification_stats()');}
 });
 await db.close();
 
