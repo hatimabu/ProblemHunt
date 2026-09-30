@@ -93,6 +93,131 @@ await test('replays all historical migrations and Stage 2 without modifying lega
     VALUES ($1,$2,'reviewing','Private moderation notes')`, [report, ids.moderator]);
 });
 
+await check('unanswered feed excludes answered, private and hidden cases for visitors and owners', async () => {
+  assert.equal((await one("SELECT count(*)::int n FROM pg_constraint WHERE conname='community_solutions_problem_id_fkey'")).n, 1);
+  await actor('author');
+  const unanswered = await one(`INSERT INTO community_problems(category_id,title,symptom,environment,expected_behavior,actual_behavior,visibility)
+    VALUES ($1,'Needs a first answer','Timeout','{"platform":"local"}','Healthy','Timeout','public') RETURNING id`, [category]);
+  await db.exec('RESET ROLE');
+  const hidden = await one(`INSERT INTO community_problems(author_id,category_id,title,symptom,environment,expected_behavior,actual_behavior,visibility,is_hidden)
+    VALUES ($1,$2,'Hidden unanswered','Timeout','{"platform":"local"}','Healthy','Timeout','public',true) RETURNING id`, [ids.author, category]);
+  for (const who of [null, 'author', 'contributor']) {
+    await actor(who, who ? 'authenticated' : 'anon');
+    const rows = (await q(`SELECT p.id FROM community_problems p WHERE p.visibility='public' AND NOT p.is_hidden
+      AND p.state IN ('open','testing') AND NOT EXISTS (SELECT 1 FROM community_solutions s WHERE s.problem_id=p.id)
+      ORDER BY p.created_at DESC,p.id DESC LIMIT 21`)).rows.map(r => r.id);
+    assert.ok(rows.includes(unanswered.id));
+    for (const excluded of [publicProblem, otherProblem, draftProblem, hidden.id]) assert.ok(!rows.includes(excluded));
+  }
+});
+
+await check('tag follows are private, canonical, duplicate-safe and cannot forge ownership or timestamps', async () => {
+  await actor('author');
+  await q("INSERT INTO community_tag_follows(tag) VALUES ('docker') ON CONFLICT(user_id,tag) DO NOTHING");
+  await q("INSERT INTO community_tag_follows(tag) VALUES ('docker') ON CONFLICT(user_id,tag) DO NOTHING");
+  assert.equal((await one('SELECT count(*)::int n FROM community_tag_follows')).n, 1);
+  await denied("INSERT INTO community_tag_follows(tag) VALUES ('docker')", '23505');
+  for (const tag of ['', ' Docker ', 'UPPER']) await denied(`INSERT INTO community_tag_follows(tag) VALUES ('${tag}')`, '23514');
+  await denied(`INSERT INTO community_tag_follows(user_id,tag) VALUES ('${ids.contributor}','cloud')`);
+  await denied("INSERT INTO community_tag_follows(tag,created_at) VALUES ('cloud',now())");
+  await denied("UPDATE community_tag_follows SET tag='cloud'");
+  await actor('contributor');
+  assert.equal((await one('SELECT count(*)::int n FROM community_tag_follows')).n, 0);
+  assert.equal((await q("DELETE FROM community_tag_follows WHERE tag='docker' RETURNING tag")).rows.length, 0);
+  await q("INSERT INTO community_tag_follows(tag) VALUES ('docker')");
+  await actor('author');
+  assert.equal((await one('SELECT count(*)::int n FROM community_tag_follows')).n, 1);
+  await q("DELETE FROM community_tag_follows WHERE tag='docker'");
+  assert.equal((await one('SELECT count(*)::int n FROM community_tag_follows')).n, 0);
+  await actor('contributor');
+  assert.equal((await one('SELECT count(*)::int n FROM community_tag_follows')).n, 1);
+});
+
+await check('saved cases reject drafts and forged owners while supporting idempotent save/remove', async () => {
+  await actor('author');
+  await denied(`INSERT INTO community_saved_cases(problem_id) VALUES ('${draftProblem}')`);
+  await actor('contributor');
+  await q('INSERT INTO community_saved_cases(problem_id) VALUES ($1) ON CONFLICT(user_id,problem_id) DO NOTHING', [publicProblem]);
+  await q('INSERT INTO community_saved_cases(problem_id) VALUES ($1) ON CONFLICT(user_id,problem_id) DO NOTHING', [publicProblem]);
+  assert.equal((await one('SELECT count(*)::int n FROM community_saved_cases')).n, 1);
+  await denied(`INSERT INTO community_saved_cases(problem_id) VALUES ('${publicProblem}')`, '23505');
+  await denied(`INSERT INTO community_saved_cases(user_id,problem_id) VALUES ('${ids.author}','${publicProblem}')`);
+  await denied(`INSERT INTO community_saved_cases(problem_id,created_at) VALUES ('${otherProblem}',now())`);
+  await denied(`UPDATE community_saved_cases SET problem_id='${otherProblem}'`);
+  await actor('author');
+  assert.equal((await one('SELECT count(*)::int n FROM community_saved_cases')).n, 0);
+  assert.equal((await q('DELETE FROM community_saved_cases RETURNING problem_id')).rows.length, 0);
+  assert.equal((await q("SELECT id FROM community_personal_feed('saved')")).rows.length, 0);
+  await actor('contributor');
+  assert.equal((await q("SELECT id FROM community_personal_feed('saved')")).rows[0].id, publicProblem);
+  await q('DELETE FROM community_saved_cases WHERE problem_id=$1', [publicProblem]);
+  assert.equal((await q("SELECT id FROM community_personal_feed('saved')")).rows.length, 0);
+});
+
+await check('personal feeds match any canonical followed tag once and hide later-private content even from its owner', async () => {
+  await actor('author');
+  await q("UPDATE community_problems SET tags=ARRAY['Docker','linux'] WHERE id=$1", [publicProblem]);
+  await q("UPDATE community_problems SET tags=ARRAY['docker'] WHERE id=$1", [draftProblem]);
+  await q("INSERT INTO community_tag_follows(tag) VALUES ('docker'),('linux')");
+  await q('INSERT INTO community_saved_cases(problem_id) VALUES ($1)', [publicProblem]);
+  assert.deepEqual((await q("SELECT id FROM community_personal_feed('following')")).rows.map(r=>r.id), [publicProblem]);
+  await actor('contributor');
+  assert.equal((await q("SELECT id FROM community_personal_feed('following')")).rows.length, 0);
+  await q("INSERT INTO community_tag_follows(tag) VALUES ('docker')");
+  await q('INSERT INTO community_saved_cases(problem_id) VALUES ($1)', [publicProblem]);
+  assert.equal((await q("SELECT id FROM community_personal_feed('following')")).rows[0].id, publicProblem);
+  await actor('author');
+  await q("UPDATE community_problems SET visibility='draft' WHERE id=$1", [publicProblem]);
+  for (const who of ['author','contributor']) {
+    await actor(who);
+    for (const view of ['saved','following']) assert.equal((await q('SELECT id FROM community_personal_feed($1)', [view])).rows.length, 0);
+    // Retain only a private reference, not a cached copy of the content; still removable.
+    assert.equal((await one('SELECT count(*)::int n FROM community_saved_cases')).n, 1);
+    await q('DELETE FROM community_saved_cases WHERE problem_id=$1', [publicProblem]);
+  }
+});
+
+await check('moderator-hidden cases disappear from personal feeds and cannot be newly saved', async () => {
+  await actor('contributor');
+  await q('INSERT INTO community_saved_cases(problem_id) VALUES ($1)', [publicProblem]);
+  await actor('moderator');
+  await q("SELECT community_moderate_report($1,'actioned','Hidden for review','hide')", [report]);
+  await actor('contributor');
+  assert.equal((await q("SELECT id FROM community_personal_feed('saved')")).rows.length, 0);
+  await actor('author');
+  await denied(`INSERT INTO community_saved_cases(problem_id) VALUES ('${publicProblem}')`);
+});
+
+await check('personal feed pagination is stable, bounded and filtered before page selection', async () => {
+  const created = [];
+  for (let i=0; i<25; i++) created.push((await one(`INSERT INTO community_problems(author_id,category_id,title,symptom,environment,expected_behavior,actual_behavior,visibility,tags)
+    VALUES ($1,$2,$3,'pagination','{"setup":"local"}','working','failure','public',ARRAY['feed-page','second-tag']) RETURNING id`, [ids.author,category,`Personal page ${i}`])).id);
+  await actor('contributor');
+  await q("INSERT INTO community_tag_follows(tag) VALUES ('feed-page'),('second-tag')");
+  for (const id of created) await q('INSERT INTO community_saved_cases(problem_id) VALUES ($1)', [id]);
+  for (const view of ['following','saved']) {
+    const first = (await q('SELECT id FROM community_personal_feed($1,0)', [view])).rows;
+    const next = (await q('SELECT id FROM community_personal_feed($1,20)', [view])).rows;
+    assert.equal(first.length,21); assert.equal(next.length,5);
+    assert.equal(new Set([...first.slice(0,20),...next].map(r=>r.id)).size,25);
+    assert.deepEqual((await q('SELECT id FROM community_personal_feed($1,-4)', [view])).rows,first);
+    assert.equal((await q('SELECT id FROM community_personal_feed($1,10001)', [view])).rows.length,0);
+  }
+  await actor('author');
+  for (const view of ['following','saved']) assert.equal((await q('SELECT id FROM community_personal_feed($1)', [view])).rows.length,0);
+});
+
+await check('anonymous and missing-identity callers cannot inspect or change personal library', async () => {
+  await actor(null, 'anon');
+  await denied('SELECT * FROM community_tag_follows');
+  await denied('SELECT * FROM community_saved_cases');
+  await denied("SELECT * FROM community_personal_feed('following')");
+  await actor(null);
+  await denied("SELECT * FROM community_personal_feed('saved')");
+  await actor('author');
+  await denied("SELECT * FROM community_personal_feed('everyone')", '23514');
+});
+
 await check('all new tables enforce RLS and expose no anonymous writes or client truncation', async () => {
   const tables = (await q("SELECT relname, relrowsecurity FROM pg_class WHERE relnamespace = 'public'::regnamespace AND relkind = 'r' AND relname LIKE 'community_%'")).rows;
   assert.ok(tables.length >= 10);
@@ -528,5 +653,68 @@ await check('fixture cleanup aborts instead of deleting a new contribution',asyn
  await q(newSolutionSql(fixture.id));
  const sql=(await read(new URL('../migrations/20260927000300_remove_known_community_fixtures.sql',import.meta.url))).replace(/^BEGIN;/,'').replace(/COMMIT;\s*$/,'');
  await denied(sql,'P0001');assert.equal((await q('SELECT id FROM community_problems WHERE id=$1',[fixture.id])).rows.length,1);
+});
+const writeupSql = (type, visibility = 'public') => `INSERT INTO community_problems
+ (post_type,category_id,title,symptom,environment,expected_behavior,actual_behavior,attempted_tests,verification_method,lessons,visibility)
+ VALUES ('${type}','${category}','Local ${type} evidence','Observed timeout','{"description":"Disposable lab"}',
+ 'Healthy','Timeout','[{"test":"Inspect route","observation":"Wrong target"}]','Local assertions only; hosted result unknown','Validate configuration','${visibility}') RETURNING *`;
+await check('typed publications require structured evidence; old inserts default to problem', async () => {
+ await actor('author');
+ assert.equal((await one('SELECT post_type FROM community_problems WHERE id=$1',[publicProblem])).post_type,'problem');
+ for (const type of ['lab','incident']) {
+  const p=await one(writeupSql(type,'draft'));
+  await q("UPDATE community_problems SET attempted_tests='[]',lessons='',verification_method='' WHERE id=$1",[p.id]);
+  await denied(`UPDATE community_problems SET visibility='public' WHERE id='${p.id}'`,'23514');
+  await q(`UPDATE community_problems SET attempted_tests='[{"test":"Check","observation":"Failed"}]', lessons='Check inputs',verification_method='Observed locally',visibility='public' WHERE id=$1`,[p.id]);
+  await denied(`UPDATE community_problems SET lessons='' WHERE id='${p.id}'`,'23514');
+  await denied(`UPDATE community_problems SET verification_method='' WHERE id='${p.id}'`,'23514');
+  await denied(`UPDATE community_problems SET attempted_tests='[]' WHERE id='${p.id}'`,'23514');
+  await denied(`UPDATE community_problems SET post_type='problem' WHERE id='${p.id}'`);
+ }
+ await denied(writeupSql('invalid'),'23514');
+});
+await check('write-ups cannot enter acceptance workflow or receive solutions', async () => {
+ await actor('author');
+ const p=await one(writeupSql('lab'));
+ await denied(`SELECT community_set_problem_state('${p.id}','testing')`,'23514');
+ await denied(`SELECT community_accept_solution('${p.id}','${solution}','Worked','Local check')`,'23514');
+ await actor('contributor');
+ await denied(newSolutionSql(p.id));
+ assert.equal((await q("UPDATE community_problems SET lessons='Tampered' WHERE id=$1 RETURNING id",[p.id])).rows.length,0);
+ await db.exec('RESET ROLE');
+ await denied(`UPDATE community_problems SET state='testing' WHERE id='${p.id}'`,'23514');
+ await denied(`UPDATE community_problems SET post_type='problem' WHERE id='${p.id}'`,'23514');
+});
+await check('typed search filters before pagination and excludes private and hidden write-ups', async () => {
+ await actor('author');
+ const lab=await one(writeupSql('lab')), incident=await one(writeupSql('incident')), draft=await one(writeupSql('lab','draft'));
+ assert.equal((await q("SELECT id FROM community_search(p_post_type=>'lab')")).rows.length,1);
+ assert.equal((await q("SELECT id FROM community_search(p_post_type=>'incident')")).rows[0].id,incident.id);
+ assert.equal((await q("SELECT id FROM community_search(p_post_type=>'lab',p_state=>'open')")).rows.length,0);
+ assert.equal((await q("SELECT id FROM community_search(p_post_type=>'invalid')")).rows.length,0);
+ await actor('contributor');
+ assert.equal((await q('SELECT id FROM community_problems WHERE id=$1',[draft.id])).rows.length,0);
+ await db.exec('RESET ROLE');
+ await q('UPDATE community_problems SET is_hidden=true WHERE id=$1',[lab.id]);
+ await actor(null,'anon');
+ assert.equal((await q("SELECT id FROM community_search(p_post_type=>'lab')")).rows.length,0);
+ assert.ok((await q("SELECT id FROM community_search('','','','','',0)")).rows.some(p=>p.id===incident.id));
+ await denied(writeupSql('lab'));
+});
+await check('typed pagination and personal feeds retain type and lessons without acceptance', async () => {
+ for(let i=0;i<25;i++) await q(writeupSql('lab').replace('(post_type,category_id', '(author_id,post_type,category_id').replace("VALUES ('lab'", `VALUES ('${ids.author}','lab'`).replace('Local lab evidence',`Local lab evidence ${i}`));
+ await actor('author');
+ const first=(await q("SELECT * FROM community_search(p_post_type=>'lab')")).rows;
+ const second=(await q("SELECT * FROM community_search(p_post_type=>'lab',p_offset=>20)")).rows;
+ assert.equal(first.length,21); assert.equal(second.length,5);
+ assert.equal(new Set([...first.slice(0,20),...second].map(p=>p.id)).size,25);
+ await q('INSERT INTO community_saved_cases(problem_id) VALUES($1)',[first[0].id]);
+ const saved=(await q("SELECT * FROM community_personal_feed('saved')")).rows;
+ assert.equal(saved[0].post_type,'lab'); assert.equal(saved[0].lessons,'Validate configuration');
+ assert.equal(saved[0].accepted_solution_id,null);
+ const contributions=(await q("SELECT * FROM community_contributions($1,'problems','',0,false)",[ids.author])).rows;
+ assert.ok(contributions.some(p=>p.post_type==='lab' && !p.accepted));
+ const active=(await q("SELECT * FROM community_contributions($1,'problems','active',0,false)",[ids.author])).rows;
+ assert.ok(active.every(p=>p.post_type==='problem'));
 });
 await db.close();

@@ -2,6 +2,9 @@
 // Protected fields must never be sent by a client insert/update.
 export type CommunityState = "open" | "testing" | "solved" | "closed";
 export type CommunityVisibility = "draft" | "public";
+export type CommunityPostType = 'problem' | 'lab' | 'incident';
+export const postTypeLabels = { problem: 'Problem', lab: 'Lab write-up', incident: 'Incident review' } as const;
+export const isProblemPost = (post: { post_type?: CommunityPostType }) => !post.post_type || post.post_type === 'problem';
 export type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
 
 export interface AttemptedTest {
@@ -24,6 +27,8 @@ export interface CommunityCategory {
 }
 
 export interface CommunityProblemInput {
+  post_type?: CommunityPostType;
+  lessons?: string;
   category_id: string;
   title: string;
   symptom?: string;

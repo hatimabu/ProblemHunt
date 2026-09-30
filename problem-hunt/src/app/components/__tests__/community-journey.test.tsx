@@ -1,3 +1,4 @@
+vi.mock('../../../lib/community-notifications', () => ({ notificationApi: { follows: async () => false }, notificationLink: () => null }));
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Routes, Route } from 'react-router';
@@ -6,7 +7,7 @@ import { CommunityDiscussion } from '../community/problem-discussion';
 import { CommunityEditor } from '../community/problem-editor';
 import type { CommunityProblem } from '../../../lib/community';
 
-const api = vi.hoisted(() => ({ get: vi.fn(), discussion: vi.fn(), taxonomy: vi.fn(), save: vi.fn(), solution: vi.fn(), comment: vi.fn(), state: vi.fn(), accept: vi.fn(), voteInfo: vi.fn(), publicNames: vi.fn() }));
+const api = vi.hoisted(() => ({ get: vi.fn(), discussion: vi.fn(), taxonomy: vi.fn(), save: vi.fn(), solution: vi.fn(), comment: vi.fn(), state: vi.fn(), accept: vi.fn(), voteInfo: vi.fn(), publicNames: vi.fn(), preferences: vi.fn() }));
 const auth = vi.hoisted(() => ({ user: { id: 'author' } as { id: string } | null, isLoading: false }));
 vi.mock('../../contexts/AuthContext', () => ({ useAuth: () => auth }));
 vi.mock('../navbar', () => ({ Navbar: () => null }));
@@ -14,7 +15,7 @@ vi.mock('../../../lib/supabase-community', async () => ({
   ...(await vi.importActual('../../../lib/supabase-community')), communityApi: api,
 }));
 const problem: CommunityProblem = {
-  id: 'case-1', author_id: 'author', category_id: 'category', title: 'Gateway timeout', symptom: '504 response',
+  post_type: 'problem', lessons: '', id: 'case-1', author_id: 'author', category_id: 'category', title: 'Gateway timeout', symptom: '504 response',
   environment: { description: 'Azure test setup' }, product: 'Gateway', product_version: '1', expected_behavior: '200 response',
   actual_behavior: '504 response', attempted_tests: [], observations: '', verification_method: '', tags: [],
   visibility: 'public', state: 'open', accepted_solution_id: null, resolution_observation: null, resolution_verification: null,
@@ -31,6 +32,7 @@ function page(path: string) {
 beforeEach(() => {
   Object.values(api).forEach(m => m.mockReset()); auth.user = { id: 'author' }; auth.isLoading = false;
   api.voteInfo.mockResolvedValue({ count: 0, voted: false });
+  api.preferences.mockResolvedValue({tags:[],saved:[]});
   api.publicNames.mockResolvedValue([{ user_id: 'author', display_name: 'Hatim' }, { user_id: 'contributor', display_name: 'Maya' }]);
   api.get.mockResolvedValue({ ...problem });
   api.discussion.mockResolvedValue({ solutions: [solution], comments: [] });
@@ -38,6 +40,47 @@ beforeEach(() => {
 });
 
 describe('community core journey', () => {
+  it.each(['lab', 'incident'] as const)('requires evidence for %s publication and persists it', async post_type => {
+    page('/post-problem');
+    await userEvent.selectOptions(await screen.findByLabelText('Content type'), post_type);
+    await userEvent.type(screen.getByLabelText('Post title'), 'Local evidence');
+    await userEvent.selectOptions(screen.getByLabelText('Category'), 'category');
+    for (const label of [post_type === 'lab' ? 'Lab objective' : 'Impact and symptoms', 'Environment and setup', 'Expected result', 'Actual result']) await userEvent.type(screen.getByLabelText(label), 'Observed locally');
+    await userEvent.click(screen.getByRole('button', { name: 'Publish write-up' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('at least one step');
+    expect(api.save).not.toHaveBeenCalled();
+    await userEvent.click(screen.getByRole('button', { name: 'Add step' }));
+    await userEvent.type(screen.getByLabelText('Step 1'), 'Inspect configuration');
+    await userEvent.type(screen.getByLabelText('Observation 1'), 'Missing setting');
+    await userEvent.type(screen.getByLabelText('Verification evidence and limitations'), 'Local checks only');
+    await userEvent.type(screen.getByLabelText('Lessons learned'), 'Validate required inputs');
+    const saved = { ...problem, post_type, lessons: 'Validate required inputs' };
+    api.save.mockResolvedValue(saved); api.get.mockResolvedValue(saved);
+    await userEvent.click(screen.getByRole('button', { name: 'Publish write-up' }));
+    await waitFor(() => expect(api.save).toHaveBeenCalledWith(expect.objectContaining({ post_type, visibility: 'public', lessons: 'Validate required inputs', attempted_tests: [{ test: 'Inspect configuration', observation: 'Missing setting' }] }), undefined));
+    expect(await screen.findByRole('heading', { name: 'Lessons learned' })).toBeVisible();
+    expect(screen.queryByRole('button', { name: 'Mark as Testing' })).not.toBeInTheDocument();
+  });
+  it('keeps type fixed when editing a private write-up and saves incomplete drafts', async () => {
+    api.get.mockResolvedValue({ ...problem, post_type: 'lab', visibility: 'draft', lessons: 'Existing lesson' });
+    page('/problem/case-1/edit');
+    expect(await screen.findByLabelText('Content type')).toBeDisabled();
+    expect(screen.getByLabelText('Lessons learned')).toHaveValue('Existing lesson');
+    api.save.mockRejectedValue(new Error('Offline'));
+    await userEvent.click(screen.getByRole('button', { name: 'Save private draft' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Offline');
+    expect(api.save).toHaveBeenCalledWith(expect.objectContaining({ post_type: 'lab', visibility: 'draft' }), 'case-1');
+    expect(screen.getByLabelText('Lessons learned')).toHaveValue('Existing lesson');
+  });
+  it('never labels a write-up as an accepted fix even with inconsistent service data', async () => {
+    api.get.mockResolvedValue({ ...problem, post_type: 'incident', state: 'solved', accepted_solution_id: solution.id, resolution_observation: 'Invalid acceptance' });
+    page('/problem/case-1');
+    expect(await screen.findByText('Incident review')).toBeVisible();
+    expect(api.discussion).not.toHaveBeenCalled();
+    expect(screen.queryByRole('region', { name: 'Confirmed fix' })).not.toBeInTheDocument();
+    expect(screen.queryByText('Invalid acceptance')).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: /Solutions/ })).not.toBeInTheDocument();
+  });
   it('attributes the problem, solutions and comments by public name and role for visitors', async () => {
     auth.user = null;
     api.discussion.mockResolvedValue({ solutions: [solution], comments: [

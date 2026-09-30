@@ -1,5 +1,72 @@
 # Release checklist
 
+## Session 05 private reply notifications — 2026-09-28
+
+- [x] Approved discussion follows, private inbox/read controls, follow removal and account isolation; legacy marketplace entries remain outside the active inbox.
+- [x] Additive pending notification migration: transactional identifier-only events, durable queue, lease fencing, idempotence, bounded retry/recovery, opt-out generations and visibility rechecks.
+- [x] Existing notification table reused; narrow browser updates and dedicated server worker role. Local credentials/context stay ignored and are excluded from the image context.
+- [x] 91 frontend/API tests, 59 disposable SQL/recovery scenarios across 34 migrations, worker config test, TypeScript/build and whitespace checks.
+- [x] Mocked compiled desktop/mobile journeys, axe/no-overflow/no page errors; screenshots inspected.
+- [x] Real Docker/PostgreSQL build/init, UID 1000/Node 22, healthy endpoint and graceful exit, crash-before/after effects, deduplication, stale lease fencing, two-connection claims and hidden-content suppression.
+- [x] Actual database/worker restart preserves one delivery; deliberate database outage yields 503 and recovery restores 200. Local lab stopped with its dedicated volume retained.
+- [ ] Fresh hosted history/grant/role review and separately authorized isolated migration; real Supabase Auth/PostgREST and full browser-to-worker integration remain unverified.
+- [ ] Define retention, export/deletion handling, capacity/load limits and wider concurrent visibility/opt-out exercises before launch.
+- [ ] Session 06 requires fresh approval. Cloud resources, main integration/deployment and registry publishing remain unapproved.
+
+## Session 04 typed knowledge posts — 2026-09-28
+
+- [x] Approved typed editor, structured lab/incident publication requirements, draft/edit flow, accurate feed/browse/workspace labels and content-type filtering.
+- [x] Prepare `20260928000200_community_post_types.sql`: backward-defaulted type, lessons, immutable type, publication/state constraints, solution restriction and compatible RPC arguments.
+- [x] 83 frontend/API tests, TypeScript/build; 47 disposable SQL scenarios across 33 migrations. Existing problem acceptance and legacy data preservation pass.
+- [x] Mocked compiled browser journeys at 1440/390px: both types draft/edit/publish/reload, failed validation/recovery, filtered browse, axe/no-overflow/no page errors; screenshots inspected.
+- [x] Local unpublished incident draft attributes repository evidence and makes no unverified cloud-recovery claims. Runbook includes migration compatibility and rollback cautions.
+- [ ] Review exact pending migrations and current hosted history before separately authorized application; no hosted SQL was applied. New frontend needs this schema, and old frontend is not a safe complete rollback once write-ups exist.
+- [ ] Verify extended search and contributions RPC/grants/cache through real isolated Auth/PostgREST, plus private/hidden/pagination and multi-session journeys.
+- [ ] Existing release/runtime/bundle and operational gates remain. No deployment or push is authorized here.
+- [ ] Obtain explicit Session 05 approval before discussion following/Docker notification work; recheck Docker availability then.
+
+## Session 03 private personal library — 2026-09-27
+
+- [x] User-approved followed tags/saved cases with private feeds, persistent service reads, follow/save/remove controls and safe auth return routes.
+- [x] Prepare additive `20260928000100_community_personal_library.sql`; owner RLS, idempotent keys, narrow grants, no client updates/timestamps, visibility checks before pagination.
+- [x] 75 frontend tests, TypeScript/build and whitespace checks; 43 disposable SQL scenarios replay 32 migrations with unchanged legacy data.
+- [x] Mocked compiled desktop/mobile review: follow/unfollow/save/remove/reload, hidden cases, failed write/retry, second account and logout; axe/no-overflow and screenshot review.
+- [ ] Verify exact new grants/upserts and RPC via real isolated Auth/PostgREST; concurrency/load remain untested.
+- [ ] Review current hosted migration history and all exact pending SQL before separate migration approval. New SQL has not been applied to hosted Supabase.
+- [ ] Include private preference references in eventual account/content export/deletion procedures; saved references can persist when content is hidden. No automatic deletion/cascade was introduced.
+- [ ] Existing release gates and bundle/runtime warnings remain. Obtain Session 04 approval before lab/incident content work.
+
+## Session 02 community layout — 2026-09-27
+
+- [x] Approved compact home feed, wide Home/Browse/domain shell, functional route links, mobile menu and contextual tested fixes.
+- [x] Accurate server-filtered unanswered pagination; preserve acceptance semantics, simulated labels and honest loading/error/empty behavior.
+- [x] 63 frontend tests, TypeScript/build; 37 disposable database tests across unchanged 31 migrations.
+- [x] Mocked compiled-browser review at 390/820/1024/1440px: navigation/reload/retry/keyboard, no overflow, axe; desktop/mobile screenshots inspected.
+- [ ] Verify new read query against isolated full Supabase/PostgREST; mocked HTTP and equivalent SQL do not prove hosted integration.
+- [ ] Existing release gaps persist: Node 22 parity, full isolated write/concurrency journeys and bundle warning. No hosted data or deployment changed.
+- [ ] Obtain Session 03 approval before followed tags/saved cases. Preserve all uncommitted planning and baseline work.
+
+## Session 01 local baseline — 2026-09-27
+
+- [x] Explicit Session 01 approval; preserve earlier planning edits on the community feature branch.
+- [x] Locked installs for both packages; unified verification command and corrected root startup commands.
+- [x] After installs: 57 frontend tests, 36 disposable database scenarios across 31 migrations, TypeScript and build pass.
+- [x] Compiled-preview direct-route HTML/CSP smoke, script syntax/invalid-input guard, ignored secret paths and whitespace checks.
+- [x] Save setup, evidence boundaries, recovery exercise and integration prerequisites in `community-session-01-baseline.md`.
+- [ ] Verify under Node 22/CI; local Node 25 and existing bundle/localStorage warnings remain.
+- [ ] Establish isolated full Supabase; adapt historical harness state expectations, local URL support and admin credential sources before write tests.
+- [ ] Review current hosted history before any separately authorized migration; local replay does not establish remote application.
+- [ ] Obtain Session 02 approval before redesign. Session 01 grants no release/deployment authorization.
+
+## Community/cloud roadmap planning — 2026-09-27
+
+- [x] Save repo memory, roadmap and ten sequenced prompts; add AGENTS.md discovery pointer.
+- [x] Record approval before every session and separate approval for cloud/hosted actions; no reset-triggered automatic work.
+- [x] Documentation-only whitespace, local reference and session-sequence checks; application code unchanged, application tests not rerun.
+- [ ] Obtain approval for Session 01 and establish current baseline evidence before implementation milestones.
+- [ ] Resolve isolated test prerequisites; assess exact hosted migration status before any separately authorized application.
+- [ ] Review budget/resource scope before any cloud exercise. AKS remains optional.
+
 ## Discussion attribution and motion — 2026-09-27
 
 - [x] Steady green solution contour, neutral accepted-solution surface, confirmed-summary-only idle glow, reduced-motion support and compact report actions.

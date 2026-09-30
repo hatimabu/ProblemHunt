@@ -1,4 +1,5 @@
 import { PrivacyPage } from './components/community/privacy';
+import { NotificationsPage } from './components/community/notifications';
 import { ModeratorPage } from './components/community/moderation';
 import { ReputationPage } from './components/community/reputation';
 import { createBrowserRouter, Navigate } from "react-router";
@@ -13,6 +14,7 @@ import { ProtectedRoute } from "./components/ProtectedRoute.tsx";
 import { ResetPasswordPage } from "./components/reset-password-page.tsx";
 
 export const router = createBrowserRouter([{path:"/privacy",Component:PrivacyPage},{ path: "/moderation", element: <ProtectedRoute><ModeratorPage /></ProtectedRoute> },
+  {path:'/notifications',Component:NotificationsPage},
   {
     path: "/",
     Component: CommunityLanding,

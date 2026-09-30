@@ -2,7 +2,7 @@
 
 **Real problems. Tested solutions.** ProblemHunt is being transformed into a free technical community for Cloud/DevOps and Professional AV. Authors post problems, test proposed solutions and accept the fix that worked.
 
-The active UI now implements public discovery, structured problems, tested solutions, votes, category reputation and private moderation. Legacy marketplace files and tables remain for retention, outside the active routes; unsafe legacy helpers are separately restricted. See [the audit and staged migration map](docs/community-platform-audit.md) for what exists, known risks and the implementation sequence. Tips, payment processing, Docker and AI are outside this transformation's current scope.
+The active UI implements public discovery, structured problems and write-ups, tested solutions, votes, reputation, private follows/saves and reply notifications. Legacy marketplace files and tables remain outside the active routes. See [the audit](docs/community-platform-audit.md), [community/cloud roadmap](docs/COMMUNITY_CLOUD_ROADMAP.md) and [local Docker notification runbook](docs/community-session-05-notifications.md). Cloud operation and AI remain later milestones; payment behavior remains excluded.
 
 ## Architecture
 
@@ -13,11 +13,20 @@ React + Vite static site
 Supabase: Auth, Postgres, RLS/RPC, Storage
 ```
 
-There is no application server, Python runtime, Azure Function, Cosmos DB dependency, or service-role key in the browser. Azure Static Web Apps is retained only as an optional static-file host.
+The frontend talks directly to Supabase; no service-role key is placed in the browser. A separate Node/Docker notification worker is implemented and verified in an isolated PostgreSQL lab. Azure Static Web Apps remains the static-file host; worker cloud deployment is not configured or authorized.
 
 ## Local setup
 
-Requirements: Node.js 22 and npm. Database migration work additionally requires a separately configured disposable test database; it is not part of starting the frontend.
+Requirements: Node.js 22 and npm (`.nvmrc` records the CI major version). From the repository root, install the locked frontend, test and worker packages and verify without hosted credentials:
+
+```powershell
+npm run install:all
+npm run verify
+```
+
+The database suite creates its own disposable in-memory PGlite instance. Docker and hosted credentials are not required for these checks. The verification build uses placeholder public configuration and disables Sentry; it is not a release artifact. See the [Session 01 runbook](docs/community-session-01-baseline.md) for evidence, limits and full Supabase prerequisites.
+
+For interactive development, configure a separately isolated Supabase environment:
 
 ```powershell
 Copy-Item problem-hunt/.env.example problem-hunt/.env.local
@@ -57,9 +66,10 @@ The GitHub workflow in `.github/workflows/deploy-azure.yml` deploys automaticall
 
 - `VITE_SUPABASE_URL`
 - `VITE_SUPABASE_ANON_KEY`
-- `AZURE_STATIC_WEB_APP_NAME` (repository variable naming the reviewed existing resource)
 - `VITE_SENTRY_DSN` (optional repository variable for sanitized error monitoring)
 - `AZURE_CREDENTIALS` — only if using the included Azure Static Web Apps host
+
+The existing app name and resource group are set directly in the workflow; an `AZURE_STATIC_WEB_APP_NAME` variable is not required.
 
 Any static host is compatible as long as it serves the `problem-hunt/dist/` output with SPA fallback to `index.html`, and injects the `VITE_*` values during the build.
 
@@ -74,6 +84,7 @@ Any static host is compatible as long as it serves the `problem-hunt/dist/` outp
 - `/profile`, `/people/:id` — private account editing and public community profile
 - `/dashboard/reputation` — own category reputation and event history
 - `/leaderboard` — category reputation and own event history
+- `/notifications` — private reply inbox and discussion follow management
 - `/auth` — Supabase authentication
 
 ## Security model

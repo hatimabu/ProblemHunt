@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test community.test.mjs"
+    "test": "node --test community.test.mjs notifications.test.mjs"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.13.0",

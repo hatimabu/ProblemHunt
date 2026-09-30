@@ -86,6 +86,9 @@ describe("AuthPage", () => {
     ['/auth?returnTo=%2Fmoderation', '/moderation'],
     ['/auth?returnTo=%2Fmy-solutions%3Faccepted%3D1', '/my-solutions?accepted=1'],
     ['/auth?returnTo=%2Fprofile', '/profile'],
+    ['/auth?returnTo=%2F%3Fview%3Dsaved', '/?view=saved'],
+    ['/auth?returnTo=%2Fdomains%2Fcloud-devops%3Ftag%3Ddocker', '/domains/cloud-devops?tag=docker'],
+    ['/auth?returnTo=%2F%2Fevil.example', '/dashboard'],
     ['/auth?returnTo=https%3A%2F%2Fevil.example', '/dashboard'],
   ])('honors safe return links only: %s', async (path, expected) => {
     loginMock.mockResolvedValue(undefined);

@@ -3,15 +3,15 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { CommunityProblem, CommunityProblemInput, CommunitySolution, CommunitySolutionInput,
   CommunityComment, CommunityCommentInput, CommunityCategory, CommunityDomain, CommunityAcceptanceInput } from './community';
 
-export const PROBLEM_COLUMNS = 'id,is_example,is_hidden,author_id,category_id,title,symptom,environment,product,product_version,expected_behavior,actual_behavior,attempted_tests,observations,verification_method,tags,visibility,state,accepted_solution_id,resolution_observation,resolution_verification,solved_at,created_at,updated_at';
+export const PROBLEM_COLUMNS = 'post_type,lessons,id,is_example,is_hidden,author_id,category_id,title,symptom,environment,product,product_version,expected_behavior,actual_behavior,attempted_tests,observations,verification_method,tags,visibility,state,accepted_solution_id,resolution_observation,resolution_verification,solved_at,created_at,updated_at';
 const SOLUTION_COLUMNS = 'id,problem_id,author_id,diagnosis,steps,reasoning,verification_method,observations,sources,created_at,updated_at';
 const COMMENT_COLUMNS = 'id,solution_id,author_id,kind,body,attempted_test,observation,verification_method,created_at,updated_at';
-const problemKeys = ['category_id','title','symptom','environment','product','product_version','expected_behavior','actual_behavior','attempted_tests','observations','verification_method','tags','visibility'] as const;
+const problemKeys = ['post_type','lessons','category_id','title','symptom','environment','product','product_version','expected_behavior','actual_behavior','attempted_tests','observations','verification_method','tags','visibility'] as const;
 
 export function communityError(error: unknown): string {
   const e = error as { code?: string; message?: string };
   if (e?.code === 'P0001') return 'The hourly posting limit has been reached. Please try again later.';
-  if (['42P01', '42883', 'PGRST202', 'PGRST205'].includes(e?.code || ''))
+  if (['42P01', '42703', 'PGRST204', '42883', 'PGRST202', 'PGRST205'].includes(e?.code || ''))
     return 'The community service is not ready in this environment. Please contact the site administrator.';
   if (['42501', 'PGRST301', 'PGRST303'].includes(e?.code || ''))
     return 'You do not have permission for this action, or your session has expired. Sign in and try again.';
@@ -33,6 +33,53 @@ export function safeSourceUrl(value: string): string | null {
 
 export function createCommunityApi(client: SupabaseClient) {
   return {
+    async preferences(userId: string) {
+      // Explicit identity filters complement RLS and prevent account-switch races.
+      async function readAll(table: string, column: string): Promise<string[]> {
+        const values: string[] = [];
+        for (let offset = 0; ; offset += 500) {
+          const r = await client.from(table).select(column).eq('user_id', userId).order(column).range(offset, offset + 499);
+          fail(r.error);
+          const rows = (r.data || []) as unknown as Record<string, string>[];
+          values.push(...rows.map(row => row[column]));
+          if (rows.length < 500) return values;
+        }
+      }
+      const [tags, saved] = await Promise.all([readAll('community_tag_follows', 'tag'), readAll('community_saved_cases', 'problem_id')]);
+      return { tags, saved };
+    },
+    async followTag(userId: string, tag: string, followed: boolean) {
+      const normalized = tag.trim().toLowerCase();
+      if (!normalized || normalized.length > 80 || /[\x00-\x1f\x7f]/.test(normalized)) throw new Error('Use a tag of 1–80 characters without control characters.');
+      const table = client.from('community_tag_follows');
+      const r = followed ? await table.upsert({ user_id: userId, tag: normalized }, { onConflict: 'user_id,tag', ignoreDuplicates: true })
+        : await table.delete().eq('user_id', userId).eq('tag', normalized);
+      fail(r.error);
+    },
+    async saveCase(userId: string, problemId: string, saved: boolean) {
+      const table = client.from('community_saved_cases');
+      const r = saved ? await table.upsert({ user_id: userId, problem_id: problemId }, { onConflict: 'user_id,problem_id', ignoreDuplicates: true })
+        : await table.delete().eq('user_id', userId).eq('problem_id', problemId);
+      fail(r.error);
+    },
+    async personalFeed(view: 'following' | 'saved', page = 1) {
+      const r = await client.rpc('community_personal_feed', { p_view: view, p_offset: (Math.min(501, Math.max(1, Math.floor(page) || 1)) - 1) * 20 });
+      fail(r.error); const rows = (r.data || []) as CommunityProblem[];
+      return { rows: rows.slice(0, 20), hasMore: rows.length > 20 };
+    },
+    async feed(view: 'latest' | 'unanswered' | 'tested' = 'latest', page = 1) {
+      // Explicit FK distinguishes proposed solutions from the accepted-solution relationship.
+      const columns = PROBLEM_COLUMNS + (view === 'unanswered' ? ',answers:community_solutions!community_solutions_problem_id_fkey()' : '');
+      let query = client.from('community_problems').select(columns).eq('visibility', 'public').eq('is_hidden', false);
+      if (view === 'unanswered') query = query.eq('post_type', 'problem').in('state', ['open', 'testing']).is('answers', null);
+      if (view === 'tested') query = query.eq('post_type', 'problem').eq('state', 'solved').not('accepted_solution_id', 'is', null);
+      const offset = (Math.min(501, Math.max(1, Math.floor(page) || 1)) - 1) * 20;
+      const r = await query.order(view === 'tested' ? 'solved_at' : 'created_at', { ascending: false })
+        .order('id', { ascending: false }).range(offset, offset + 20);
+      fail(r.error);
+      const rows = (r.data || []) as unknown as CommunityProblem[];
+      return { rows: rows.slice(0, 20), hasMore: rows.length > 20 };
+    },
     async publicNames(ids: string[]): Promise<{ user_id: string; display_name: string }[]> {
       if (!ids.length) return [];
       // Explicit consent filter keeps identity consistent for visitors and signed-in readers.
@@ -74,10 +121,10 @@ export function createCommunityApi(client: SupabaseClient) {
     async ledger() {
       const r = await client.from('community_reputation_events').select('id,category_id,reason,points,created_at').order('created_at',{ascending:false}).limit(100); fail(r.error); return r.data || [];
     },
-    async search(filters: { query?: string; domain?: string; category?: string; tag?: string; state?: string; page?: number }) {
+    async search(filters: { query?: string; domain?: string; category?: string; tag?: string; state?: string; postType?: string; page?: number }) {
       const { data, error } = await client.rpc('community_search', {
         p_query: filters.query || '', p_domain: filters.domain || '', p_category: filters.category || '',
-        p_tag: filters.tag || '', p_state: filters.state || '', p_offset: ((filters.page || 1) - 1) * 20,
+        p_post_type: filters.postType || '', p_tag: filters.tag || '', p_state: filters.state || '', p_offset: ((filters.page || 1) - 1) * 20,
       });
       fail(error);
       const rows = (data || []) as CommunityProblem[];
@@ -107,7 +154,9 @@ export function createCommunityApi(client: SupabaseClient) {
     },
     async save(input: CommunityProblemInput, id?: string) {
       const table = client.from('community_problems');
-      const query = id ? table.update(problemPayload(input)).eq('id', id) : table.insert(problemPayload(input));
+      const payload = problemPayload(input);
+      if (id) delete payload.post_type; // Type is fixed at creation.
+      const query = id ? table.update(payload).eq('id', id) : table.insert(payload);
       const { data, error } = await query.select(PROBLEM_COLUMNS).maybeSingle();
       fail(error); return required(data) as CommunityProblem;
     },
