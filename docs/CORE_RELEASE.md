@@ -1,5 +1,7 @@
 # Core website release — 2026-10-02
 
+Latest outcome: user authorized publication and all work was pushed to main at `907c462`. Remote frontend/database and real integration checks passed. [Azure workflow run](https://github.com/hatimabu/ProblemHunt/actions/runs/37040380754) failed before upload because SUPPORT_CONTACT is empty. Required privacy migration remains pending. No deployment or hosted SQL succeeded. Main publication approval persists; older preparation-only restrictions below are historical. Configure the owner's contact and apply the separately approved privacy SQL before retrying. The release guard also verifies the required export RPC exists and denies anonymous access.
+
 The user authorized finishing the functional community website before the separate Docker/Azure learning exercises. Work stays on `feature/community-knowledge-platform`. No merge, push, deployment, paid service, hosted migration or data removal is included in this preparation.
 
 ## Candidate scope

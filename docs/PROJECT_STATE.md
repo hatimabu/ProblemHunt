@@ -1,4 +1,8 @@
 # ProblemHunt project state
+## Main pushed; deployment blocked by contact configuration — 2026-10-02
+
+User explicitly authorized main publication. Committed all completed work, merged into current main with its CSS correction preserved, and pushed `907c462540b390c9cc9995231726afa65db149df`. GitHub run https://github.com/hatimabu/ProblemHunt/actions/runs/37040380754 passed all frontend/database and real integration jobs. Azure authentication succeeded; Build frontend failed because SUPPORT_CONTACT is empty. No upload occurred, so this is NOT a successful live release. Required hosted privacy SQL remains pending. Release guard now also probes the anonymous export RPC to block a missing schema; mocked present/missing checks pass. No synthetic production writes, hosted migration, new resource or cost introduced. Next: contact configuration and scoped privacy migration approval/application, then retry deployment under existing user authorization. Dependency install reported 7 moderate/3 high advisories, untriaged; previous worker image scan remains a separate learning-service issue.
+
 ## Core implementation complete locally — 2026-10-02
 
 Added private account JSON downloads, deletion request/cancel controls and a trusted moderator review queue. Requests do not erase accounts or other authors' replies. Additive `20261002000100_community_account_privacy.sql` is local-only; caller-bound export excludes credentials, private moderation notes, other authors' solution snapshots and reputation event keys. Operator export updated consistently. Public privacy copy describes the actual scope.

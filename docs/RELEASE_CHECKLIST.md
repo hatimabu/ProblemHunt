@@ -1,4 +1,12 @@
 # Release checklist
+## Publication attempt — 2026-10-02
+
+- [x] Explicit user approval for main commit/push and existing Azure publication; main `907c462` pushed.
+- [x] Remote frontend/database and real integration jobs passed in run 37040380754.
+- [x] Azure login and existing app token retrieval succeeded.
+- [ ] Deploy: failed before upload because SUPPORT_CONTACT is empty. Prior live site remains; no successful publication claimed.
+- [ ] Supply/configure contact; approve/apply required privacy migration, then retry under existing deployment authorization and verify live.
+
 ## Current core implementation — 2026-10-02
 
 - [x] Account data download, private deletion request/cancellation and moderator review implemented; actual erasure remains separately reviewed.
