@@ -14,7 +14,8 @@ export async function config({readOnly=false}={}) {
   const c = await readJson(process.env.COMMUNITY_TEST_CONFIG || localFile);
   const allowed = process.argv[process.argv.indexOf('--allow-project') + 1];
   if (!process.argv.includes('--allow-project') || allowed !== c.ref) throw new Error('Pass --allow-project <explicitly authorized ref> to enable hosted test writes.');
-  if (c.url !== `https://${c.ref}.supabase.co`) throw new Error('Project reference/URL mismatch.');
+  const local = c.ref === 'problemhunt-core-integration' && c.url === 'http://127.0.0.1:55321';
+  if (!local && c.url !== `https://${c.ref}.supabase.co`) throw new Error('Project reference/URL mismatch.');
   if(c.ref==='ajvobbpwgopinxtbpcpu'&&!readOnly)throw new Error('Synthetic fixture writes are disabled on the production project. Set COMMUNITY_TEST_CONFIG to an isolated test project configuration.');
   return c;
 }

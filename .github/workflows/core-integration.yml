@@ -1,0 +1,61 @@
+name: Core website integration
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [feature/community-knowledge-platform]
+  workflow_dispatch:
+  workflow_call:
+permissions:
+  contents: read
+jobs:
+  integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      SUPABASE_TELEMETRY_DISABLED: '1'
+      COMMUNITY_TEST_CONFIG: supabase/.temp/core-integration/accounts.json
+      COMMUNITY_TEST_BASE_URL: http://127.0.0.1:4173
+      VITE_REPLY_NOTIFICATIONS_ENABLED: 'false'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.90.0
+      - run: npm run install:all
+      - run: npx --prefix supabase/tests playwright install --with-deps chromium
+      - name: Start dedicated local Supabase
+        run: |
+          node scripts/community-local-prepare.mjs
+          supabase start --workdir supabase/.temp/core-integration > supabase/.temp/core-integration/start.log 2>&1
+          supabase status --workdir supabase/.temp/core-integration -o json > supabase/.temp/core-integration/status.json
+          node scripts/community-local-replay.mjs
+          node scripts/community-local-accounts.mjs
+      - name: Real Auth and API journeys
+        run: |
+          node scripts/community-api-smoke.mjs --allow-project problemhunt-core-integration
+          node scripts/community-core-integration.mjs --allow-project problemhunt-core-integration
+          node scripts/community-export-check.mjs
+      - name: Build against local public configuration
+        run: |
+          node --input-type=module <<'JS'
+          import {readFileSync} from 'node:fs';
+          import {execFileSync} from 'node:child_process';
+          const c=JSON.parse(readFileSync('supabase/.temp/core-integration/status.json','utf8'));
+          execFileSync('npm',['run','build','--prefix','problem-hunt'],{stdio:'inherit',env:{...process.env,VITE_SUPABASE_URL:c.API_URL,VITE_SUPABASE_ANON_KEY:c.ANON_KEY,VITE_SENTRY_DSN:''}});
+          JS
+      - name: Real browser and Storage journeys
+        run: |
+          node scripts/community-preview.mjs --local-integration > supabase/.temp/core-integration/preview.log 2>&1 &
+          node scripts/community-browser-smoke.mjs --allow-project problemhunt-core-integration
+          node scripts/community-profile-smoke.mjs --allow-project problemhunt-core-integration
+          node scripts/community-core-browser.mjs --allow-project problemhunt-core-integration
+          node scripts/community-privacy-browser.mjs --allow-project problemhunt-core-integration
+          node scripts/community-auth-browser.mjs --allow-project problemhunt-core-integration
+      - name: Stop local test services
+        if: always()
+        run: supabase stop --workdir supabase/.temp/core-integration
+      # Never upload status.json, account files, dumps or Auth/Storage logs.

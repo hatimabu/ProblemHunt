@@ -1,0 +1,95 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "location": {"type": "string", "defaultValue": "canadacentral"},
+    "owner": {"type": "string", "minLength": 1},
+    "expiresOn": {"type": "string", "metadata": {"description": "Review/teardown date, not an automatic deletion schedule"}},
+    "databaseAdminPassword": {"type": "securestring", "minLength": 24},
+    "workerPassword": {"type": "securestring", "minLength": 48, "maxLength": 48}
+  },
+  "variables": {
+    "suffix": "[uniqueString(resourceGroup().id)]",
+    "server": "[concat('phnotif-', variables('suffix'))]",
+    "registry": "[concat('phnotif', variables('suffix'))]",
+    "vault": "[concat('phnotif-', variables('suffix'))]",
+    "tags": {"project": "problemhunt-notification-lab", "environment": "isolated-learning", "owner": "[parameters('owner')]", "expiresOn": "[parameters('expiresOn')]"},
+    "identityId": "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', 'phnotif-worker')]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Network/virtualNetworks", "apiVersion": "2024-05-01", "name": "phnotif-vnet", "location": "[parameters('location')]", "tags": "[variables('tags')]",
+      "properties": {"addressSpace": {"addressPrefixes": ["10.84.0.0/16"]}, "subnets": [
+        {"name": "apps", "properties": {"addressPrefix": "10.84.0.0/23", "delegations": [{"name": "apps", "properties": {"serviceName": "Microsoft.App/environments"}}]}},
+        {"name": "postgres", "properties": {"addressPrefix": "10.84.2.0/28", "delegations": [{"name": "postgres", "properties": {"serviceName": "Microsoft.DBforPostgreSQL/flexibleServers"}}]}}
+      ]}
+    },
+    {"type": "Microsoft.Network/privateDnsZones", "apiVersion": "2020-06-01", "name": "phnotif.postgres.database.azure.com", "location": "global", "tags": "[variables('tags')]"},
+    {
+      "type": "Microsoft.Network/privateDnsZones/virtualNetworkLinks", "apiVersion": "2020-06-01", "name": "phnotif.postgres.database.azure.com/lab", "location": "global",
+      "dependsOn": ["[resourceId('Microsoft.Network/privateDnsZones', 'phnotif.postgres.database.azure.com')]", "[resourceId('Microsoft.Network/virtualNetworks', 'phnotif-vnet')]"],
+      "properties": {"registrationEnabled": false, "virtualNetwork": {"id": "[resourceId('Microsoft.Network/virtualNetworks', 'phnotif-vnet')]"}}
+    },
+    {
+      "type": "Microsoft.DBforPostgreSQL/flexibleServers", "apiVersion": "2024-08-01", "name": "[variables('server')]", "location": "[parameters('location')]", "tags": "[variables('tags')]",
+      "sku": {"name": "Standard_B1ms", "tier": "Burstable"},
+      "dependsOn": ["[resourceId('Microsoft.Network/privateDnsZones/virtualNetworkLinks', 'phnotif.postgres.database.azure.com', 'lab')]"],
+      "properties": {
+        "version": "17", "administratorLogin": "notification_lab_admin", "administratorLoginPassword": "[parameters('databaseAdminPassword')]",
+        "storage": {"storageSizeGB": 32, "autoGrow": "Disabled"}, "backup": {"backupRetentionDays": 7, "geoRedundantBackup": "Disabled"},
+        "highAvailability": {"mode": "Disabled"},
+        "network": {"publicNetworkAccess": "Disabled", "delegatedSubnetResourceId": "[resourceId('Microsoft.Network/virtualNetworks/subnets', 'phnotif-vnet', 'postgres')]", "privateDnsZoneArmResourceId": "[resourceId('Microsoft.Network/privateDnsZones', 'phnotif.postgres.database.azure.com')]"}
+      }
+    },
+    {
+      "type": "Microsoft.DBforPostgreSQL/flexibleServers/databases", "apiVersion": "2024-08-01", "name": "[concat(variables('server'), '/problemhunt_notification_lab')]",
+      "dependsOn": ["[resourceId('Microsoft.DBforPostgreSQL/flexibleServers', variables('server'))]"],
+      "properties": {"charset": "UTF8", "collation": "en_US.utf8"}
+    },
+    {
+      "type": "Microsoft.ContainerRegistry/registries", "apiVersion": "2023-07-01", "name": "[variables('registry')]", "location": "[parameters('location')]", "tags": "[variables('tags')]",
+      "sku": {"name": "Basic"}, "properties": {"adminUserEnabled": false, "publicNetworkAccess": "Enabled"}
+    },
+    {"type": "Microsoft.ManagedIdentity/userAssignedIdentities", "apiVersion": "2023-01-31", "name": "phnotif-worker", "location": "[parameters('location')]", "tags": "[variables('tags')]"},
+    {
+      "type": "Microsoft.KeyVault/vaults", "apiVersion": "2023-07-01", "name": "[variables('vault')]", "location": "[parameters('location')]", "tags": "[variables('tags')]",
+      "properties": {"tenantId": "[subscription().tenantId]", "sku": {"family": "A", "name": "standard"}, "enableRbacAuthorization": true, "enableSoftDelete": true, "softDeleteRetentionInDays": 7, "publicNetworkAccess": "Enabled", "accessPolicies": []}
+    },
+    {
+      "type": "Microsoft.KeyVault/vaults/secrets", "apiVersion": "2023-07-01", "name": "[concat(variables('vault'), '/notification-worker-password')]",
+      "dependsOn": ["[resourceId('Microsoft.KeyVault/vaults', variables('vault'))]"],
+      "properties": {"value": "[parameters('workerPassword')]", "contentType": "Restricted PostgreSQL worker login; 48 lowercase hex characters"}
+    },
+    {
+      "type": "Microsoft.Authorization/roleAssignments", "apiVersion": "2022-04-01", "name": "[guid(resourceGroup().id, 'notification-acr-pull')]",
+      "scope": "[resourceId('Microsoft.ContainerRegistry/registries', variables('registry'))]",
+      "dependsOn": ["[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', 'phnotif-worker')]", "[resourceId('Microsoft.ContainerRegistry/registries', variables('registry'))]"],
+      "properties": {"roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '7f951dda-4ed3-4680-a7ca-43fe172d538d')]", "principalId": "[reference(variables('identityId'), '2023-01-31').principalId]", "principalType": "ServicePrincipal"}
+    },
+    {
+      "type": "Microsoft.Authorization/roleAssignments", "apiVersion": "2022-04-01", "name": "[guid(resourceGroup().id, 'notification-vault-read')]",
+      "scope": "[resourceId('Microsoft.KeyVault/vaults', variables('vault'))]",
+      "dependsOn": ["[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', 'phnotif-worker')]", "[resourceId('Microsoft.KeyVault/vaults', variables('vault'))]"],
+      "properties": {"roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '4633458b-17de-408a-b874-0445c86b69e6')]", "principalId": "[reference(variables('identityId'), '2023-01-31').principalId]", "principalType": "ServicePrincipal"}
+    },
+    {
+      "type": "Microsoft.OperationalInsights/workspaces", "apiVersion": "2023-09-01", "name": "phnotif-logs", "location": "[parameters('location')]", "tags": "[variables('tags')]",
+      "properties": {"sku": {"name": "PerGB2018"}, "retentionInDays": 30, "workspaceCapping": {"dailyQuotaGb": 0.1}}
+    },
+    {
+      "type": "Microsoft.App/managedEnvironments", "apiVersion": "2025-01-01", "name": "phnotif-environment", "location": "[parameters('location')]", "tags": "[variables('tags')]",
+      "dependsOn": ["[resourceId('Microsoft.OperationalInsights/workspaces', 'phnotif-logs')]", "[resourceId('Microsoft.Network/virtualNetworks', 'phnotif-vnet')]"],
+      "properties": {
+        "workloadProfiles": [{"name": "Consumption", "workloadProfileType": "Consumption"}],
+        "vnetConfiguration": {"infrastructureSubnetId": "[resourceId('Microsoft.Network/virtualNetworks/subnets', 'phnotif-vnet', 'apps')]", "internal": false},
+        "appLogsConfiguration": {"destination": "log-analytics", "logAnalyticsConfiguration": {"customerId": "[reference(resourceId('Microsoft.OperationalInsights/workspaces', 'phnotif-logs'), '2023-09-01').customerId]", "sharedKey": "[listKeys(resourceId('Microsoft.OperationalInsights/workspaces', 'phnotif-logs'), '2023-09-01').primarySharedKey]"}}
+      }
+    }
+  ],
+  "outputs": {
+    "databaseHost": {"type": "string", "value": "[reference(resourceId('Microsoft.DBforPostgreSQL/flexibleServers', variables('server')), '2024-08-01').fullyQualifiedDomainName]"},
+    "registry": {"type": "string", "value": "[concat(variables('registry'), '.azurecr.io')]"},
+    "workerSecretUrl": {"type": "string", "value": "[concat('https://', variables('vault'), '.vault.azure.net/secrets/notification-worker-password')]"}
+  }
+}
+

@@ -52,7 +52,7 @@ if (args[0] === '--install') {
   run('TypeScript', 'problem-hunt', ['node_modules/typescript/bin/tsc', '--noEmit']);
   run('Frontend tests (mocked services)', 'problem-hunt', ['node_modules/vitest/vitest.mjs', 'run', '--maxWorkers=2']);
   run('Disposable database permissions and notification recovery', 'supabase/tests', ['--test', 'community.test.mjs', 'notifications.test.mjs']);
-  run('Notification worker configuration tests', 'services/notifications', ['--test', 'test/config.test.mjs']);
+  run('Notification worker configuration and telemetry tests', 'services/notifications', ['--test', 'test/config.test.mjs', 'test/telemetry.test.mjs']);
   run('Production build with placeholder public configuration', 'problem-hunt', ['node_modules/vite/bin/vite.js', 'build']);
   console.log('\nLocal baseline passed. This does not verify hosted Auth, Storage, concurrency or deployment.');
 }

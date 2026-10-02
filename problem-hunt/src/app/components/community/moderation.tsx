@@ -1,3 +1,4 @@
+import {DeletionRequestQueue} from './account-privacy';
 import { useEffect, useState, type FormEvent } from 'react';
 import { communityApi, communityError } from '../../../lib/supabase-community';
 import { CommunityLayout, ErrorNotice, TextField } from './shared';
@@ -13,7 +14,7 @@ export function ReportControl({target,label}:{target:{problem_id?:string;solutio
 export function ModeratorPage(){
  const {user}=useAuth();const [allowed,setAllowed]=useState<boolean|null>(null),[rows,setRows]=useState<Awaited<ReturnType<typeof communityApi.reports>>>([]),[reviews,setReviews]=useState<Awaited<ReturnType<typeof communityApi.reviews>>>([]),[error,setError]=useState(''),[retry,setRetry]=useState(0);
  useEffect(()=>{let active=true;setAllowed(null);setRows([]);setError('');(async()=>{try{const ok=await communityApi.moderator();if(!active)return;setAllowed(ok);if(ok){const [r,v]=await Promise.all([communityApi.reports(),communityApi.reviews()]);if(active){setRows(r);setReviews(v);}}}catch(e){if(active)setError(communityError(e));}})();return()=>{active=false;};},[user?.id,retry]);
- return <CommunityLayout><h1>Moderator review</h1>{error?<ErrorNotice error={error} retry={()=>setRetry(n=>n+1)}/>:allowed===null?<p role="status">Checking moderator access…</p>:!allowed?<p>You do not have moderator permission.</p>:<><p>Private reports, latest 100. Hiding a reported discussion removes it and its answers from public access; it does not delete content. Private drafts remain private.</p>{!rows.length?<p>No reports to review.</p>:rows.map(r=><Review key={r.id} report={r} review={reviews.find(v=>v.report_id===r.id)} onSaved={()=>setRetry(n=>n+1)}/>)}</>}</CommunityLayout>;
+ return <CommunityLayout><h1>Moderator review</h1>{error?<ErrorNotice error={error} retry={()=>setRetry(n=>n+1)}/>:allowed===null?<p role="status">Checking moderator access…</p>:!allowed?<p>You do not have moderator permission.</p>:<><DeletionRequestQueue key={user?.id}/><p>Private reports, latest 100. Hiding a reported discussion removes it and its answers from public access; it does not delete content. Private drafts remain private.</p>{!rows.length?<p>No reports to review.</p>:rows.map(r=><Review key={r.id} report={r} review={reviews.find(v=>v.report_id===r.id)} onSaved={()=>setRetry(n=>n+1)}/>)}</>}</CommunityLayout>;
 }
 function Review({report:r,review,onSaved}:{report:Awaited<ReturnType<typeof communityApi.reports>>[number];review?:Awaited<ReturnType<typeof communityApi.reviews>>[number];onSaved:()=>void}){
  const [notes,setNotes]=useState(review?.private_notes || ''),[status,setStatus]=useState(review?.status || 'reviewing'),[action,setAction]=useState('review'),[busy,setBusy]=useState(false),[error,setError]=useState('');

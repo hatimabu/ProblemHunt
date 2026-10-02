@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
-import { beforeEach, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { FollowDiscussion, NotificationsPage } from '../community/notifications';
 const api=vi.hoisted(()=>({follows:vi.fn(),follow:vi.fn(),inbox:vi.fn(),following:vi.fn(),read:vi.fn()}));
 const auth=vi.hoisted(()=>({user:{id:'alice'} as {id:string}|null,isLoading:false}));
@@ -9,6 +9,15 @@ vi.mock('../../contexts/AuthContext',()=>({useAuth:()=>auth}));
 vi.mock('../navbar',()=>({Navbar:()=>null}));
 vi.mock('../../../lib/community-notifications',async()=>({...await vi.importActual('../../../lib/community-notifications'),notificationApi:api}));
 const n={id:'n1',message:'New reply in a discussion you follow.',link:'/problem/00000000-0000-0000-0000-000000000001#solution-00000000-0000-0000-0000-000000000002',is_read:false,created_at:'2026-09-28T12:00:00Z'};
+beforeEach(()=>vi.stubEnv('VITE_REPLY_NOTIFICATIONS_ENABLED','true'));
+afterEach(()=>vi.unstubAllEnvs());
+it('keeps the core launch free of inactive follow controls and inbox requests',()=>{
+ vi.stubEnv('VITE_REPLY_NOTIFICATIONS_ENABLED','false');
+ render(<MemoryRouter><FollowDiscussion id="p1"/><NotificationsPage/></MemoryRouter>);
+ expect(screen.getByText(/Reply notifications are not available yet/)).toBeInTheDocument();
+ expect(screen.queryByRole('button',{name:'Follow replies'})).not.toBeInTheDocument();
+ expect(api.follows).not.toHaveBeenCalled();expect(api.inbox).not.toHaveBeenCalled();
+});
 beforeEach(()=>{vi.resetAllMocks();auth.user={id:'alice'};api.follows.mockResolvedValue(false);api.follow.mockResolvedValue(undefined);api.read.mockResolvedValue(undefined);api.inbox.mockResolvedValue({rows:[n],hasMore:false});api.following.mockResolvedValue({rows:[],hasMore:false});});
 it('follows and unfollows only after server confirmation',async()=>{
  render(<MemoryRouter><FollowDiscussion id="p1"/></MemoryRouter>);

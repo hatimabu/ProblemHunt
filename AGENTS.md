@@ -1,5 +1,7 @@
 # Working on ProblemHunt
 
+Cost policy (user clarified 2026-09-30): prefer free plans, but paid services may be approved after the user understands the infrastructure, purpose, alternatives and estimated recurring costs. Explain these before seeking explicit scoped approval and before any billable action. Free allowances, trials and budget alerts are not spending caps. Session 07 cloud implementation is on hold for this explanation and informed approval; its earlier general approval does not authorize provisioning.
+
 For community/cloud roadmap work, first read `docs/AGENT_MEMORY.md`, then the current session in `docs/COMMUNITY_CLOUD_SESSIONS.md` and `docs/COMMUNITY_CLOUD_ROADMAP.md`. The user requires explicit approval before each session prompt starts. Saving these plans does not authorize implementation. Do not automatically advance to the next session or infer approval from a usage reset. Record progress and the exact next step for future chats.
 
 Before substantial changes, read `docs/PROJECT_STATE.md`, `docs/RELEASE_CHECKLIST.md`, the product PDF and `docs/community-platform-audit.md`, then inspect Git status and the relevant stage runbook. Preserve existing work.

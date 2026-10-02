@@ -1,0 +1,32 @@
+{
+  "scannedAt": "2026-09-30T01:03:26.305207494Z",
+  "scanner": "Trivy 0.74.0",
+  "scannerDigest": "sha256:62b1e65e8869bc4b4c6aa4fa2b21595256c7c2f6018a9d9ad61caf87187c1969",
+  "imageConfigId": "sha256:a645897992f91dbb9cfaa7445caf1976a20585523792548365fbb2600f640c23",
+  "archiveSha256": "f4581d07a4c338fa70ebc9be07bd48cd8c228e8c432d30ab0a951d10b6452a3d",
+  "databaseUpdatedAt": "2026-09-29T19:09:08.570009916Z",
+  "high": 52,
+  "critical": 4,
+  "fixedVersionsAvailable": 0,
+  "affectedPackages": [
+    "bsdutils",
+    "gzip",
+    "libacl1",
+    "libblkid1",
+    "libmount1",
+    "libsmartcols1",
+    "libsystemd0",
+    "libtinfo6",
+    "libudev1",
+    "libuuid1",
+    "mount",
+    "ncurses-base",
+    "ncurses-bin",
+    "perl-base",
+    "util-linux",
+    "util-linux-extra",
+    "zlib1g"
+  ],
+  "gate": "BLOCKED: findings exceed HIGH/CRITICAL policy; no exceptions applied",
+  "rawEvidence": "services/notifications/.local/scan (ignored, image archive/report/SBOM)"
+}

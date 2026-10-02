@@ -1,0 +1,64 @@
+name: Notification service checks
+on:
+  pull_request:
+    branches: [main, feature/community-knowledge-platform]
+    paths: ['services/notifications/**', 'supabase/**', 'infra/notifications/**', '.github/workflows/notification-checks.yml']
+  push:
+    branches: [feature/community-knowledge-platform]
+    paths: ['services/notifications/**', 'supabase/**', 'infra/notifications/**', '.github/workflows/notification-checks.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      SCANNER: aquasec/trivy:0.74.0@sha256:62b1e65e8869bc4b4c6aa4fa2b21595256c7c2f6018a9d9ad61caf87187c1969
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+          cache: npm
+          cache-dependency-path: |
+            services/notifications/package-lock.json
+            supabase/tests/package-lock.json
+      - name: Focused tests and infrastructure guardrails
+        run: |
+          npm ci --prefix services/notifications --ignore-scripts
+          npm ci --prefix supabase/tests
+          npm test --prefix services/notifications
+          npm test --prefix supabase/tests
+          node infra/notifications/validate.mjs
+      - name: Build commit-labelled runtime and local integration lab
+        run: |
+          npm run lab:prepare --prefix services/notifications
+          mkdir -p services/notifications/.local/scan services/notifications/.local/scanner-cache
+          docker build --target runtime --label org.opencontainers.image.revision="$GITHUB_SHA" --iidfile services/notifications/.local/scan/image-id.txt -t notification-worker:"$GITHUB_SHA" -f services/notifications/Dockerfile services/notifications/.local/context
+          docker save notification-worker:"$GITHUB_SHA" -o services/notifications/.local/scan/worker.tar
+          sha256sum services/notifications/.local/scan/worker.tar > services/notifications/.local/scan/archive-sha256.txt
+          docker compose -f services/notifications/compose.yml build
+          docker compose -f services/notifications/compose.yml up -d db
+          docker compose -f services/notifications/compose.yml run --rm init
+          docker compose -f services/notifications/compose.yml run --rm --no-deps init node lab/verify.mjs
+          docker compose -f services/notifications/compose.yml run --rm --no-deps init node lab/observe.mjs
+      - name: Download public vulnerability database without application access
+        run: docker run --rm -v "$PWD/services/notifications/.local/scanner-cache:/cache" "$SCANNER" image --download-db-only --cache-dir /cache
+      - name: Offline image scan (block high and critical findings)
+        run: |
+          docker run --rm --network none -v "$PWD/services/notifications/.local/scan:/scan" -v "$PWD/services/notifications/.local/scanner-cache:/cache" "$SCANNER" image --input /scan/worker.tar --skip-db-update --offline-scan --scanners vuln --cache-dir /cache --format json --output /scan/scan.json --severity HIGH,CRITICAL --exit-code 1
+      - name: Export software bill of materials
+        if: always()
+        run: docker run --rm --network none -v "$PWD/services/notifications/.local/scan:/scan" -v "$PWD/services/notifications/.local/scanner-cache:/cache" "$SCANNER" image --input /scan/worker.tar --skip-db-update --offline-scan --scanners vuln --cache-dir /cache --format cyclonedx --output /scan/sbom.cdx.json
+      - name: Preserve image and evidence (no registry push)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: notification-image-${{ github.sha }}
+          path: services/notifications/.local/scan/*
+          retention-days: 7
+          if-no-files-found: error
+      - name: Stop disposable CI lab
+        if: always()
+        run: docker compose -f services/notifications/compose.yml down

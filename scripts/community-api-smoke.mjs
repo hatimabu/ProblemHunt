@@ -35,8 +35,8 @@ try {
     assert.equal(solved.state, 'solved'); assert.equal(solved.accepted_solution_id, solution.id);
   }
   const closed = checked(await author.from('community_problems').insert({ category_id: categories[0].id, title: '[Stage 3 API test] Unresolved draft' }).select().single(), 'Create unresolved case');
-  checked(await author.rpc('community_set_problem_state', { p_problem_id: closed.id, p_state: 'closed' }), 'Close unresolved');
+  assert.equal((await author.rpc('community_set_problem_state', { p_problem_id: closed.id, p_state: 'closed' })).error?.code, '23514', 'Unresolved closure must be denied');
   await writeFile(new URL('../supabase/.temp/community-api-results.json', import.meta.url), JSON.stringify({ project: c.ref, problemId: p.id, solutionId: solution.id, closedId: closed.id, verifiedAt: new Date().toISOString() }, null, 2));
-  console.log('PASS: real Auth/PostgREST publish, propose, clarify, test, author-only acceptance, fresh-session solved reads, unresolved close.');
+  console.log('PASS: real Auth/PostgREST publish, propose, clarify, test, author-only acceptance, fresh-session solved reads, unresolved closure denied.');
   console.log('Synthetic records retained; identifiers saved in ignored result file.');
 } catch (e) { console.error(e.message); process.exitCode = 1; }

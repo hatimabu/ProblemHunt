@@ -1,5 +1,9 @@
 # Community and cloud learning roadmap
 
+## Cost constraint — 2026-09-30
+
+The latest user clarification permits paid services after they understand and explicitly approve the design and costs. Prefer free options, explain recurring/idle costs and alternatives before continuing, and never treat free allowances/trials as a zero-cost guarantee. Session 07 is on hold for this explanation and informed approval, not completed. Existing hosting/database plans stay unchanged; other sessions remain approval-gated.
+
 Status: proposal saved at the user's request on 2026-09-27. Implementation requires approval per session. Session prompts: COMMUNITY_CLOUD_SESSIONS.md. Persistent handoff: AGENT_MEMORY.md.
 
 ## Outcomes

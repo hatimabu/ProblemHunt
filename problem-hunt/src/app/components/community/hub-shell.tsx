@@ -4,6 +4,7 @@ import { AudioLines, ArrowUpRight, Bookmark, Hash, CheckCircle2, Cloud, Compass,
 import { communityApi } from '../../../lib/supabase-community';
 import { isProblemPost, type CommunityProblem } from '../../../lib/community';
 import './hub.css';
+import { replyNotificationsEnabled } from '../../../lib/community-features';
 
 export function HubShell({ children }: { children: ReactNode }) {
   const { pathname, search } = useLocation();
@@ -27,7 +28,7 @@ export function HubShell({ children }: { children: ReactNode }) {
     { to: '/', label: 'Community feed', icon: Compass },
     { to: '/?view=following', label: 'Following', icon: Hash },
     { to: '/?view=saved', label: 'Saved cases', icon: Bookmark },
-    { to: '/notifications', label: 'Reply notifications', icon: MessageSquare },
+    ...(replyNotificationsEnabled() ? [{ to: '/notifications', label: 'Reply notifications', icon: MessageSquare }] : []),
     { to: '/browse', label: 'Knowledge library', icon: MessageSquare },
     { to: '/domains/cloud-devops', label: 'Cloud & DevOps', icon: Cloud },
     { to: '/domains/professional-av', label: 'AV & Audio', icon: AudioLines },

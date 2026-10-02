@@ -5,6 +5,13 @@ import {fileURLToPath} from 'node:url';
 import path from 'node:path';
 const root=fileURLToPath(new URL('../problem-hunt/dist/',import.meta.url));
 const config=JSON.parse(await readFile(path.join(root,'staticwebapp.config.json'),'utf8'));
+if (process.argv.includes('--local-integration')) {
+  // This server binds loopback; production's checked-in CSP is never weakened.
+  config.globalHeaders['Content-Security-Policy'] = config.globalHeaders['Content-Security-Policy']
+    .replace("connect-src 'self'", "connect-src 'self' http://127.0.0.1:55321")
+    .replace("img-src 'self'", "img-src 'self' http://127.0.0.1:55321")
+    .replace('; upgrade-insecure-requests', '');
+}
 createServer(async(req,res)=>{
  try{
   const pathname=decodeURIComponent(new URL(req.url,'http://localhost').pathname);
