@@ -1,4 +1,45 @@
 # ProblemHunt project state
+## Core implementation complete locally — 2026-10-02
+
+Added private account JSON downloads, deletion request/cancel controls and a trusted moderator review queue. Requests do not erase accounts or other authors' replies. Additive `20261002000100_community_account_privacy.sql` is local-only; caller-bound export excludes credentials, private moderation notes, other authors' solution snapshots and reputation event keys. Operator export updated consistently. Public privacy copy describes the actual scope.
+
+Evidence on Node 22.23.3: TypeScript, 98 frontend tests, 62 SQL scenarios across 36 migrations, five worker tests pass. Baseline was interrupted during its final build; a separate build on the same Node version passed (718.78 kB size warning). Real isolated browser privacy journeys passed for two-account download isolation, request persistence, moderator review, cancellation and mobile accessibility. Real signup confirmation and password recovery passed using local Mailpit, including old-password rejection and expired-link handling. Neither external email delivery nor production Auth settings are established by these checks. Integration CI now includes both journeys; not yet executed remotely.
+
+October 2 read-only hosted inventory: 34 applied, no remote-only versions; optional worker observability and required account-privacy SQL are pending. No hosted mutations. Core scope is implemented locally with reply notifications off; learning sessions remain separate. Remaining release gates: owner-provided support contact/operator decisions, exact SQL review and scoped migration approval, authorized commit/push and remote CI, production Auth/rollback review, explicit deployment approval and live verification. No commit/push/deployment performed. See CORE_RELEASE.md and AGENT_MEMORY.md for the resumable handoff. Prior entries below are historical.
+
+End-of-turn cleanup: dedicated core Supabase stack stopped successfully with its Docker volume retained; the local preview process was stopped. Ignored account/status/export files remain private and untracked. Final dist uses placeholder test configuration and must not be deployed; the release workflow must rebuild with reviewed production variables. Git whitespace check passes (line-ending normalization warnings only). All work remains uncommitted on the community branch.
+
+## Core release preparation — 2026-10-01
+
+User authorized finishing the functional core before personal learning. Added a dedicated real local Supabase integration configuration, preparation/replay/account scripts, API/browser/Storage/moderation coverage, read-only account export SQL/check, and a Node 22 GitHub integration workflow (prepared, not run remotely). Updated stale unresolved-close/dashboard test expectations. Fresh replay of all 35 unchanged migrations required local `supabase_admin` for historical Storage ownership; do not infer hosted-role equivalence. Replay tool refuses an occupied database. Repeated fixtures hit the real posting limit; fresh synthetic accounts were created with prior credentials preserved, without changing rate limits.
+
+Core notifications now default off, with hidden follow/navigation controls and an honest direct-route message. Existing backend follows/events remain intact; no worker deployed. Added safe public support contact configuration and a deployment-build guard requiring `SUPPORT_CONTACT` plus notifications explicitly off. Contact is not yet supplied; no public copy claims a monitored mailbox. Account export excludes credentials, other users' authored content and private moderator notes; deletion remains an individually reviewed operator procedure, not an untested cascade.
+
+Evidence: 94 frontend tests in 20 files, TypeScript and final build; 60 SQL scenarios/five worker tests earlier in this same turn. Real local Auth/PostgREST post-to-solved, preference privacy/upserts, anti-join, vote/state/write-up/visibility checks and moderation hide/restore pass. Real two-user profile/avatar Storage/browser checks pass. Final core desktop/mobile accessibility/header/no-overflow/page-error checks pass and screenshots inspected; support-contact helper/guard positive and missing-config cases checked. Both local account exports pass ownership/credential checks. Workflow YAML and script syntax checked; ignored credential/export paths verified. Local Node 25 remains a CI Node 22 parity limitation; final browser bundle ~713.5 kB emits a size warning.
+
+Fresh read-only hosted history: 34 applied, only notification observability `20260929000100` pending (not needed for notifications-off core); no missing local versions. No hosted SQL applied. Read-only Azure confirms existing `problemhunt-web-sdm7w4743u274`, resource group `problemhunt`, Free SKU, main branch, hostname `thankful-hill-0ae5de10f.7.azurestaticapps.net`. A direct inventory attempt rejected certificate validation; verification was not disabled, CLI listing succeeded instead.
+
+See CORE_RELEASE.md for exact scope, test reproduction and operational/deployment packet. Remaining: owner support contact and report/privacy operator/retention decisions; authorized commit/push and remote CI of exact candidate; production Auth/email/rollback review; explicit deployment approval and post-release verification. No commit, push, merge, cloud provisioning, production write or deployment performed. Existing learning-guide edits preserved; sessions 07–10 stay separate. Dedicated core integration services and preview were stopped after verification; local data and ignored credentials retained.
+
+## Two learning guides delivered — 2026-09-30
+
+At the user's request, created exactly two new guides: `LOCAL_LEARNING_GUIDE.md` and `AZURE_SHORT_EXERCISE_GUIDE.md`. Local guide uses the existing Docker/WSL lab, observed command paths, recovery scripts and safe retained-volume shutdown; it requires rebuilding after the cancelled candidate experiment. Azure guide explains architecture, cost assumptions, explicit image/bootstrap gates, staged commands, approval scope, monitoring, rollback and teardown. It does not pretend missing Azure operator tooling is implemented.
+
+Documentation-only work: checked local links, PowerShell code-block syntax and whitespace; no application tests, containers, cloud operations, migration, commit or push performed for this request. Prior test evidence remains historical. Existing edits preserved. Website implementation is not fully release-ready: isolated backend integration, reviewed/authorized hosted migrations, image/runtime delivery readiness, operational data handling and final approved release/live checks remain. User asked for guides and status, then stop; do not continue implementation or advance sessions.
+
+
+## Superseding cost clarification — 2026-09-30
+
+The user clarified after the cancellation: paid services may be approved once the infrastructure and costs are understood. Session 07 is now on hold for explanation and informed scope/budget approval, not permanently rejected and not completed. No cloud resources, hosted SQL, registry publication or deployment occurred. Preserve the prior work; explain the optional learning lab versus the existing website and obtain informed approval before further implementation. The earlier cancellation record below describes the preceding instruction.
+
+
+## Session 07 aborted on cost grounds — 2026-09-30
+
+User initially approved Session 07, then clarified: “if there is no free plan abort” and required cost explanations because the project must remain free. The proposed Azure lab is not an assured free plan, so cloud exercise is aborted, not completed. No resource provisioning, registry push, hosted SQL, cloud deployment or production change occurred. Read-only Azure subscription enumeration was performed; no target was selected.
+
+Session 06 is now committed at `b375957` (observed clean tree at this turn's start), superseding the previous uncommitted handoff; remote state was not checked. Before the cost clarification, a pinned Alpine candidate image built locally. It was not scanned or runtime-verified; Dockerfile/validator changes were reverted and ignored build context regenerated from the original source. Local Compose image tags may still reference the unverified candidate: run `npm run lab:prepare --prefix services/notifications` and `docker compose -f services/notifications/compose.yml build` before any later approved lab run. No containers were started this session; the retained volume is unchanged. The original vulnerability gate remains unresolved.
+
+Saved the free-plan policy in AGENTS, memory, roadmap and Azure proposal. Documentation diff/whitespace checks only after cancellation; no further implementation tests necessary. Next: discuss a free-only roadmap, with local Docker/Kubernetes learning as an optional separately approved session. Do not resume paid Azure work or infer deployment approval from the earlier Session 07 approval.
 
 ## Session 06 operations and cloud preparation — 2026-09-29
 

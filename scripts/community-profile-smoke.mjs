@@ -40,14 +40,14 @@ try{
   assert.equal(checked(await other.rpc('community_contributions',{p_user_id:account.id,p_kind:'problems',p_state:'draft',p_public:false}),'Draft boundary').length,0);
   assert.equal(checked(await anon.rpc('community_contributions',{p_user_id:account.id,p_kind:'problems',p_state:'draft',p_public:false}),'Anonymous draft boundary').length,0);
   for(const route of ['/dashboard','/my-problems?state=draft','/my-solutions','/my-solutions?accepted=1','/profile']){
-   await page.goto(base+route);await page.getByRole('heading',{level:1}).waitFor();if(route==='/dashboard')await page.getByRole('heading',{name:'Recent problems'}).waitFor();else await page.getByRole('button',{name:'Next page'}).waitFor();
+   await page.goto(base+route);await page.getByRole('heading',{level:1}).waitFor();if(route==='/dashboard')await page.getByRole('heading',{name:'Recent posts'}).waitFor();else if(route!=='/profile')await page.getByRole('button',{name:'Next page'}).waitFor();
    assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
    const audit=await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa','wcag21aa']).analyze();assert.deepEqual(audit.violations.map(v=>v.id),[],route);
   }
   await page.getByRole('button',{name:'Remove picture'}).click();await page.getByText('Picture removed.',{exact:true}).waitFor();assert.equal(checked(await api.storage.from('community-avatars').list(account.id,{search:second.avatar_path.split('/')[1]}),'Removed object listing').length,0);
   await page.getByLabel('Publish my profile and picture').uncheck();await page.getByRole('button',{name:'Save profile'}).click();await page.getByText('Profile saved.',{exact:true}).waitFor();
   await visitor.reload();await visitor.getByText('This profile is private or has not been created.').waitFor();
-  await page.goto(base+'/dashboard');await page.getByRole('heading',{name:'Recent problems'}).waitFor();await page.screenshot({path:new URL('../supabase/.temp/profile-dashboard-mobile.png',import.meta.url).pathname.replace(/^\/(?=[A-Z]:)/,'') ,fullPage:true});
+  await page.goto(base+'/dashboard');await page.getByRole('heading',{name:'Recent posts'}).waitFor();await page.screenshot({path:new URL('../supabase/.temp/profile-dashboard-mobile.png',import.meta.url).pathname.replace(/^\/(?=[A-Z]:)/,'') ,fullPage:true});
   await page.setViewportSize({width:1440,height:1000});await page.screenshot({path:new URL('../supabase/.temp/profile-dashboard-desktop.png',import.meta.url).pathname.replace(/^\/(?=[A-Z]:)/,''),fullPage:true});
   await context.close();console.log('PASS profile account '+i+': owner edit, public/private identity, avatar upload/replace/remove, foreign Storage denial, draft privacy, mobile/direct refresh, accessibility.');
  }

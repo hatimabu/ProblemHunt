@@ -29,11 +29,14 @@ jobs:
   test:
     uses: ./.github/workflows/frontend-tests.yml
 
+  integration:
+    uses: ./.github/workflows/core-integration.yml
+
   deploy:
     if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.confirm_release == true))
     runs-on: ubuntu-latest
     name: Deploy static app
-    needs: test
+    needs: [test, integration]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -71,8 +74,12 @@ jobs:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
           VITE_SENTRY_DSN: ${{ vars.VITE_SENTRY_DSN }}
+          VITE_SUPPORT_CONTACT: ${{ vars.SUPPORT_CONTACT }}
+          VITE_REPLY_NOTIFICATIONS_ENABLED: 'false'
           NODE_ENV: production
-        run: npm run build
+        run: |
+          node ../scripts/community-release-config.mjs
+          npm run build
 
       - name: Deploy static app
         uses: Azure/static-web-apps-deploy@v1

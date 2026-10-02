@@ -1,5 +1,7 @@
 # Isolated notification cloud exercise — proposal, not deployed
 
+**On hold, 2026-09-30:** after initially declining costs, the user clarified that paid services can be approved once the infrastructure and costs are understood. Explain this proposal and alternatives before continuing; no resources have been created and no billable action is authorized yet.
+
 Session 06 prepares ARM JSON to stay consistent with the repository's existing `azureARM.json`. This directory is independent of the public Static Web App template and deployment workflow. Proposed region: Canada Central, subject to the user's selection and SKU availability. Proposed resource group: **rg-problemhunt-notifications-lab** in a subscription the user must identify. Do not reuse a production resource group.
 
 ## Resources and boundaries

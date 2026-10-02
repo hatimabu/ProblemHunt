@@ -4,10 +4,11 @@ import { useAuth } from '../../contexts/AuthContext';
 import { notificationApi, notificationLink } from '../../../lib/community-notifications';
 import { communityError } from '../../../lib/supabase-community';
 import { CommunityLayout, ErrorNotice } from './shared';
+import { replyNotificationsEnabled } from '../../../lib/community-features';
 
 export function FollowDiscussion({ id }: { id: string }) {
   const { user, isLoading } = useAuth();
-  if (isLoading) return null;
+  if (!replyNotificationsEnabled() || isLoading) return null;
   if (!user) return <Link to={`/auth?returnTo=${encodeURIComponent(`/problem/${id}`)}`}>Sign in for reply notifications</Link>;
   return <FollowControl key={`${user.id}:${id}`} id={id} userId={user.id} />;
 }
@@ -26,6 +27,7 @@ function FollowControl({ id, userId }: { id: string; userId: string }) {
 }
 export function NotificationsPage() {
   const { user, isLoading } = useAuth();
+  if (!replyNotificationsEnabled()) return <CommunityLayout title="Reply notifications"><h1>Reply notifications</h1><p>Reply notifications are not available yet. You can save a case and revisit it from Saved cases.</p><Link to="/?view=saved">View saved cases</Link></CommunityLayout>;
   return <CommunityLayout title="Reply notifications"><h1>Reply notifications</h1>{isLoading ? <p role="status">Loading account…</p> : !user ? <Link to="/auth?returnTo=%2Fnotifications">Sign in to view notifications</Link> : <Inbox key={user.id} userId={user.id} />}</CommunityLayout>;
 }
 function Inbox({ userId }: { userId: string }) {

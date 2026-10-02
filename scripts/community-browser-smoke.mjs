@@ -114,12 +114,12 @@ try {
   await owner.getByLabel('Problem title').fill('[Stage 3 browser test] Unresolved case');
   await owner.getByLabel('Category', { exact: true }).selectOption({ index: 1 });
   await owner.getByRole('button', { name: 'Save private draft' }).click();
-  await owner.getByRole('button', { name: 'Close unresolved problem' }).click();
-  await owner.getByRole('button', { name: 'Confirm close', exact: true }).click();
-  await owner.getByText('This discussion is closed without a confirmed fix.', { exact: true }).waitFor();
+  await owner.getByRole('heading', { name: '[Stage 3 browser test] Unresolved case', exact: true }).waitFor();
+  assert.equal(await owner.getByRole('button', { name: 'Close unresolved problem' }).count(), 0);
   await owner.reload();
-  await owner.getByText('This discussion is closed without a confirmed fix.', { exact: true }).waitFor();
-  console.log('PASS browser: author closes unresolved case; closed state survives refresh.');
-  await writeFile(resultPath, JSON.stringify({ project: c.ref, problemId, problemUrl, closedUrl: owner.url(), verifiedAt: new Date().toISOString(), viewport: '390x844' }, null, 2));
+  await owner.getByRole('heading', { name: '[Stage 3 browser test] Unresolved case', exact: true }).waitFor();
+  assert.equal(await owner.getByRole('button', { name: 'Close unresolved problem' }).count(), 0);
+  console.log('PASS browser: unresolved draft survives refresh without an invalid close action.');
+  await writeFile(resultPath, JSON.stringify({ project: c.ref, problemId, problemUrl, draftUrl: owner.url(), verifiedAt: new Date().toISOString(), viewport: '390x844' }, null, 2));
 } catch (e) { console.error(e.message); process.exitCode = 1; }
 finally { await browser?.close(); }

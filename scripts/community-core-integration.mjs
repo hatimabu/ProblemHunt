@@ -1,0 +1,61 @@
+import assert from 'node:assert/strict';
+import {readFile} from 'node:fs/promises';
+import {config,client,signedIn,checked,createClient} from './community-test-support.mjs';
+const c=await config();
+if(c.ref!=='problemhunt-core-integration')throw new Error('This suite requires the dedicated local stack');
+const [a,b]=await Promise.all(c.accounts.map(account=>signedIn(c,account))), anon=client(c);
+const [author,contributor]=c.accounts;
+const category=checked(await a.from('community_categories').select('id').limit(1),'Taxonomy')[0].id;
+const base={category_id:category,title:`Local integration ${Date.now()}`,symptom:'Intermittent gateway timeout',environment:{platform:'Synthetic local only'},expected_behavior:'Healthy response',actual_behavior:'Timeout',tags:['integration'],attempted_tests:[{test:'Inspect route',observation:'Old target'}]};
+const p=checked(await a.from('community_problems').insert({...base,visibility:'public'}).select().single(),'Public case');
+const draft=checked(await a.from('community_problems').insert({...base,title:'Private integration draft'}).select().single(),'Private case');
+for(const api of [b,anon]) assert.equal(checked(await api.from('community_problems').select('id').eq('id',draft.id),'Draft privacy').length,0);
+for(const table of ['community_tag_follows','community_saved_cases']){
+ const row=table==='community_tag_follows'?{user_id:author.id,tag:'integration'}:{user_id:author.id,problem_id:p.id};
+ const conflict=table==='community_tag_follows'?'user_id,tag':'user_id,problem_id';
+ checked(await a.from(table).upsert(row,{onConflict:conflict,ignoreDuplicates:true}),'Save preference');
+ checked(await a.from(table).upsert(row,{onConflict:conflict,ignoreDuplicates:true}),'Duplicate preference');
+ assert.equal(checked(await b.from(table).select('*').eq('user_id',author.id),'Preference privacy').length,0);
+ assert.ok((await b.from(table).insert(row)).error,'Cannot forge preference owner');
+}
+for(const view of ['following','saved'])assert.ok(checked(await a.rpc('community_personal_feed',{p_view:view,p_offset:0}),'Personal feed').some(row=>row.id===p.id));
+assert.ok((await a.from('community_saved_cases').insert({problem_id:draft.id})).error,'Cannot save draft');
+const unanswered=()=>anon.from('community_problems').select('id,answers:community_solutions!community_solutions_problem_id_fkey()').eq('visibility','public').eq('is_hidden',false).eq('post_type','problem').in('state',['open','testing']).is('answers',null);
+assert.ok(checked(await unanswered(),'Unanswered before reply').some(row=>row.id===p.id));
+const s=checked(await b.from('community_solutions').insert({problem_id:p.id,diagnosis:'Wrong route',steps:['Correct target'],reasoning:'Backend was replaced',verification_method:'Repeat request'}).select().single(),'Solution');
+assert.ok(!checked(await unanswered(),'Unanswered after reply').some(row=>row.id===p.id));
+assert.ok((await b.from('community_solution_votes').insert({solution_id:s.id})).error,'Self vote denied');
+checked(await a.from('community_solution_votes').insert({solution_id:s.id}),'Vote');
+assert.equal((await a.from('community_solution_votes').insert({solution_id:s.id})).error?.code,'23505');
+checked(await a.from('community_solution_votes').delete().eq('solution_id',s.id),'Withdraw vote');
+checked(await a.rpc('community_set_problem_state',{p_problem_id:p.id,p_state:'testing'}),'Testing');
+checked(await a.rpc('community_set_problem_state',{p_problem_id:p.id,p_state:'open'}),'Stop testing');
+checked(await a.rpc('community_set_problem_state',{p_problem_id:p.id,p_state:'testing'}),'Resume testing');
+checked(await a.rpc('community_accept_solution',{p_problem_id:p.id,p_solution_id:s.id,p_observation:'HTTP 200',p_verification:'Three requests'}),'Accept');
+checked(await a.rpc('community_reverse_acceptance',{p_problem_id:p.id,p_reason:'Regression found in local exercise'}),'Reverse acceptance');
+const reversed=checked(await anon.from('community_problems').select('state,accepted_solution_id').eq('id',p.id).single(),'Reversed state');
+assert.equal(reversed.state,'testing');assert.equal(reversed.accepted_solution_id,null);
+for(const post_type of ['lab','incident']){
+ const post=checked(await a.from('community_problems').insert({...base,post_type,visibility:'public',verification_method:'Repeated locally',lessons:'Verify the configured target'}).select().single(),'Publish write-up');
+ assert.ok(checked(await anon.rpc('community_search',{p_post_type:post_type,p_query:'gateway'}),'Typed search').some(row=>row.id===post.id));
+ assert.ok((await b.from('community_solutions').insert({problem_id:post.id,diagnosis:'Invalid write-up answer',steps:['No'],reasoning:'No',verification_method:'No'})).error);
+}
+checked(await a.from('community_problems').update({visibility:'draft'}).eq('id',p.id),'Make case private');
+for(const view of ['following','saved'])assert.ok(!checked(await a.rpc('community_personal_feed',{p_view:view}),'Private feed exclusion').some(row=>row.id===p.id));
+assert.equal(checked(await b.from('community_solutions').select('id').eq('id',s.id),'Private child exclusion').length,0);
+const status=JSON.parse(await readFile(new URL('../supabase/.temp/core-integration/status.json',import.meta.url),'utf8'));
+assert.equal(status.API_URL,c.url);
+const admin=createClient(c.url,status.SERVICE_ROLE_KEY,{auth:{persistSession:false,autoRefreshToken:false}});
+checked(await a.from('community_problems').update({visibility:'public'}).eq('id',p.id),'Restore local case');
+const report=checked(await b.from('community_reports').insert({problem_id:p.id,reason:'Local integration review',details:'Synthetic record'}).select('id').single(),'Report');
+assert.equal(checked(await a.from('community_reports').select('id').eq('id',report.id),'Reporter privacy').length,0);
+assert.equal((await a.rpc('community_moderate_report',{p_report_id:report.id,p_status:'actioned',p_notes:'Forbidden',p_action:'hide'})).error?.code,'42501');
+checked(await admin.from('community_moderators').upsert({user_id:contributor.id}),'Grant local moderator');
+assert.equal(checked(await b.from('community_problems').select('id').eq('id',draft.id),'Moderator draft denial').length,0);
+ checked(await b.rpc('community_moderate_report',{p_report_id:report.id,p_status:'actioned',p_notes:'Local hidden fixture',p_action:'hide'}),'Moderate hide');
+ assert.equal(checked(await anon.from('community_problems').select('id').eq('id',p.id),'Hidden case denial').length,0);
+ assert.equal(checked(await a.from('community_report_reviews').select('report_id').eq('report_id',report.id),'Private moderator notes').length,0);
+ checked(await b.rpc('community_moderate_report',{p_report_id:report.id,p_status:'dismissed',p_notes:'Local test restored',p_action:'restore'}),'Moderate restore');
+// Retain the synthetic moderator because local review rows reference it.
+console.log('PASS real Auth/PostgREST: preference upserts and privacy, anti-join feed, vote ownership/duplicates/removal, state reversal, typed search/write-ups, private parent/child exclusion. Local synthetic data retained.');
+console.log('PASS real moderation: private reports/notes, unauthorized review denial, moderator draft denial, hide and restore.');

@@ -1,4 +1,55 @@
 # Release checklist
+## Current core implementation — 2026-10-02
+
+- [x] Account data download, private deletion request/cancellation and moderator review implemented; actual erasure remains separately reviewed.
+- [x] Node 22.23.3: TypeScript, 98 frontend tests, 62 SQL scenarios, five worker tests and separate production build pass. Existing bundle-size warning remains.
+- [x] Real local privacy browser journeys plus signup confirmation/password recovery against Mailpit; no production synthetic writes or external email.
+- [x] Fresh hosted inventory: 34 applied, TWO pending migrations; required account privacy plus optional notification observability. No hosted SQL applied.
+- [x] Saved exact continuation instructions; local implementation is complete for the notifications-off core scope. Separate learning guides preserved.
+- [ ] Owner supplies monitored support contact and identifies report/privacy operator and retention choices.
+- [ ] Review and explicitly authorize required hosted account-privacy migration; do not blindly apply optional worker SQL.
+- [ ] Authorized commit/push and remote CI on exact candidate; production Auth/redirect/email and rollback verification.
+- [ ] Explicit merge/deployment approval, then live verification. Main push triggers deployment.
+
+CORE_RELEASE.md contains the release packet. Older sections below describe their dated milestones, not current gaps or hosted state.
+
+## Core website release candidate — 2026-10-01
+
+- [x] User approval for core release preparation; learning work remains separate.
+- [x] Real isolated Supabase replay and Auth/API/browser/Storage/moderation journeys; no public synthetic writes.
+- [x] 94 frontend tests, 60 SQL scenarios, five worker tests, TypeScript/build, local export privacy checks and desktop/mobile accessibility evidence.
+- [x] Notifications default off; public support contact wiring and release guard prepared.
+- [x] Fresh hosted history: 34 applied, only optional worker-metrics SQL pending. Existing Azure target is Free SKU. No hosted changes.
+- [x] Operator export and reviewed deletion procedure prepared; reproducible local integration workflow added.
+- [ ] Supply monitored support contact and confirm report/privacy operations and retention choices. Deployment variable not changed.
+- [ ] Approve commit/push, run remote CI on exact candidate; new integration workflow has only local equivalent evidence so far.
+- [ ] Verify production Auth/redirect/email behavior and compatible rollback artifact; keep learning image's failing scan explicit.
+- [ ] Explicitly approve target release before main merge/deployment; then verify live navigation, headers and authorized account behavior.
+
+Details and exact next steps: CORE_RELEASE.md. Earlier sections are historical milestones, not current hosted history.
+
+## Two learning guides — 2026-09-30
+
+- [x] Create only two new guides: local Docker learning first; short Azure tutorial second, with architecture/cost/cleanup explanation.
+- [x] Match commands to existing files/scripts, mark missing cloud bootstrap and scan gates explicitly, validate relative links and PowerShell syntax.
+- [x] Preserve the local-only versus full Supabase/cloud evidence boundary; no execution or deployment authorization inferred.
+- [ ] Website release remains incomplete: real isolated integration, hosted SQL review/approval, runtime security/delivery, operational data handling, final CI and approved live verification.
+- [ ] Stop after reporting guides and remaining scope; await a new user request.
+
+
+## Superseding cost clarification — 2026-09-30
+
+The user clarified after the cancellation: paid services may be approved once the infrastructure and costs are understood. Session 07 is now on hold for explanation and informed scope/budget approval, not permanently rejected and not completed. No cloud resources, hosted SQL, registry publication or deployment occurred. Preserve the prior work; explain the optional learning lab versus the existing website and obtain informed approval before further implementation. The earlier cancellation record below describes the preceding instruction.
+
+
+## Session 07 cost cancellation — 2026-09-30
+
+- [x] Stop the paid Azure exercise after the user's free-plan constraint; no cloud mutations or image publication performed.
+- [x] Record that Session 07 is aborted, not successfully completed; preserve the prior implementation and database volume.
+- [x] Revert the unverified Alpine Dockerfile/validator experiment; regenerate ignored context. Rebuild original Compose images before a future local lab run because local tags may still point to the candidate.
+- [x] Persist advance cost-disclosure/free-plan requirements in AGENTS, roadmap and memory; retain Azure templates only as an inactive proposal.
+- [ ] Original scan findings remain unresolved. No cloud exercise, bootstrap compatibility or cloud monitoring results claimed.
+- [ ] Any next local session needs separate approval; paid services require an explicit change to the user's cost policy.
 
 ## Session 06 operations and cloud preparation — 2026-09-29
 
