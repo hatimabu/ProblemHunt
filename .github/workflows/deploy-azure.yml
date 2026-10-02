@@ -74,7 +74,7 @@ jobs:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
           VITE_SENTRY_DSN: ${{ vars.VITE_SENTRY_DSN }}
-          VITE_SUPPORT_CONTACT: ${{ vars.SUPPORT_CONTACT }}
+          VITE_SUPPORT_CONTACT: ${{ vars.SUPPORT_CONTACT || secrets.SUPPORT_CONTACT }}
           VITE_REPLY_NOTIFICATIONS_ENABLED: 'false'
           NODE_ENV: production
         run: |
