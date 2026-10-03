@@ -71,8 +71,8 @@ export function Navbar() {
         </div>
       </div>
 
-      <div className="board-container flex min-h-[64px] items-center justify-between gap-4">
-        <Link to="/" className="flex items-center gap-2">
+      <div className="board-container brand-header-row flex min-h-[64px] items-center justify-between gap-4">
+        <Link to="/" aria-label="ProblemHunt home" className="flex items-center gap-2">
           <BrandLogo />
         </Link>
 

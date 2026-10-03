@@ -1,4 +1,12 @@
 # ProblemHunt project state
+## Approved Scout logo integrated on main — 2026-10-02
+
+User explicitly requested the approved round-7 running Scout on the official website/main. Replaced the framed checkmark with the original sage fox sprite, square glasses, four-leg 280ms sprint and close ProblemHunt wordmark; no cube/gulp. Preserved homepage navigation, decorative image semantics and a static reduced-motion pose. Compact layout handles 320px screens.
+
+Evidence: 98 frontend tests, TypeScript and final production build pass on local Node 25 (CI Node 22 remains authoritative). Browser checks at 320/390/768/1440px: no horizontal overflow or page errors, image decode, animation, reduced-motion static pose and Browse-to-home link pass. Desktop/mobile screenshots inspected. SVG is 39.29kB / 2.58kB gzip; existing ~719kB JS bundle warning persists. No database changes or synthetic writes.
+
+Fresh GitHub read supersedes the old deployment-blocked note: main b79edd5 successfully deployed in run 37059064548. This logo change is prepared for main publication; next verify its own CI/deployment and the live header. No support configuration or migration was modified in this logo task.
+
 ## Main pushed; deployment blocked by contact configuration — 2026-10-02
 
 User explicitly authorized main publication. Committed all completed work, merged into current main with its CSS correction preserved, and pushed `907c462540b390c9cc9995231726afa65db149df`. GitHub run https://github.com/hatimabu/ProblemHunt/actions/runs/37040380754 passed all frontend/database and real integration jobs. Azure authentication succeeded; Build frontend failed because SUPPORT_CONTACT is empty. No upload occurred, so this is NOT a successful live release. Required hosted privacy SQL remains pending. Release guard now also probes the anonymous export RPC to block a missing schema; mocked present/missing checks pass. No synthetic production writes, hosted migration, new resource or cost introduced. Next: contact configuration and scoped privacy migration approval/application, then retry deployment under existing user authorization. Dependency install reported 7 moderate/3 high advisories, untriaged; previous worker image scan remains a separate learning-service issue.

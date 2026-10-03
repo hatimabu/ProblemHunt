@@ -1,3 +1,5 @@
+import scoutRun from "../../assets/brand/scout-run.svg";
+
 type BrandLogoVariant = "icon" | "wordmark" | "full";
 
 interface BrandLogoProps {
@@ -6,30 +8,24 @@ interface BrandLogoProps {
   variant?: BrandLogoVariant;
 }
 
-function ProblemHuntMark({ className = "" }: { className?: string }) {
+function ProblemHuntMark({ className = "", decorative = false }: { className?: string; decorative?: boolean }) {
   return (
-    <svg
-      viewBox="0 0 32 32"
+    <img
+      src={scoutRun}
+      width="116"
+      height="64"
       className={`problem-hunt-mark ${className}`.trim()}
-      fill="none"
-      role="img"
-      aria-label="Problem Hunt mark"
-    >
-      <path className="problem-hunt-mark__corner problem-hunt-mark__corner--tl" d="M10 6H7v3" />
-      <path className="problem-hunt-mark__corner problem-hunt-mark__corner--tr" d="M22 6h3v3" />
-      <path className="problem-hunt-mark__corner problem-hunt-mark__corner--br" d="M25 22v3h-3" />
-      <path className="problem-hunt-mark__corner problem-hunt-mark__corner--bl" d="M10 25H7v-3" />
-      <rect className="problem-hunt-mark__core" x="10" y="10" width="12" height="12" rx="2" />
-      <path className="problem-hunt-mark__check" d="m12.8 16 2.1 2.1 4.4-4.4" />
-    </svg>
+      alt={decorative ? "" : "Scout, the ProblemHunt fox"}
+      aria-hidden={decorative || undefined}
+      draggable={false}
+    />
   );
 }
 
 function ProblemHuntWordmark({ className = "" }: { className?: string }) {
   return (
     <div className={`problem-hunt-wordmark ${className}`.trim()}>
-      <p className="problem-hunt-wordmark__name">Problem Hunt</p>
-      <p className="problem-hunt-wordmark__tagline">Real problems. Tested solutions.</p>
+      <p className="problem-hunt-wordmark__name">Problem<span>Hunt</span></p>
     </div>
   );
 }
@@ -40,8 +36,8 @@ export function BrandLogo({ className = "", badgeClassName = "", variant = "full
 
   return (
     <div className={`problem-hunt-lockup ${className}`.trim()}>
-      <div className={`board-brand-mark ${badgeClassName}`.trim()}>
-        <ProblemHuntMark />
+      <div className={`problem-hunt-scout ${badgeClassName}`.trim()}>
+        <ProblemHuntMark decorative />
       </div>
       <ProblemHuntWordmark />
     </div>

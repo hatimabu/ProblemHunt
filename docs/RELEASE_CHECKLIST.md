@@ -1,4 +1,12 @@
 # Release checklist
+## Scout logo — 2026-10-02
+
+- [x] User approved round-7 running Scout for main and official website.
+- [x] Original sprite integrated, close wordmark, homepage link, reduced motion and compact 320px layout.
+- [x] 98 frontend tests, TypeScript/build; desktop/mobile visual checks and browser navigation/no-overflow/no-page-error checks at 320/390/768/1440px.
+- [x] Fresh read confirms previous main b79edd5 deployment succeeded (run 37059064548), superseding historical contact-blocked status below.
+- [ ] Publish logo commit on main; verify its remote CI/deployment and live header. No database or cloud configuration change needed for this asset.
+
 ## Publication attempt — 2026-10-02
 
 - [x] Explicit user approval for main commit/push and existing Azure publication; main `907c462` pushed.
