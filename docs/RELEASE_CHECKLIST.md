@@ -1,11 +1,18 @@
 # Release checklist
+## Icon-only voting and Scout follow-up — 2026-10-03
+
+- [x] Scout 85ac23f deployed successfully in run 37082900893; live asset, home navigation, mobile/desktop layout and reduced motion verified.
+- [x] Icon-only upvote design implemented locally, retaining accessible names, live announcements, count and server-confirmed toggle behavior.
+- [x] Five existing trust tests, TypeScript and build pass; visual idle/selected/disabled preview checked.
+- [ ] Upvote design publication remains separate; changes currently local on main.
+
 ## Scout logo — 2026-10-02
 
 - [x] User approved round-7 running Scout for main and official website.
 - [x] Original sprite integrated, close wordmark, homepage link, reduced motion and compact 320px layout.
 - [x] 98 frontend tests, TypeScript/build; desktop/mobile visual checks and browser navigation/no-overflow/no-page-error checks at 320/390/768/1440px.
 - [x] Fresh read confirms previous main b79edd5 deployment succeeded (run 37059064548), superseding historical contact-blocked status below.
-- [ ] Publish logo commit on main; verify its remote CI/deployment and live header. No database or cloud configuration change needed for this asset.
+- [x] Logo commit 85ac23f published on main; remote CI/deployment and live header verified in run 37082900893. No database or cloud configuration change was needed for this asset.
 
 ## Publication attempt — 2026-10-02
 

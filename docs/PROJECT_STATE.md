@@ -1,4 +1,10 @@
 # ProblemHunt project state
+## Icon-only upvote design; Scout deployment verified — 2026-10-03
+
+User requested an icon-only upvote button. Local main now uses a compact 44px upward-arrow control, outlined idle/filled selected state, separate numeric count, hidden live score announcements and accessible action labels. Voting permissions, confirmed count updates, busy disabling and error handling remain unchanged. Five existing community trust tests, TypeScript and production build pass; standalone visual state preview inspected. This upvote change is local, not published.
+
+Scout commit 85ac23f is successfully deployed: GitHub run 37082900893 passed frontend, database, integration and Azure jobs. Read-only live checks at https://problemhunt.cc verify the hashed Scout SVG, homepage link, reduced-motion static pose, no page errors and no overflow at 320/390/1440px. No production writes or hosted configuration changes. Older pending logo-publication notes below are superseded.
+
 ## Approved Scout logo integrated on main — 2026-10-02
 
 User explicitly requested the approved round-7 running Scout on the official website/main. Replaced the framed checkmark with the original sage fox sprite, square glasses, four-leg 280ms sprint and close ProblemHunt wordmark; no cube/gulp. Preserved homepage navigation, decorative image semantics and a static reduced-motion pose. Compact layout handles 320px screens.
